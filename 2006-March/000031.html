@@ -1,0 +1,1950 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [114] trunk: Fix $PATH handling, change how tmlib is included.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B114%5D%20trunk%3A%20Fix%20%24PATH%20handling%2C%20change%20how%20tmlib%20is%20included.&In-Reply-To=%3C200603072324.k27NOlOW023166%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000030.html">
+   <LINK REL="Next"  HREF="000032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [114] trunk: Fix $PATH handling, change how tmlib is included.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B114%5D%20trunk%3A%20Fix%20%24PATH%20handling%2C%20change%20how%20tmlib%20is%20included.&In-Reply-To=%3C200603072324.k27NOlOW023166%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [114] trunk: Fix $PATH handling, change how tmlib is included.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Wed Mar  8 00:24:47 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000030.html">[Tmtest-commits] [113] trunk: Add two tests to check running files named - and -.test.
+</A></li>
+        <LI>Next message: <A HREF="000032.html">[Tmtest-commits] [115] trunk: Get rid of CuTest, and zutest.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 114
+Author:   bronson
+Date:     2006-03-08 00:24:44 +0100 (Wed, 08 Mar 2006)
+
+Log Message:
+-----------
+Fix $PATH handling, change how tmlib is included.  Every test now needs
+to invoke tmtest as $tmtest.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/test/00-cmdline/01-UnknownSwitch.test
+    trunk/test/00-cmdline/02-UnknownSwitch.test
+    trunk/test/00-cmdline/10-CfgDir.test
+    trunk/test/00-cmdline/11-CfgMissing.test
+    trunk/test/00-cmdline/12-CfgEmpty.test
+    trunk/test/01-testfile/01-ExitGarbageWarn.test
+    trunk/test/01-testfile/02-StdOutNK.test
+    trunk/test/01-testfile/03-StdErrNK.test
+    trunk/test/01-testfile/05-MultipleStdout.test
+    trunk/test/01-testfile/06-MultipleStderr.test
+    trunk/test/01-testfile/08-GarbageInStdout.test
+    trunk/test/01-testfile/09-GarbageInStderr.test
+    trunk/test/01-testfile/11-InnerConfig.test
+    trunk/test/01-testfile/20-TestVars.test
+    trunk/test/01-testfile/21-TestVarsABS.test
+    trunk/test/01-testfile/22-TestVarsRel.test
+    trunk/test/01-testfile/23-TestVarsDeep.test
+    trunk/test/01-testfile/24-TestVarsRoot.test
+    trunk/test/01-testfile/dumpscript/10-Stdout.test
+    trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+    trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+    trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+    trunk/test/01-testfile/dumpscript/14-DeepDir.test
+    trunk/test/01-testfile/dumpscript/15-PathOps.test
+    trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+    trunk/test/02-running/00-Empty.test
+    trunk/test/02-running/01-Empty.test
+    trunk/test/02-running/02-Empty.test
+    trunk/test/02-running/04-Pwd.test
+    trunk/test/02-running/05-Abort.test
+    trunk/test/02-running/05-Disable.test
+    trunk/test/02-running/05-Running.test
+    trunk/test/02-running/06-Abort2.test
+    trunk/test/02-running/06-Disable2.test
+    trunk/test/02-running/06-Hidden.test
+    trunk/test/02-running/07-Abort3.test
+    trunk/test/02-running/07-Disable3.test
+    trunk/test/02-running/08-Abort4.test
+    trunk/test/02-running/08-Disable4.test
+    trunk/test/02-running/10-Assert.test
+    trunk/test/02-running/11-Assert.test
+    trunk/test/02-running/12-Disabled.test
+    trunk/test/02-running/13-DisabledDir.test
+    trunk/test/02-running/14-AbortConf.test
+    trunk/test/02-running/15-DisabledDir.test
+    trunk/test/02-running/16-ConfigError.test
+    trunk/test/02-running/17-ConfigError.test
+    trunk/test/02-running/18-TestError.test
+    trunk/test/02-running/20-Atexit.test
+    trunk/test/02-running/21-QuoteFile.test
+    trunk/test/02-running/22-Signal.test
+    trunk/test/02-running/30-Mkfile.test
+    trunk/test/02-running/31-Mkfile.test
+    trunk/test/02-running/32-Mkdir.test
+    trunk/test/02-running/33-Mkdir.test
+    trunk/test/02-running/34-Mkdir.test
+    trunk/test/02-running/40-Replace.test
+    trunk/test/02-running/41-Indent.test
+    trunk/test/02-running/50-OpenFDsTest.test
+    trunk/test/02-running/51-OpenFDsConfig.tst
+    trunk/test/02-running/60-TestDash.test
+    trunk/test/02-running/61-TestDash.test
+    trunk/test/03-results/01-Ystderr.test
+    trunk/test/03-results/01-YstderrOut.test
+    trunk/test/03-results/01-Ystdout.test
+    trunk/test/03-results/01-YstdoutOut.test
+    trunk/test/03-results/02-Nstderr.test
+    trunk/test/03-results/02-Nstdout.test
+    trunk/test/03-results/03-Nstderr.test
+    trunk/test/03-results/03-Nstdout.test
+    trunk/test/03-results/04-Nstderr.test
+    trunk/test/03-results/04-Nstdout.test
+    trunk/test/03-results/09-NoNL.test
+    trunk/test/03-results/09-NoNLStderr.test
+    trunk/test/03-results/10-NoNLErrFail.test
+    trunk/test/03-results/10-NoNLFFail.test
+    trunk/test/03-results/10-NoNLFail.test
+    trunk/test/03-results/11-NoNLOutput.test
+    trunk/test/03-results/11-NoNLOutput2.test
+    trunk/test/03-results/12-NoNLTwice.test
+    trunk/test/03-results/13-MultiNL.test
+    trunk/test/03-results/13-MultiNL2.test
+    trunk/test/03-results/13-MultiNL2Err.test
+    trunk/test/03-results/13-MultiNLErr.test
+    trunk/test/03-results/14-NoNLWarn.test
+    trunk/test/03-results/15-EmptyWithErr.test
+    trunk/test/03-results/15-EmptyWithOut.test
+    trunk/test/03-results/16-EmptyWithErrNoNL.test
+    trunk/test/03-results/16-EmptyWithOutNoNL.test
+    trunk/test/03-results/17-NoStderr.test
+    trunk/test/03-results/18-NoNLWarnOut.test
+    trunk/test/03-results/30-Binary.test
+    trunk/test/03-results/31-BinaryFail.test
+    trunk/test/03-results/32-BinaryLarge.test
+    trunk/test/03-results/33-BinaryHuge.test
+    trunk/test/04-diff/00-NoDiff.test
+    trunk/test/04-diff/01-Diff.test
+    trunk/test/04-diff/02-MultiDiff.test
+    trunk/test/04-diff/05-AbortDiff.test
+    trunk/test/04-diff/05-DisableDiff.test
+    trunk/test/04-diff/06-AbortDiff2.test
+    trunk/test/04-diff/06-DisableDiff2.test
+    trunk/test/04-diff/07-AbortDiff3.test
+    trunk/test/04-diff/07-DisableDiff3.test
+    trunk/test/04-diff/08-AbortDiff4.test
+    trunk/test/04-diff/08-DisableDiff4.test
+    trunk/test/04-diff/09-MultiLevelDiff.test
+    trunk/test/04-diff/10-Patch.test
+    trunk/test/04-diff/11-MultiPatch.test
+    trunk/test/04-diff/12-MultiLevelPatch.test
+    trunk/test/04-diff/13-MultiLevelPatch.test
+    trunk/test/04-diff/17-ConfigError.test
+    trunk/test/04-diff/18-NeedNLWarn.test
+    trunk/test/04-diff/20-DiffNoNL.test
+    trunk/test/04-diff/21-PatchNoNL.test
+    trunk/test/04-diff/22-PatchNoNL2.test
+    trunk/test/04-diff/23-PatchNoNL3.test
+    trunk/tmtest.conf
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/TODO	2006-03-07 23:24:44 UTC (rev 114)
+@@ -11,12 +11,6 @@
+   That's probably the most agreeable.
+   We will not read either config or test files from a world-writable directory.
+   Ever.
+-- Put $args into EVERY test we run.  NO!  This is not as useful.
+-  Get rid of $args and turn every invocation of tmtest into $tmtest.
+-  This allows us to run the entire suite under i.e. &quot;valgrind tmtest&quot;
+-  - Figure out how to ensure that we run the binary in the project tree
+-    when testing rather than the globally installed one.  What happened?
+-	(this is how -- specify the executable and args using $tmtest).
+ - Add --diff and --shell to change the executables that get launched.
+   No, that clutters the arguments up.  Take them from $DIFF and $SHELL.
+   No, obviously that's a bad idea.  That prevents people using tcsh
+@@ -54,6 +48,11 @@
+   unit tests only add 12K or so, where might as well just leave em).
+ - If there were failures, should highlight that in the test summary.
+ 	&quot;%d FAILURES&quot; or somesuch.
++- Well, piping the result of a command to a function destroys the the
++  exit code.  I don't know of any good way around this!  Maybe this
++  is a good argument to have rewriting performed by tmtest itself...
++  I think it is.  So, we can add, &quot;STDOUT: --pipe 'sed -e /.../'&quot;
++  or something.  I don't like that.  Ick. it all sucks.
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+@@ -142,6 +141,11 @@
+   DISABLED DISABLED:  Hopefully that will clean up 05-08-Disable/Abort.test
+ - Add a timeout that will terminate stalled tests.  You can set the timeout
+   in the config file or the test itself.
++- I don't like that $tmtest expands to &quot;$tmtest --config=...&quot;.  That's
++  not what one would normally expect.  However, since it also potentially
++  expands to &quot;valgrind tmtest --config...&quot; it's not THAT bad -- it's
++  never just a filename.  Maybe change $tmtest to $tmtest_cmd?  In every
++  test... arg.  or something!
+ 
+ maybe never:
+ - Add STDOUT: trimws and STDERR: trimws - to trim whitespace from
+
+Modified: trunk/test/00-cmdline/01-UnknownSwitch.test
+===================================================================
+--- trunk/test/00-cmdline/01-UnknownSwitch.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/00-cmdline/01-UnknownSwitch.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,11 +1,13 @@
+ # Verifies that we correctly report unknown short switches
+ 
+-tmtest $args -z - &lt;&lt;-EOL
++# TODO: we pipe stderr to stdout for rewriting.  that needs to be
++# changed during 0.98.  Also, the exit code is lost -- tmtest returns 1.
++
++$tmtest -z - &lt;&lt;-EOL 2&gt;&amp;1 | REPLACE &quot;$tmtest_file&quot; tmtest
+ 	echo Howdy
+ 	STDOUT:
+ 	Howdy
+ EOL
+ 
+-RESULT: 1
+-STDERR:
++STDOUT:
+ tmtest: invalid option -- z
+
+Modified: trunk/test/00-cmdline/02-UnknownSwitch.test
+===================================================================
+--- trunk/test/00-cmdline/02-UnknownSwitch.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/00-cmdline/02-UnknownSwitch.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,11 +1,14 @@
+ # Verifies that we correctly report unknown short switches
+ 
+-tmtest $args --huh - &lt;&lt;-EOL
++# TODO: this sends stderr to stdout for rewriting.  This sucks
++# and needs to be fixed.  The exit code is also lost.
++
++
++$tmtest --huh - &lt;&lt;-EOL 2&gt;&amp;1 | REPLACE &quot;$tmtest_file&quot; tmtest
+ 	echo Howdy
+ 	STDOUT:
+ 	Howdy
+ EOL
+ 
+-RESULT: 1
+-STDERR:
++STDOUT:
+ tmtest: unrecognized option `--huh'
+
+Modified: trunk/test/00-cmdline/10-CfgDir.test
+===================================================================
+--- trunk/test/00-cmdline/10-CfgDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/00-cmdline/10-CfgDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,4 +1,4 @@
+-tmtest $args --config=/tmp - &lt;&lt;-EOL
++$tmtest --config=/tmp - &lt;&lt;-EOL
+ 	echo Test!
+ EOL
+ 
+
+Modified: trunk/test/00-cmdline/11-CfgMissing.test
+===================================================================
+--- trunk/test/00-cmdline/11-CfgMissing.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/00-cmdline/11-CfgMissing.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -9,7 +9,7 @@
+ 	sed -e 's/Could not locate .*zzyzx: No such file or directory/Could not locate ...zzyzx: No such file or directory/'
+ }
+ 
+-tmtest $args --config=&quot;$MYDIR/zzyzx&quot; - &lt;&lt;-EOL 2&gt;&amp;1 | SANIFY
++$tmtest --config=&quot;$MYDIR/zzyzx&quot; - &lt;&lt;-EOL 2&gt;&amp;1 | SANIFY
+ 	echo Howdy
+ 	STDOUT:
+ 	Howdy
+
+Modified: trunk/test/00-cmdline/12-CfgEmpty.test
+===================================================================
+--- trunk/test/00-cmdline/12-CfgEmpty.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/00-cmdline/12-CfgEmpty.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,4 +1,4 @@
+-tmtest $args --config= - &lt;&lt;-EOL
++$tmtest --config= - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT:
+ 	Howdy
+
+Modified: trunk/test/01-testfile/01-ExitGarbageWarn.test
+===================================================================
+--- trunk/test/01-testfile/01-ExitGarbageWarn.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/01-ExitGarbageWarn.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Ensure we emit a warning if the user includes garbage in his
+ # exit value section.
+ 
+-tmtest $args -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	RESULT: 0
+ 	junque
+
+Modified: trunk/test/01-testfile/02-StdOutNK.test
+===================================================================
+--- trunk/test/01-testfile/02-StdOutNK.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/02-StdOutNK.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # following char isn't a delimiter (&quot;STDOUT &quot;, &quot;STDOUT:&quot; and &quot;STDOUT\n&quot;
+ # are all keywords, &quot;STDOUTx&quot; is not).
+ 
+-tmtest $args -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo STDOUTx
+ 	STDOUT:
+ 	STDOUTx
+
+Modified: trunk/test/01-testfile/03-StdErrNK.test
+===================================================================
+--- trunk/test/01-testfile/03-StdErrNK.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/03-StdErrNK.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ # Same as 02, but works on STDERR not STDOUT.
+ 
+ 
+-tmtest $args -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo STDERR. 1&gt;&amp;2
+ 	STDERR:
+ 	STDERR.
+
+Modified: trunk/test/01-testfile/05-MultipleStdout.test
+===================================================================
+--- trunk/test/01-testfile/05-MultipleStdout.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/05-MultipleStdout.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Ensure we emit a warning if we notice multiple STDOUT sections.
+ 
+ 
+-tmtest $args -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	# tmtest will use the empty section which comes first.
+ 	# Therefore, since the test actually does produce output,
+ 	# this test is expected to fail.
+
+Modified: trunk/test/01-testfile/06-MultipleStderr.test
+===================================================================
+--- trunk/test/01-testfile/06-MultipleStderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/06-MultipleStderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Ensure we emit a warning if the user includes multiple stderr sections.
+ # This test succeeds because the second stderr section is ignored.
+ 
+-tmtest $args -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT :
+ 	Howdy
+
+Modified: trunk/test/01-testfile/08-GarbageInStdout.test
+===================================================================
+--- trunk/test/01-testfile/08-GarbageInStdout.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/08-GarbageInStdout.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -3,7 +3,7 @@
+ #
+ # Ensures that we recognize when the stdout clause contains garbage.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+     echo crapola
+ 	STDOUT: crapola
+     crapola
+
+Modified: trunk/test/01-testfile/09-GarbageInStderr.test
+===================================================================
+--- trunk/test/01-testfile/09-GarbageInStderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/09-GarbageInStderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -3,7 +3,7 @@
+ #
+ # Ensures that we recognize when the stdout clause contains garbage.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+     echo crapola
+     echo crapola
+     echo crapola
+
+Modified: trunk/test/01-testfile/11-InnerConfig.test
+===================================================================
+--- trunk/test/01-testfile/11-InnerConfig.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/11-InnerConfig.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # test directory.  (seems like there's got to be a better way of doing
+ # this but this works for now).
+ 
+-tmtest $args -q - &lt;&lt;-'EOL'
++$tmtest $args -q - &lt;&lt;-'EOL'
+ 	if [ $OUTER_CONFIG_FILE ]; then
+ 		# this is what happens when inner tests don't have $args
+ 		ABORT &quot;inner test read outer config file!&quot;
+
+Modified: trunk/test/01-testfile/20-TestVars.test
+===================================================================
+--- trunk/test/01-testfile/20-TestVars.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/20-TestVars.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # MYDIR=/tmp, MYFILE=&quot;(STDIN)&quot;, TESTDIR=/tmp, TESTFILE=&quot;(STDIN)&quot;
+ 
+ 
+-tmtest $args -o -q - &lt;&lt;-'EOL' | INDENT
++$tmtest $args -o -q - &lt;&lt;-'EOL' | INDENT
+ 	echo MYDIR:    &quot;$MYDIR&quot;
+ 	echo MYFILE:   &quot;$MYFILE&quot;
+ 	echo TESTDIR:  &quot;$TESTDIR&quot;
+
+Modified: trunk/test/01-testfile/21-TestVarsABS.test
+===================================================================
+--- trunk/test/01-testfile/21-TestVarsABS.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/21-TestVarsABS.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -8,7 +8,7 @@
+ 	echo TESTFILE: &quot;$TESTFILE&quot;
+ EOL
+ 
+-tmtest $args --ignore-extension -o -q &quot;$tt&quot; &lt;&lt;-EOL | REPLACE &quot;$tt&quot; /tmp/FILE | INDENT
++$tmtest $args --ignore-extension -o -q &quot;$tt&quot; &lt;&lt;-EOL | REPLACE &quot;$tt&quot; /tmp/FILE | INDENT
+ 
+ STDOUT:
+     echo MYDIR:    &quot;$MYDIR&quot;
+
+Modified: trunk/test/01-testfile/22-TestVarsRel.test
+===================================================================
+--- trunk/test/01-testfile/22-TestVarsRel.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/22-TestVarsRel.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -9,7 +9,7 @@
+ EOL
+ 
+ cd `dirname &quot;$tt&quot;`
+-tmtest $args --ignore-extension -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
++$tmtest $args --ignore-extension -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
+ 
+ STDOUT:
+     echo MYDIR:    &quot;$MYDIR&quot;
+
+Modified: trunk/test/01-testfile/23-TestVarsDeep.test
+===================================================================
+--- trunk/test/01-testfile/23-TestVarsDeep.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/23-TestVarsDeep.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -13,7 +13,7 @@
+ EOL
+ 
+ cd &quot;$do&quot;
+-tmtest $config -o -q &quot;di/tt.test&quot; &lt;&lt;-EOL | REPLACE $do /tmp/DIR | INDENT
++$tmtest $config -o -q &quot;di/tt.test&quot; &lt;&lt;-EOL | REPLACE $do /tmp/DIR | INDENT
+ 
+ STDOUT:
+     echo MYDIR:    &quot;$MYDIR&quot;
+
+Modified: trunk/test/01-testfile/24-TestVarsRoot.test
+===================================================================
+--- trunk/test/01-testfile/24-TestVarsRoot.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/24-TestVarsRoot.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -9,7 +9,7 @@
+ EOL
+ 
+ cd `dirname &quot;$tt&quot;`
+-tmtest $args --ignore-extension -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
++$tmtest $args --ignore-extension -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
+ 
+ STDOUT:
+     echo MYDIR:    &quot;$MYDIR&quot;
+
+Modified: trunk/test/01-testfile/dumpscript/10-Stdout.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/10-Stdout.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/dumpscript/10-Stdout.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ # The --config directive disables reading config files from the directory
+ # containing the named config file and all its parent directories.
+ 
+-tmtest $args --dump-script - &lt;&lt;-EOL | FIX_SCRIPT
++$tmtest --dump-script - &lt;&lt;-EOL | FIX_SCRIPT
+ 	this test is never run but we do need to specify a file so tmtest
+ 	knows what config files to include.
+ EOL
+
+Modified: trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -17,7 +17,7 @@
+ 	echo &quot;$config&quot;
+ EOL
+ 
+-tmtest $args --dump-script &quot;$dd/&quot; | REPLACE &quot;$dd&quot; /tmp/DIR | FIX_SCRIPT
++$tmtest --dump-script &quot;$dd/&quot; | REPLACE &quot;$dd&quot; /tmp/DIR | FIX_SCRIPT
+ 
+ STDOUT:
+ 	
+
+Modified: trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -26,7 +26,7 @@
+ EOL
+ 
+ 
+-tmtest $args --dump-script &quot;$di/..&quot; | REPLACE &quot;$do&quot; /tmp/DIR | FIX_SCRIPT
++$tmtest --dump-script &quot;$di/..&quot; | REPLACE &quot;$do&quot; /tmp/DIR | FIX_SCRIPT
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -25,7 +25,7 @@
+ 
+ 
+ cd &quot;$di&quot;
+-tmtest $args --dump-script &quot;..&quot; | REPLACE &quot;$do&quot; /tmp/DIR | FIX_SCRIPT
++$tmtest --dump-script &quot;..&quot; | REPLACE &quot;$do&quot; /tmp/DIR | FIX_SCRIPT
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/01-testfile/dumpscript/14-DeepDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/14-DeepDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/dumpscript/14-DeepDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -29,7 +29,7 @@
+ 
+ 
+ cd `dirname &quot;$do&quot;`
+-tmtest $args --dump-script &quot;$(basename $do)/di&quot; | REPLACE &quot;$(basename $do)&quot; DIR | FIX_SCRIPT
++$tmtest --dump-script &quot;$(basename $do)/di&quot; | REPLACE &quot;$(basename $do)&quot; DIR | FIX_SCRIPT
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/01-testfile/dumpscript/15-PathOps.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/15-PathOps.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/dumpscript/15-PathOps.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -12,7 +12,7 @@
+ 	echo &quot;$config&quot;
+ EOL
+ 
+-tmtest $args --dump-script &quot;$dd//abc/./..//def/ghi//./../../&quot; | REPLACE &quot;$dd&quot; /tmp/DIR | FIX_SCRIPT
++$tmtest --dump-script &quot;$dd//abc/./..//def/ghi//./../../&quot; | REPLACE &quot;$dd&quot; /tmp/DIR | FIX_SCRIPT
+ 
+ STDOUT:
+ 	
+
+Modified: trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -28,7 +28,7 @@
+ EOL
+ 
+ 
+-tmtest $args --dump-script &quot;$do/di//../di&quot; | REPLACE &quot;$do&quot; DIR | FIX_SCRIPT
++$tmtest --dump-script &quot;$do/di//../di&quot; | REPLACE &quot;$do&quot; DIR | FIX_SCRIPT
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/02-running/00-Empty.test
+===================================================================
+--- trunk/test/02-running/00-Empty.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/00-Empty.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # no stderr, and an exit code of 0.
+ 
+ 
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ EOL
+ 
+ 
+
+Modified: trunk/test/02-running/01-Empty.test
+===================================================================
+--- trunk/test/02-running/01-Empty.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/01-Empty.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,6 +1,6 @@
+ # What happens when we output an empty test file?
+ # Should just produce nothing.
+ 
+-tmtest $CFG -o - &lt;&lt;-EOL
++$tmtest -o - &lt;&lt;-EOL
+ EOL
+ 
+
+Modified: trunk/test/02-running/02-Empty.test
+===================================================================
+--- trunk/test/02-running/02-Empty.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/02-Empty.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,6 +2,6 @@
+ 
+ # Diff should produce no data since nothing differs from the default.
+ 
+-tmtest $CFG -d - &lt;&lt;-EOL
++$tmtest -d - &lt;&lt;-EOL
+ EOL
+ 
+
+Modified: trunk/test/02-running/04-Pwd.test
+===================================================================
+--- trunk/test/02-running/04-Pwd.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/04-Pwd.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ # TMPFILE environment variable, or if TMPFILE='/tmp'.  If you have
+ # some other value in TMPFILE, you will have to modify this test.
+ 
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	pwd
+ 	STDOUT:
+ 	/tmp
+
+Modified: trunk/test/02-running/05-Abort.test
+===================================================================
+--- trunk/test/02-running/05-Abort.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/05-Abort.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	ABORT
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/05-Disable.test
+===================================================================
+--- trunk/test/02-running/05-Disable.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/05-Disable.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	DISABLED
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/05-Running.test
+===================================================================
+--- trunk/test/02-running/05-Running.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/05-Running.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -38,7 +38,7 @@
+ 	skip
+ EOL
+ 
+-tmtest $CFG -q mid.test sub/sub.test ../sup.test sub . ..
++$tmtest -q mid.test sub/sub.test ../sup.test sub . ..
+ 
+ # clean up after ourselves
+ rm -rf ../sup.test ../mid
+
+Modified: trunk/test/02-running/06-Abort2.test
+===================================================================
+--- trunk/test/02-running/06-Abort2.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/06-Abort2.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a test is aborted and gives a reason.
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	ABORT: This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/06-Disable2.test
+===================================================================
+--- trunk/test/02-running/06-Disable2.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/06-Disable2.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a test is disabled and gives a reason.
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	DISABLED: This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/06-Hidden.test
+===================================================================
+--- trunk/test/02-running/06-Hidden.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/06-Hidden.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -10,7 +10,7 @@
+ 	hidden
+ EOL
+ 
+-tmtest $CFG -q
++$tmtest -q
+ rm .hidden.test
+ 
+ 
+
+Modified: trunk/test/02-running/07-Abort3.test
+===================================================================
+--- trunk/test/02-running/07-Abort3.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/07-Abort3.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a test is aborted but output is selected.
+ 
+ 
+-tmtest -q -o - &lt;&lt;-EOL
++$tmtest -q -o - &lt;&lt;-EOL
+ 	ABORT This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/07-Disable3.test
+===================================================================
+--- trunk/test/02-running/07-Disable3.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/07-Disable3.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a test is disabled but output is selected.
+ 
+ 
+-tmtest -q -o - &lt;&lt;-EOL
++$tmtest -q -o - &lt;&lt;-EOL
+ 	DISABLED This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/08-Abort4.test
+===================================================================
+--- trunk/test/02-running/08-Abort4.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/08-Abort4.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -10,7 +10,7 @@
+ # dis  (STDIN)                   :    
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	ABORT: &quot;   &quot;
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/08-Disable4.test
+===================================================================
+--- trunk/test/02-running/08-Disable4.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/08-Disable4.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -10,7 +10,7 @@
+ # dis  (STDIN)                   :    
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	DISABLED: &quot;   &quot;
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/02-running/10-Assert.test
+===================================================================
+--- trunk/test/02-running/10-Assert.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/10-Assert.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -6,7 +6,7 @@
+ # will read the config files.
+ cd &quot;$TESTDIR&quot;
+ 
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	ASSERT 1 -eq 1
+ 	echo it ran
+ 	STDOUT:
+
+Modified: trunk/test/02-running/11-Assert.test
+===================================================================
+--- trunk/test/02-running/11-Assert.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/11-Assert.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -8,7 +8,7 @@
+ 
+ 
+ cd &quot;$TESTDIR&quot;
+-tmtest $CFG -q - &lt;&lt;-EOL | sed -re &quot;s/ on.*line [0-9]+/ on line LL/&quot;
++$tmtest -q - &lt;&lt;-EOL | sed -re &quot;s/ on.*line [0-9]+/ on line LL/&quot;
+ 	ASSERT -1 -eq 1
+ 	echo it ran
+ 	STDOUT:
+
+Modified: trunk/test/02-running/12-Disabled.test
+===================================================================
+--- trunk/test/02-running/12-Disabled.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/12-Disabled.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Ensures that a disabled test doesn't run.
+ 
+ 
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	DISABLED
+ 	echo it ran
+ 	STDOUT:
+
+Modified: trunk/test/02-running/13-DisabledDir.test
+===================================================================
+--- trunk/test/02-running/13-DisabledDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/13-DisabledDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -19,7 +19,7 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+
+Modified: trunk/test/02-running/14-AbortConf.test
+===================================================================
+--- trunk/test/02-running/14-AbortConf.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/14-AbortConf.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -22,7 +22,7 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+
+Modified: trunk/test/02-running/15-DisabledDir.test
+===================================================================
+--- trunk/test/02-running/15-DisabledDir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/15-DisabledDir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -20,7 +20,7 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+
+Modified: trunk/test/02-running/16-ConfigError.test
+===================================================================
+--- trunk/test/02-running/16-ConfigError.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/16-ConfigError.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -3,7 +3,7 @@
+ 
+ # TODO: figure out how to rewrite stderr.  That may require some
+ # assistance from tmtest...  After 0.98's streaming changes though.
+-# 	tmtest $CFG -q 2&gt; &gt;( REPLACE &quot;$dir&quot; /tmp/DIR &gt;&amp;2 )
++# 	tmtest -q 2&gt; &gt;( REPLACE &quot;$dir&quot; /tmp/DIR &gt;&amp;2 )
+ 
+ MKDIR dir
+ cd &quot;$dir&quot;
+@@ -25,7 +25,7 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+@@ -34,8 +34,8 @@
+ /tmp/DIR/tmtest.conf: line 2: dotheyspeakbocceonwhat: command not found
+ 
+ Processing .
+-ok   t1.test 
+-ok   t2.test 
++ERR  t1.test                   error in /tmp/DIR/tmtest.conf
++ERR  t2.test                   error in /tmp/DIR/tmtest.conf
+ 
+-2 tests run, 2 successes, 0 failures.
++2 tests run, 0 successes, 2 failures.
+ STDERR:
+
+Modified: trunk/test/02-running/17-ConfigError.test
+===================================================================
+--- trunk/test/02-running/17-ConfigError.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/17-ConfigError.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -27,7 +27,7 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+
+Modified: trunk/test/02-running/18-TestError.test
+===================================================================
+--- trunk/test/02-running/18-TestError.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/18-TestError.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Sees what happens when we're in pedantic mode and there's an error
+ # in the test file.
+ 
+-tmtest $args -o - &lt;&lt;-EOL | sed -re &quot;s/: line [0-9]+:/: line BLAH:/&quot; | INDENT &quot;  &quot;
++$tmtest $args -o - &lt;&lt;-EOL | sed -re &quot;s/: line [0-9]+:/: line BLAH:/&quot; | INDENT &quot;  &quot;
+ 	set -e
+ 	iusedtobullseyewompratsinmypants
+ 	echo it ran
+
+Modified: trunk/test/02-running/20-Atexit.test
+===================================================================
+--- trunk/test/02-running/20-Atexit.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/20-Atexit.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Ensures that the atexit function does what it is supposed to.
+ 
+ cd &quot;$TESTDIR&quot;
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo begin
+ 	ATEXIT echo 1
+ 	ATEXIT echo 2
+
+Modified: trunk/test/02-running/21-QuoteFile.test
+===================================================================
+--- trunk/test/02-running/21-QuoteFile.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/21-QuoteFile.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -16,7 +16,7 @@
+ 	hi
+ EOs
+ 
+-tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm &quot;vl'hurg.test&quot; '12&quot;.test'
+ 
+ 
+
+Modified: trunk/test/02-running/22-Signal.test
+===================================================================
+--- trunk/test/02-running/22-Signal.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/22-Signal.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ # be expanded to be the pid of the parent, not the pid of the child process
+ # that we want to kill!
+ 
+-tmtest $CFG -q - &lt;&lt;'EOL'
++$tmtest -q - &lt;&lt;'EOL'
+     kill -9 $$
+ EOL
+ 
+
+Modified: trunk/test/02-running/30-Mkfile.test
+===================================================================
+--- trunk/test/02-running/30-Mkfile.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/30-Mkfile.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -12,7 +12,7 @@
+ # fill it with data (technically, the empty file was created by the
+ # mktemp(1) call above)
+ cd &quot;$TESTDIR&quot;
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	MKFILE sfn '$fn' &lt;&lt;-EOS
+ 		FileContents
+ 	EOS
+
+Modified: trunk/test/02-running/31-Mkfile.test
+===================================================================
+--- trunk/test/02-running/31-Mkfile.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/31-Mkfile.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ 
+ 
+ cd &quot;$TESTDIR&quot;
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	MKFILE sfn &lt;&lt;-EOS
+ 		FileContents
+ 	EOS
+
+Modified: trunk/test/02-running/32-Mkdir.test
+===================================================================
+--- trunk/test/02-running/32-Mkdir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/32-Mkdir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -12,7 +12,7 @@
+ # fill it with data (technically, the empty file was created by the
+ # mktemp(1) call above)
+ cd &quot;$TESTDIR&quot;
+-tmtest $CFG -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	MKFILE sfn '$fn' &lt;&lt;-EOS
+ 		FileContents
+ 	EOS
+
+Modified: trunk/test/02-running/33-Mkdir.test
+===================================================================
+--- trunk/test/02-running/33-Mkdir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/33-Mkdir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ dn=`mktemp -d -t`
+ 
+ cd &quot;$TESTDIR&quot;
+-tmtest $cfg -q - &lt;&lt;-EOL
++$tmtest $cfg -q - &lt;&lt;-EOL
+ 	MKDIR sdn '$dn'
+ 
+ 	echo start
+
+Modified: trunk/test/02-running/34-Mkdir.test
+===================================================================
+--- trunk/test/02-running/34-Mkdir.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/34-Mkdir.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -6,7 +6,7 @@
+ dn=`mktemp -d -t`
+ 
+ cd &quot;$TESTDIR&quot;
+-tmtest $cfg -q - &lt;&lt;-EOL
++$tmtest $cfg -q - &lt;&lt;-EOL
+ 
+ 	# normally we run tests in pedantic mode, where any single error
+ 	# will cause the test to bail and return a nonzero result code.
+
+Modified: trunk/test/02-running/40-Replace.test
+===================================================================
+--- trunk/test/02-running/40-Replace.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/40-Replace.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # regular expression metachars are correctly interpreted as
+ # regular characters.
+ 
+-tmtest $CFG -o - &lt;&lt;'EOL' | INDENT
++$tmtest -o - &lt;&lt;'EOL' | INDENT
+ 	echo $'Abc  : '   $'abc'       | REPLACE abc def
+ 	echo $'A\'b  : '  $'a\'b'      | REPLACE $'a\'b' def
+ 	echo $'A\&quot;b  : '  $'a\&quot;b'      | REPLACE $'a\&quot;b' def
+
+Modified: trunk/test/02-running/41-Indent.test
+===================================================================
+--- trunk/test/02-running/41-Indent.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/41-Indent.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Ensures that INDENT works.  Also tests that we can exec to a process
+ # group to cause all further output from the script to be indented.
+ 
+-tmtest $CFG -o - &lt;&lt;-EOL | INDENT &quot;| &quot;
++$tmtest -o - &lt;&lt;-EOL | INDENT &quot;| &quot;
+ 	# this technique doesn't work.  Fixes scheduled for 0.98 should
+ 	# fix it.  Put it into its own test when that happens.
+ 	# exec &gt; &gt;(INDENT)
+
+Modified: trunk/test/02-running/50-OpenFDsTest.test
+===================================================================
+--- trunk/test/02-running/50-OpenFDsTest.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/50-OpenFDsTest.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # Ensure we don't leak fds to the running test.
+ # Ideally, there would be NO open FDs.  This will be the case for tmtest 0.98.
+ 
+-tmtest -o $CFG -q - &lt;&lt;-'EOL' | INDENT
++$tmtest -o -q - &lt;&lt;-'EOL' | INDENT
+ 	for i in `seq 3 255`; do
+ 		exec 2&gt;/dev/null
+ 		echo -n &gt;&amp;$i &amp;&amp; echo open: $i
+
+Modified: trunk/test/02-running/51-OpenFDsConfig.tst
+===================================================================
+--- trunk/test/02-running/51-OpenFDsConfig.tst	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/51-OpenFDsConfig.tst	2006-03-07 23:24:44 UTC (rev 114)
+@@ -25,7 +25,7 @@
+ 
+ while [ -f /tmp/s ]; do sleep 1; done
+ 
+-tmtest $args -o &quot;$dd&quot; | INDENT
++$tmtest $args -o &quot;$dd&quot; | INDENT
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/02-running/60-TestDash.test
+===================================================================
+--- trunk/test/02-running/60-TestDash.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/60-TestDash.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -11,7 +11,7 @@
+ 	Howdy pardner.
+ EOL
+ 
+-tmtest -q &quot;$file&quot; | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q &quot;$file&quot; | REPLACE &quot;$dir&quot; /tmp/DIR
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/02-running/61-TestDash.test
+===================================================================
+--- trunk/test/02-running/61-TestDash.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/02-running/61-TestDash.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -11,7 +11,7 @@
+ 	Howdy pardner.
+ EOL
+ 
+-tmtest -q --ignore-extension &quot;$file&quot; | REPLACE &quot;$dir&quot; /tmp/DIR
++$tmtest -q --ignore-extension &quot;$file&quot; | REPLACE &quot;$dir&quot; /tmp/DIR
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/03-results/01-Ystderr.test
+===================================================================
+--- trunk/test/03-results/01-Ystderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/01-Ystderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,4 +1,4 @@
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR :
+ 	Howdy
+
+Modified: trunk/test/03-results/01-YstderrOut.test
+===================================================================
+--- trunk/test/03-results/01-YstderrOut.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/01-YstderrOut.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,6 +1,6 @@
+ # Ensures an empty STDOUT clause won't affect the test results.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR:
+ 	Howdy
+
+Modified: trunk/test/03-results/01-Ystdout.test
+===================================================================
+--- trunk/test/03-results/01-Ystdout.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/01-Ystdout.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,4 +1,4 @@
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT :
+ 	Howdy
+
+Modified: trunk/test/03-results/01-YstdoutOut.test
+===================================================================
+--- trunk/test/03-results/01-YstdoutOut.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/01-YstdoutOut.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,6 +1,6 @@
+ # Ensures an empty stderr section won't affect the test results.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT :
+ 	Howdy
+
+Modified: trunk/test/03-results/02-Nstderr.test
+===================================================================
+--- trunk/test/03-results/02-Nstderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/02-Nstderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # (Howdy vs. howdy).
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR:
+ 	howdy
+
+Modified: trunk/test/03-results/02-Nstdout.test
+===================================================================
+--- trunk/test/03-results/02-Nstdout.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/02-Nstdout.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # (Howdy vs. howdy).
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT:
+ 	howdy
+
+Modified: trunk/test/03-results/03-Nstderr.test
+===================================================================
+--- trunk/test/03-results/03-Nstderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/03-Nstderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # there's an extra space after the Howdy in the stderr.
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR:
+ 	Howdy 
+
+Modified: trunk/test/03-results/03-Nstdout.test
+===================================================================
+--- trunk/test/03-results/03-Nstdout.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/03-Nstdout.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # there's an extra space after the Howdy in the stdout.
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 
+ 	STDOUT:
+
+Modified: trunk/test/03-results/04-Nstderr.test
+===================================================================
+--- trunk/test/03-results/04-Nstderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/04-Nstderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # there's an extra newline in the expected stdout.
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR:
+ 	Howdy
+
+Modified: trunk/test/03-results/04-Nstdout.test
+===================================================================
+--- trunk/test/03-results/04-Nstdout.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/04-Nstdout.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # there's an extra newline in the expected stdout.
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 
+ 	STDOUT:
+
+Modified: trunk/test/03-results/09-NoNL.test
+===================================================================
+--- trunk/test/03-results/09-NoNL.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/09-NoNL.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -9,7 +9,7 @@
+ # (back when we were parsing tests using re2c, lines needed to be
+ # less than BUFSIZ and the results always had to end in a newline).
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo -n Howdy
+ 	STDOUT: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/09-NoNLStderr.test
+===================================================================
+--- trunk/test/03-results/09-NoNLStderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/09-NoNLStderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -9,7 +9,7 @@
+ # less than BUFSIZ and the results always had to end in a newline).
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo -n Howdy 1&gt;&amp;2
+ 	STDERR: --no-trailing-newline
+ 	Howdy
+
+Modified: trunk/test/03-results/10-NoNLErrFail.test
+===================================================================
+--- trunk/test/03-results/10-NoNLErrFail.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/10-NoNLErrFail.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -6,7 +6,7 @@
+ #
+ # Also see: 09-NoNL.test
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/10-NoNLFFail.test
+===================================================================
+--- trunk/test/03-results/10-NoNLFFail.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/10-NoNLFFail.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # Howdy.  The test clearly only produces one.  However, because we
+ # suppress one, the test succeeds.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/10-NoNLFail.test
+===================================================================
+--- trunk/test/03-results/10-NoNLFail.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/10-NoNLFail.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -10,7 +10,7 @@
+ # less than BUFSIZ and the results always had to end in a newline).
+ 
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/11-NoNLOutput.test
+===================================================================
+--- trunk/test/03-results/11-NoNLOutput.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/11-NoNLOutput.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -9,7 +9,7 @@
+ # (back when we were parsing tests using re2c, lines needed to be
+ # less than BUFSIZ and the results always had to end in a newline).
+ 
+-tmtest -o -q - &lt;&lt;-EOL | INDENT &quot;   &quot;
++$tmtest -o -q - &lt;&lt;-EOL | INDENT &quot;   &quot;
+ 	echo -n Howdy
+ 	STDOUT: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/11-NoNLOutput2.test
+===================================================================
+--- trunk/test/03-results/11-NoNLOutput2.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/11-NoNLOutput2.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -9,7 +9,7 @@
+ # (back when we were parsing tests using re2c, lines needed to be
+ # less than BUFSIZ and the results always had to end in a newline).
+ 
+-tmtest -o -q - &lt;&lt;-EOL | INDENT &quot;   &quot;
++$tmtest -o -q - &lt;&lt;-EOL | INDENT &quot;   &quot;
+ 	echo -n Howdy
+ 	STDOUT: --no-trailing-newline
+ 	Howdy
+
+Modified: trunk/test/03-results/12-NoNLTwice.test
+===================================================================
+--- trunk/test/03-results/12-NoNLTwice.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/12-NoNLTwice.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -11,7 +11,7 @@
+ 
+ DISABLED
+ 
+-head -c -1 &lt;&lt;-EOL | tmtest -d -q -
++head -c -1 &lt;&lt;-EOL | $tmtest -d -q -
+     echo -n Howdy
+     STDOUT:
+     Howdy
+
+Modified: trunk/test/03-results/13-MultiNL.test
+===================================================================
+--- trunk/test/03-results/13-MultiNL.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/13-MultiNL.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # test produces one newline, and the expected results end in two newlines,
+ # one of the two newlines will match and the test will succeed.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/13-MultiNL2.test
+===================================================================
+--- trunk/test/03-results/13-MultiNL2.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/13-MultiNL2.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # Since the test is only expecting a single newline, and only
+ # one will be suppressed, this test will fail.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/13-MultiNL2Err.test
+===================================================================
+--- trunk/test/03-results/13-MultiNL2Err.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/13-MultiNL2Err.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # Since the test is only expecting a single newline, and only
+ # one will be suppressed, this test will fail.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/13-MultiNLErr.test
+===================================================================
+--- trunk/test/03-results/13-MultiNLErr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/13-MultiNLErr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # test produces one newline, and the expected results end in two newlines,
+ # one of the two newlines will match and the test will succeed.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR: -n
+ 	Howdy
+
+Modified: trunk/test/03-results/14-NoNLWarn.test
+===================================================================
+--- trunk/test/03-results/14-NoNLWarn.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/14-NoNLWarn.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -8,7 +8,7 @@
+ 
+ # See also 18-NoNLWarnOut.test and 04-diff/22-PatchNoNL2.test
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo -n Howdy
+ 	STDOUT:
+ 	Howdy
+
+Modified: trunk/test/03-results/15-EmptyWithErr.test
+===================================================================
+--- trunk/test/03-results/15-EmptyWithErr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/15-EmptyWithErr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # A blank test with an empty stderr clause should succeed because
+ # the stdout clause doesn't contain anything -- not even a newline.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	STDERR:
+ EOL
+ STDOUT:
+
+Modified: trunk/test/03-results/15-EmptyWithOut.test
+===================================================================
+--- trunk/test/03-results/15-EmptyWithOut.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/15-EmptyWithOut.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,7 +1,7 @@
+ # A blank test with an empty stdout clause should succeed because
+ # the stdout clause doesn't contain anything -- not even a newline.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	STDOUT:
+ EOL
+ STDOUT:
+
+Modified: trunk/test/03-results/16-EmptyWithErrNoNL.test
+===================================================================
+--- trunk/test/03-results/16-EmptyWithErrNoNL.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/16-EmptyWithErrNoNL.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # 15-BlankWithErr.test), so adding -n should not change the
+ # results at all.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	STDERR: -n
+ EOL
+ STDOUT:
+
+Modified: trunk/test/03-results/16-EmptyWithOutNoNL.test
+===================================================================
+--- trunk/test/03-results/16-EmptyWithOutNoNL.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/16-EmptyWithOutNoNL.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -2,7 +2,7 @@
+ # 15-BlankWithOut.test), so adding -n should not change the
+ # results at all.
+ 
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	STDOUT: -n
+ EOL
+ STDOUT:
+
+Modified: trunk/test/03-results/17-NoStderr.test
+===================================================================
+--- trunk/test/03-results/17-NoStderr.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/17-NoStderr.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -1,4 +1,4 @@
+-tmtest -q - &lt;&lt;-EOL
++$tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy 1&gt;&amp;2
+ 	STDERR :
+ 	Howdy
+
+Modified: trunk/test/03-results/18-NoNLWarnOut.test
+===================================================================
+--- trunk/test/03-results/18-NoNLWarnOut.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/18-NoNLWarnOut.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -8,7 +8,7 @@
+ 
+ # See also 14-NoNLWarn.test and 04-diff/18-NeedNLWarn.test
+ 
+-tmtest -o -q - &lt;&lt;-EOL | INDENT
++$tmtest -o -q - &lt;&lt;-EOL | INDENT
+ 	echo -n &quot;right output&quot;
+ 	echo -n &quot;stderr text&quot; 1&gt;&amp;2
+ 	STDOUT:
+
+Modified: trunk/test/03-results/30-Binary.test
+===================================================================
+--- trunk/test/03-results/30-Binary.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/30-Binary.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -14,7 +14,7 @@
+ echo -e &quot;\\0\\0\\0\\0&quot; &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++$tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ ok   /tmp/FILE 
+
+Modified: trunk/test/03-results/31-BinaryFail.test
+===================================================================
+--- trunk/test/03-results/31-BinaryFail.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/31-BinaryFail.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -14,7 +14,7 @@
+ echo -e &quot;\\0\\0\\0&quot; &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++$tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ FAIL /tmp/FILE        O..  stdout differed
+
+Modified: trunk/test/03-results/32-BinaryLarge.test
+===================================================================
+--- trunk/test/03-results/32-BinaryLarge.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/32-BinaryLarge.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -25,7 +25,7 @@
+ done &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++$tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ ok   /tmp/FILE 
+
+Modified: trunk/test/03-results/33-BinaryHuge.test
+===================================================================
+--- trunk/test/03-results/33-BinaryHuge.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/03-results/33-BinaryHuge.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -19,7 +19,7 @@
+ perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}; print &quot;\n&quot;;' &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++$tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ ok   /tmp/FILE 
+
+Modified: trunk/test/04-diff/00-NoDiff.test
+===================================================================
+--- trunk/test/04-diff/00-NoDiff.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/00-NoDiff.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -6,7 +6,7 @@
+ # no differences.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++$tmtest -d - &lt;&lt;-EOL
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+ 	right output
+
+Modified: trunk/test/04-diff/01-Diff.test
+===================================================================
+--- trunk/test/04-diff/01-Diff.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/01-Diff.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -7,7 +7,7 @@
+ # updated for 2.0 on 27 Jan 2005
+ 
+ 
+-tmtest --diff - &lt;&lt;-EOL | FIX_DIFF
++$tmtest --diff - &lt;&lt;-EOL | FIX_DIFF
+     echo &quot;right output&quot;
+     STDOUT:
+     wrong output
+
+Modified: trunk/test/04-diff/02-MultiDiff.test
+===================================================================
+--- trunk/test/04-diff/02-MultiDiff.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/02-MultiDiff.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -18,7 +18,7 @@
+ 	test 2 wrong output
+ EOF
+ 
+-tmtest --ignore-extension -d &quot;$t1&quot; &quot;$t2&quot; | FIX_DIFF
++$tmtest --ignore-extension -d &quot;$t1&quot; &quot;$t2&quot; | FIX_DIFF
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/04-diff/05-AbortDiff.test
+===================================================================
+--- trunk/test/04-diff/05-AbortDiff.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/05-AbortDiff.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest --diff - &lt;&lt;-EOL | FIX_DIFF
++$tmtest --diff - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/05-DisableDiff.test
+===================================================================
+--- trunk/test/04-diff/05-DisableDiff.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/05-DisableDiff.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/06-AbortDiff2.test
+===================================================================
+--- trunk/test/04-diff/06-AbortDiff2.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/06-AbortDiff2.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a diff is aborted and gives a reason.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT: This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/06-DisableDiff2.test
+===================================================================
+--- trunk/test/04-diff/06-DisableDiff2.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/06-DisableDiff2.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a diff is disabled and gives a reason.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED: This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/07-AbortDiff3.test
+===================================================================
+--- trunk/test/04-diff/07-AbortDiff3.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/07-AbortDiff3.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -6,7 +6,7 @@
+ 
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/07-DisableDiff3.test
+===================================================================
+--- trunk/test/04-diff/07-DisableDiff3.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/07-DisableDiff3.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -6,7 +6,7 @@
+ 
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/08-AbortDiff4.test
+===================================================================
+--- trunk/test/04-diff/08-AbortDiff4.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/08-AbortDiff4.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -8,7 +8,7 @@
+ # printed after the &quot;ERROR Test was aborted&quot;.  TODO.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT: &quot;   &quot;
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/08-DisableDiff4.test
+===================================================================
+--- trunk/test/04-diff/08-DisableDiff4.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/08-DisableDiff4.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -8,7 +8,7 @@
+ # printed after the &quot;ERROR Test is disabled&quot;.  TODO.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED: &quot;   &quot;
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/09-MultiLevelDiff.test
+===================================================================
+--- trunk/test/04-diff/09-MultiLevelDiff.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/09-MultiLevelDiff.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -51,7 +51,7 @@
+ EOL
+ 
+ 
+-tmtest --ignore-extension -d | FIX_DIFF
++$tmtest --ignore-extension -d | FIX_DIFF
+ 
+ rm -rf t.test one two
+ 
+
+Modified: trunk/test/04-diff/10-Patch.test
+===================================================================
+--- trunk/test/04-diff/10-Patch.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/10-Patch.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -15,7 +15,7 @@
+ # This is a little exotic...  Patch needs the CWD to be the directory
+ # containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
+ 
+-tmtest --ignore-extension -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++$tmtest --ignore-extension -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ echo
+ INDENT &quot;\t&quot; &lt; &quot;$tt&quot;
+
+Modified: trunk/test/04-diff/11-MultiPatch.test
+===================================================================
+--- trunk/test/04-diff/11-MultiPatch.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/11-MultiPatch.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -26,7 +26,7 @@
+ 
+ # All tt* files must be in the same directory.
+ 
+-tmtest --ignore-extension -d &quot;$tt1&quot; &quot;$tt2&quot; &quot;$tt3&quot; | (cd `dirname &quot;$tt1&quot;` &amp;&amp; patch | FIX_PATCH)
++$tmtest --ignore-extension -d &quot;$tt1&quot; &quot;$tt2&quot; &quot;$tt3&quot; | (cd `dirname &quot;$tt1&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo
+ INDENT &quot;\t&quot; &lt; &quot;$tt1&quot;
+ echo
+
+Modified: trunk/test/04-diff/12-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/12-MultiLevelPatch.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/12-MultiLevelPatch.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -51,7 +51,7 @@
+ EOL
+ 
+ 
+-tmtest --ignore-extension -d | patch -p0 | FIX_PATCH
++$tmtest --ignore-extension -d | patch -p0 | FIX_PATCH
+ echo
+ INDENT &quot;\t&quot; &lt; t.test
+ echo
+
+Modified: trunk/test/04-diff/13-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/13-MultiLevelPatch.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/13-MultiLevelPatch.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -52,7 +52,7 @@
+ 
+ cd two
+ 
+-tmtest --ignore-extension -d .. | patch -p0 | FIX_PATCH
++$tmtest --ignore-extension -d .. | patch -p0 | FIX_PATCH
+ echo
+ INDENT &quot;\t&quot; &lt; ../t.test
+ echo
+
+Modified: trunk/test/04-diff/17-ConfigError.test
+===================================================================
+--- trunk/test/04-diff/17-ConfigError.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/17-ConfigError.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -33,7 +33,7 @@
+ 	he
+ EOs
+ 
+-tmtest -d 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR | FIX_DIFF
++$tmtest -d 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR | FIX_DIFF
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+
+Modified: trunk/test/04-diff/18-NeedNLWarn.test
+===================================================================
+--- trunk/test/04-diff/18-NeedNLWarn.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/18-NeedNLWarn.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -11,7 +11,7 @@
+ # See also the corresponding test in 03-Running/18-NeedNLWarn.test
+ 
+ 
+-tmtest --diff -q - &lt;&lt;-EOL | FIX_DIFF
++$tmtest --diff -q - &lt;&lt;-EOL | FIX_DIFF
+ 	echo -n &quot;right output&quot;
+ 	echo -n &quot;stderr text&quot; 1&gt;&amp;2
+ 	STDOUT:
+
+Modified: trunk/test/04-diff/20-DiffNoNL.test
+===================================================================
+--- trunk/test/04-diff/20-DiffNoNL.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/20-DiffNoNL.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -12,7 +12,7 @@
+ # buggy and you should probably update them.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++$tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+     echo -n &quot;right output&quot;
+     STDOUT:
+     right output
+
+Modified: trunk/test/04-diff/21-PatchNoNL.test
+===================================================================
+--- trunk/test/04-diff/21-PatchNoNL.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/21-PatchNoNL.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -20,7 +20,7 @@
+ # Ignore stderr because we want to ignore the warning that tmtest prints
+ # about the sections not having matching trailing newlines.
+ 
+-tmtest --ignore-extension -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++$tmtest --ignore-extension -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+
+Modified: trunk/test/04-diff/22-PatchNoNL2.test
+===================================================================
+--- trunk/test/04-diff/22-PatchNoNL2.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/22-PatchNoNL2.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -27,7 +27,7 @@
+ # Pipe STDERR to /dev/null because we want to ignore the warning that
+ # tmtest prints (other tests ensure the warning works)
+ 
+-tmtest --ignore-extension -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++$tmtest --ignore-extension -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+
+Modified: trunk/test/04-diff/23-PatchNoNL3.test
+===================================================================
+--- trunk/test/04-diff/23-PatchNoNL3.test	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/test/04-diff/23-PatchNoNL3.test	2006-03-07 23:24:44 UTC (rev 114)
+@@ -21,7 +21,7 @@
+ # This is a little exotic...  Patch needs the CWD to be the directory
+ # containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
+ 
+-tmtest --ignore-extension -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++$tmtest --ignore-extension -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+
+Modified: trunk/tmtest.conf
+===================================================================
+--- trunk/tmtest.conf	2006-03-07 22:41:14 UTC (rev 113)
++++ trunk/tmtest.conf	2006-03-07 23:24:44 UTC (rev 114)
+@@ -33,37 +33,27 @@
+ set -e
+ 
+ 
++# Every test executes tmtest vi the $tmtest variable so that we can
++# force which binary gets run.  We also provide $tmtest_file to tell
++# the file that contains the executable since $tmtest itself may end
++# up looking like &quot;valgrind tmtest --config...&quot;
++# TODO: split --config into $config so it's more obvious that some
++# shenanigans are going on here?  Then each test would start with
++# &quot;$tmtest $config...&quot;
+ 
+-# Add the current directory at the front of the PATH environment variable.
+-# This means that while the test is running, any executables in this
+-# directory will take priority over similarly-named executables anywhere
+-# else (like /usr/bin or ~/bin).  This ensures that we lauch the unstable
+-# copy of tmtest to handle each subtest.
++tmtest_file=&quot;$MYDIR/tmtest&quot;
++tmtest=&quot;$tmtest_file --config=$MYDIR/test/tmtest.sub.conf&quot;
+ 
+-PATH=&quot;$MYDIR:$PATH&quot;
+ 
++# Including tmlib here allows us to run the tests without installing
++# tmtest first.  Make sure we don't include the potentially buggy
++# development tmlib if the globally-installed tmlib has already
++# defined the functions (type MKDIR sees if the MKDIR function
++# exists).
+ 
+-# All testfiles include $args in the arguments to the subexec.
+-# (if they don't, it's a bug in the test).
+-#
+-# This allows us to specify default commands for all tests being run.
+-# For instance, forcing the config file ensures that no config files
+-# outside the test directory will be read.  This way we can be sure
+-# that the tests are not succeeding due to some local configuration;
+-# their environment is as clean as we can possibly make it.
++type MKDIR &gt; /dev/null 2&gt;&amp;1 || . &quot;$MYDIR/tmlib.sh&quot;
+ 
+-args=&quot;--config=$MYDIR/test/tmtest.sub.conf&quot;
+ 
+-
+-# This allows us to run tests without installing tmtest first.
+-# This is generally a good thing but it will cause problems if
+-# this tmlib has problems...  Maybe we should check to see if
+-# a particular function has been defined and include tmlib only
+-# if it hasn't.
+-
+-. &quot;$MYDIR/tmlib.sh&quot;
+-
+-
+ # We set OUTER_CONFIG_FILE so that we can check later that this file
+ # has or has not been read.  We need to ensure that subtests have NOT
+ # read this file (we need to restrict the config files that they read
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000030.html">[Tmtest-commits] [113] trunk: Add two tests to check running files named - and -.test.
+</A></li>
+	<LI>Next message: <A HREF="000032.html">[Tmtest-commits] [115] trunk: Get rid of CuTest, and zutest.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,2135 @@
+From tmtest-commits at lists.berlios.de  Thu Mar  1 01:01:18 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Thu, 1 Mar 2007 01:01:18 +0100
+Subject: [Tmtest-commits] [136] trunk: Use upstream mutest instead of
+	embedding zutest.
+Message-ID: <200703010001.l2101I18021650@sheep.berlios.de>
+
+Revision: 136
+Author:   bronson
+Date:     2007-03-01 01:01:04 +0100 (Thu, 01 Mar 2007)
+
+Log Message:
+-----------
+Use upstream mutest instead of embedding zutest.
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/TODO
+    trunk/compare.c
+    trunk/main.c
+    trunk/pathstack.c
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/test/02-running/50-OpenFDsTest.test
+    trunk/units.c
+    trunk/units.h
+
+Removed Paths:
+-------------
+    trunk/zutest.c
+    trunk/zutest.h
+
+Property Changed:
+----------------
+    trunk/
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:externals
+   + mutest svn+ssh://holt.dreamhost.com/home/bronson/svn/mutest/trunk
+
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/Makefile	2007-03-01 00:01:04 UTC (rev 136)
+@@ -39,8 +39,8 @@
+ CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+ CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
+ # unit test files
+-CSRC+=units.c zutest.c
+-CHDR+=units.h zutest.h
++CSRC+=units.c mutest/mutest.c
++CHDR+=units.h mutest/mutest.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+@@ -66,8 +66,8 @@
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: compare.c pathstack.c units.c units.h zutest.c zutest.h $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c zutest.c $(SCANC) -o units -DUNITS_MAIN
++units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/mutest.h $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+@@ -105,7 +105,7 @@
+ endif
+ 
+ clean:
+-	rm -f tmtest template.c tags zutest
++	rm -f tmtest template.c tags
+ 
+ distclean: clean
+ 	rm -f stscan.[co]
+@@ -129,6 +129,4 @@
+ 	
+ reupdate:
+ 	ls re2c/*.[ch] | (ODIR=`pwd`; cd ../oe; xargs cp --target-directory $$ODIR/re2c)
+-
+-zutest: zutest.c zutest.h Makefile
+-	gcc -Wall -Werror -g zutest.c -DZUTEST_MAIN -o zutest
++	
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/TODO	2007-03-01 00:01:04 UTC (rev 136)
+@@ -61,6 +61,8 @@
+ - Add the zutest unit tests to the tmtest test battery.
+ - Make zutest able to run both quiet (only failures printed) and verbose
+   (everything printed and then some).
++- Try to re-enable some of the disabled tests.  Especially the openfds
++  test; it's helped in the past to ensure that we don't leak fds.
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/compare.c	2007-03-01 00:01:04 UTC (rev 136)
+@@ -360,11 +360,11 @@
+ 
+ void compare_tests()
+ {
+-	zutest( test_empty() );
+-	zutest( test_standard() );
+-	zutest( test_large() );
+-	zutest( test_newlines() );
+-	zutest( test_inc() );
+-	zutest( test_inc_newlines() );
++	mutest( test_empty() );
++	mutest( test_standard() );
++	mutest( test_large() );
++	mutest( test_newlines() );
++	mutest( test_inc() );
++	mutest( test_inc_newlines() );
+ };
+ 
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/main.c	2007-03-01 00:01:04 UTC (rev 136)
+@@ -1049,11 +1049,11 @@
+ 				break;
+ 
+ 			case 'U':
+-				run_unit_tests(run_all_unit_tests);
++				run_unit_tests(all_tests);
+ 				exit(0);
+ 
+ 			case 257:
+-				run_unit_tests_showing_failures(run_all_unit_tests);
++				run_unit_tests_showing_failures(all_tests);
+ 				exit(0);
+ 
+ 			case 'V':
+
+Modified: trunk/pathstack.c
+===================================================================
+--- trunk/pathstack.c	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/pathstack.c	2007-03-01 00:01:04 UTC (rev 136)
+@@ -320,9 +320,9 @@
+ 
+ void pathstack_tests()
+ {
+-	zutest( test_pathstack() );
+-	zutest( test_small_pathstack() );
+-	zutest( test_empty_pathstack() );
++	mutest( test_pathstack() );
++	mutest( test_small_pathstack() );
++	mutest( test_empty_pathstack() );
+ }
+ 
+ #endif
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-03-01 00:01:04 UTC (rev 136)
+@@ -10,77 +10,77 @@
+ # This doesn't work either
+ # $tmtest --show-unit-fails > >(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g) 2>&1
+ 
+-$tmtest --show-unit-fails 2>&1 | sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | sed s/zutest.c:[0-9]\*:/zutest.c:NNN:/
++$tmtest --show-unit-fails 2>&1 | sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | sed s/mutest\\/mutest.c:[0-9]\*:/mutest.c:NNN:/
+ 
+ STDOUT:
+-zutest.c:NNN: In test_assert_int, assert a == b failed. a==4 and b==3!
+-zutest.c:NNN: In test_assert_int, assert a != c failed. a==4 and c==4!
+-zutest.c:NNN: In test_assert_int, assert a > c failed. a==4 and c==4!
+-zutest.c:NNN: In test_assert_int, assert b > c failed. b==3 and c==4!
+-zutest.c:NNN: In test_assert_int, assert b >= a failed. b==3 and a==4!
+-zutest.c:NNN: In test_assert_int, assert c < a failed. c==4 and a==4!
+-zutest.c:NNN: In test_assert_int, assert c < b failed. c==4 and b==3!
+-zutest.c:NNN: In test_assert_int, assert a <= b failed. a==4 and b==3!
+-zutest.c:NNN: In test_assert_int, assert a == 0 failed. a==4!
+-zutest.c:NNN: In test_assert_int, assert z != 0 failed. z==0!
+-zutest.c:NNN: In test_assert_int, assert z > 0 failed. z==0!
+-zutest.c:NNN: In test_assert_int, assert n > 0 failed. n==-1!
+-zutest.c:NNN: In test_assert_int, assert a <= 0 failed. a==4!
+-zutest.c:NNN: In test_assert_int, assert z < 0 failed. z==0!
+-zutest.c:NNN: In test_assert_int, assert a < 0 failed. a==4!
+-zutest.c:NNN: In test_assert_int, assert n >= 0 failed. n==-1!
+-zutest.c:NNN: In test_assert_hex, assert a == b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert a != c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert a > c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert b > c failed. b==0xHEXDIGIT and c==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert b >= a failed. b==0xHEXDIGIT and a==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert c < a failed. c==0xHEXDIGIT and a==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert c < b failed. c==0xHEXDIGIT and b==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert a <= b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert a == 0 failed. a==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert z != 0 failed. z==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert z > 0 failed. z==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert n > 0 failed. n==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert a <= 0 failed. a==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert z < 0 failed. z==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert a < 0 failed. a==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_hex, assert n >= 0 failed. n==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert n != NULL failed. n==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert ap == NULL failed. ap==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert ap == bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert ap != cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert ap > cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert bp > cp failed. bp==0xHEXDIGIT and cp==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert bp >= ap failed. bp==0xHEXDIGIT and ap==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert cp < ap failed. cp==0xHEXDIGIT and ap==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert cp < bp failed. cp==0xHEXDIGIT and bp==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_ptr, assert ap <= bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
+-zutest.c:NNN: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
+-zutest.c:NNN: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
+-zutest.c:NNN: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
+-zutest.c:NNN: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
+-zutest.c:NNN: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
+-zutest.c:NNN: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
+-zutest.c:NNN: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
+-zutest.c:NNN: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
+-zutest.c:NNN: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
+-zutest.c:NNN: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
+-zutest.c:NNN: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
+-zutest.c:NNN: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
+-zutest.c:NNN: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
+-zutest.c:NNN: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
+-zutest.c:NNN: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
+-zutest.c:NNN: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
+-zutest.c:NNN: In test_assert_strings, assert a eq b failed. a is "Bogozity" and b is "Arclamp"!
+-zutest.c:NNN: In test_assert_strings, assert a ne c failed. a is "Bogozity" and c is "Bogozity"!
+-zutest.c:NNN: In test_assert_strings, assert a gt c failed. a is "Bogozity" and c is "Bogozity"!
+-zutest.c:NNN: In test_assert_strings, assert b gt c failed. b is "Arclamp" and c is "Bogozity"!
+-zutest.c:NNN: In test_assert_strings, assert b ge a failed. b is "Arclamp" and a is "Bogozity"!
+-zutest.c:NNN: In test_assert_strings, assert c lt a failed. c is "Bogozity" and a is "Bogozity"!
+-zutest.c:NNN: In test_assert_strings, assert c lt b failed. c is "Bogozity" and b is "Arclamp"!
+-zutest.c:NNN: In test_assert_strings, assert a le b failed. a is "Bogozity" and b is "Arclamp"!
+-zutest.c:NNN: In test_assert_strings, assert a is empty failed. a is: Bogozity
+-zutest.c:NNN: In test_assert_strings, assert n is empty failed. n is NULL!
+-zutest.c:NNN: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
+-zutest.c:NNN: In test_assert_strings, assert n is nonempty failed. n is NULL!
++mutest.c:NNN: In test_assert_int, assert a == b failed. a==4 and b==3!
++mutest.c:NNN: In test_assert_int, assert a != c failed. a==4 and c==4!
++mutest.c:NNN: In test_assert_int, assert a > c failed. a==4 and c==4!
++mutest.c:NNN: In test_assert_int, assert b > c failed. b==3 and c==4!
++mutest.c:NNN: In test_assert_int, assert b >= a failed. b==3 and a==4!
++mutest.c:NNN: In test_assert_int, assert c < a failed. c==4 and a==4!
++mutest.c:NNN: In test_assert_int, assert c < b failed. c==4 and b==3!
++mutest.c:NNN: In test_assert_int, assert a <= b failed. a==4 and b==3!
++mutest.c:NNN: In test_assert_int, assert a == 0 failed. a==4!
++mutest.c:NNN: In test_assert_int, assert z != 0 failed. z==0!
++mutest.c:NNN: In test_assert_int, assert z > 0 failed. z==0!
++mutest.c:NNN: In test_assert_int, assert n > 0 failed. n==-1!
++mutest.c:NNN: In test_assert_int, assert a <= 0 failed. a==4!
++mutest.c:NNN: In test_assert_int, assert z < 0 failed. z==0!
++mutest.c:NNN: In test_assert_int, assert a < 0 failed. a==4!
++mutest.c:NNN: In test_assert_int, assert n >= 0 failed. n==-1!
++mutest.c:NNN: In test_assert_hex, assert a == b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert a != c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert a > c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert b > c failed. b==0xHEXDIGIT and c==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert b >= a failed. b==0xHEXDIGIT and a==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert c < a failed. c==0xHEXDIGIT and a==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert c < b failed. c==0xHEXDIGIT and b==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert a <= b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert a == 0 failed. a==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert z != 0 failed. z==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert z > 0 failed. z==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert n > 0 failed. n==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert a <= 0 failed. a==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert z < 0 failed. z==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert a < 0 failed. a==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_hex, assert n >= 0 failed. n==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert n != NULL failed. n==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert ap == NULL failed. ap==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert ap == bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert ap != cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert ap > cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert bp > cp failed. bp==0xHEXDIGIT and cp==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert bp >= ap failed. bp==0xHEXDIGIT and ap==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert cp < ap failed. cp==0xHEXDIGIT and ap==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert cp < bp failed. cp==0xHEXDIGIT and bp==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert ap <= bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
++mutest.c:NNN: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
++mutest.c:NNN: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
++mutest.c:NNN: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
++mutest.c:NNN: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
++mutest.c:NNN: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
++mutest.c:NNN: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
++mutest.c:NNN: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
++mutest.c:NNN: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
++mutest.c:NNN: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
++mutest.c:NNN: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
++mutest.c:NNN: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
++mutest.c:NNN: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
++mutest.c:NNN: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
++mutest.c:NNN: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
++mutest.c:NNN: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
++mutest.c:NNN: In test_assert_strings, assert a eq b failed. a is "Bogozity" and b is "Arclamp"!
++mutest.c:NNN: In test_assert_strings, assert a ne c failed. a is "Bogozity" and c is "Bogozity"!
++mutest.c:NNN: In test_assert_strings, assert a gt c failed. a is "Bogozity" and c is "Bogozity"!
++mutest.c:NNN: In test_assert_strings, assert b gt c failed. b is "Arclamp" and c is "Bogozity"!
++mutest.c:NNN: In test_assert_strings, assert b ge a failed. b is "Arclamp" and a is "Bogozity"!
++mutest.c:NNN: In test_assert_strings, assert c lt a failed. c is "Bogozity" and a is "Bogozity"!
++mutest.c:NNN: In test_assert_strings, assert c lt b failed. c is "Bogozity" and b is "Arclamp"!
++mutest.c:NNN: In test_assert_strings, assert a le b failed. a is "Bogozity" and b is "Arclamp"!
++mutest.c:NNN: In test_assert_strings, assert a is empty failed. a is: Bogozity
++mutest.c:NNN: In test_assert_strings, assert n is empty failed. n is NULL!
++mutest.c:NNN: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
++mutest.c:NNN: In test_assert_strings, assert n is nonempty failed. n is NULL!
+ All OK.  14 tests run, 14 successes (252 assertions).
+
+Modified: trunk/test/02-running/50-OpenFDsTest.test
+===================================================================
+--- trunk/test/02-running/50-OpenFDsTest.test	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/test/02-running/50-OpenFDsTest.test	2007-03-01 00:01:04 UTC (rev 136)
+@@ -9,6 +9,8 @@
+ #    open: 7
+ #    open: 10
+ 
++DISABLED: Number of open fds keeps changing.
++
+ $tmtest -o -q - <<-'EOL' | INDENT
+ 	for i in `seq 3 255`; do
+ 		exec 2>/dev/null
+
+Modified: trunk/units.c
+===================================================================
+--- trunk/units.c	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/units.c	2007-03-01 00:01:04 UTC (rev 136)
+@@ -2,25 +2,9 @@
+ #include <stddef.h>
+ 
+ 
+-void run_all_unit_tests()
++void all_tests()
+ {
+-	zutest_tests();
++	mutest_tests();
+ 	compare_tests();
+ 	pathstack_tests();
+ }
+-
+-
+-#ifdef UNITS_MAIN
+-int main(int argc, char **argv)
+-{
+-	if(argc > 1) {
+-		// "zutest -f" prints all the failures in the zutest unit tests.
+-		// This allows you to check the output of each macro.
+-		run_unit_tests_showing_failures(run_all_unit_tests);
+-	} else {
+-		run_unit_tests(run_all_unit_tests);
+-	}
+-	// this will never be reached
+-	return 0;
+-}
+-#endif
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/units.h	2007-03-01 00:01:04 UTC (rev 136)
+@@ -1,4 +1,4 @@
+-#include "zutest.h"
++#include "mutest/mutest.h"
+ 
+ void compare_tests();
+ void pathstack_tests();
+
+Deleted: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/zutest.c	2007-03-01 00:01:04 UTC (rev 136)
+@@ -1,407 +0,0 @@
+-/* zutest.c
+- * Scott Bronson
+- * 6 Mar 2006
+- * 
+- * This file is released under the MIT License.
+- * See http://en.wikipedia.org/wiki/MIT_License for more.
+- *
+- * Version 0.7,  16 Feb 2007 -- turn dependency tree into functions
+- * Version 0.6,  26 Apr 2006 -- first version worth releasing
+- * Released under the MIT License.
+- */
+-
+-#include <stdio.h>
+-#include <stdlib.h>
+-#include <stdarg.h>
+-#include <string.h>
+-#include "zutest.h"
+-
+-
+-/** @file zutest.c
+- *
+- * This file contains all of the test mechanisms provided by the
+- * Zutest unit testing framework.
+- *
+- * A single function is called a test.  If any of the asserts fail
+- * within a test, the test itself is stopped and printed as a failure
+- * but all other tests in the current test suite, and all other test
+- * suites, will still be run.
+- * 
+- * You need to ensure that it's impossible for Assert macros to be
+- * called without first ensuring that test_enter is called.
+- * 
+- * A single test is typically:
+- *   
+- *   Generally each step in a test must be processed in order
+- * (later steps depend on earlier).  This is why tmtest bails
+- * on the entire test when the first assert fails -- chances are
+- * that the failure will prevent any further processing in this
+- * test from producing meaningful results, and is probably not
+- * unlikely to cause a full crash.  Therefore when an assert fails,
+- * the current test is stopped and the next test is started.
+- *
+- * Q: Why not collect tests in data structures like other unit test
+- * program do?
+- * A: Zutest used to do this.  However, you can't call a data structure
+- * with different parameters.  For instance, ensuring a suite of tests
+- * works with any sized buffer:
+- *     test_buffer(1024);
+- *     test_buffer(13);
+- *     test_buffer(0);
+- * And you can't set a breakpoint on a data structure or step through
+- * it in a debugger.  So, while it might be conceptually cleaner to
+- * specify your tests purely declarative, in practice it's significantly
+- * less convenient.
+- *
+- * TODO: move test setup into the tests themselves.
+- * TODO: print test results, test suites, etc as they run.
+- *    Add a quiet flag that will suppress printing unless a test fails.
+- *    quiet=0, full printing
+- *    quiet=1, test results not printed
+- *    quiet=2, suite results not printed
+- *    quiet=3, summary not printed.
+- */
+-
+-
+-int zutest_assertions = 0;		///< A goofy statistic, updated by the assertion macros
+-int zutest_tests_run = 0;		///< The number of tests that we have run.  successes+failures==tests_run (if not, then there's a bug somewhere).
+-int zutest_successes = 0;		///< The number of successful tests run
+-int zutest_failures = 0;		///< The number of failed tests run.
+-jmp_buf zutest_test_bail;		///< If an assertion fails, and we're not inverted, this is where we end up.
+-static jmp_buf *inversion;		///< If an assertion fails, and we're inverted, this is where we end up.  This is NULL except when running Zutest's internal unit tests.  See test_fail().
+-static int show_failures = 0; 	///< Set this to 1 to print the failures.  This allows you to view the output of each failure to ensure it looks OK.
+-
+-
+-void zutest_fail(const char *file, int line, const char *func, 
+-		const char *msg, ...)
+-{
+-	va_list ap;
+-	if(!inversion || show_failures) {
+-		fprintf(stderr, "%s:%d: In %s, assert ", file, line, func);
+-		va_start(ap, msg);
+-		vfprintf(stderr, msg, ap);
+-		va_end(ap);
+-		fputc('\n', stderr);
+-	}
+-
+-	// If inversion is set, then an assert correctly failed.
+-	if(inversion) {
+-		longjmp(*inversion, 1);
+-	}
+-
+-	longjmp(zutest_test_bail, 1);
+-}
+-
+-
+-void print_zutest_results()
+-{
+-	if(zutest_failures == 0) {
+-		printf("All OK.  %d test%s run, %d successe%s (%d assertion%s).\n",
+-				zutest_successes, (zutest_successes == 1 ? "" : "s"),
+-				zutest_successes, (zutest_successes == 1 ? "" : "s"),
+-				zutest_assertions, (zutest_assertions == 1 ? "" : "s"));
+-		return;
+-	}
+-
+-	printf("ERROR: %d failure%s in %d test%s run!\n",
+-			zutest_failures, (zutest_failures == 1 ? "" : "s"), 
+-			zutest_tests_run, (zutest_tests_run == 1 ? "" : "s"));
+-}
+-
+-
+-/** Runs all the unit tests in all the passed-in test suites.
+- */
+-
+-void run_unit_tests(zutest_proc proc)
+-{
+-	(*proc)();
+-	print_zutest_results();
+-	exit(zutest_failures < 100 ? zutest_failures : 100);
+-}
+-
+-
+-void run_unit_tests_showing_failures(zutest_proc proc)
+-{
+-	show_failures = 1;
+-	run_unit_tests(proc);
+-}
+-
+-
+-/**
+- * Examines the command-line arguments.  If "--run-unit-tests" is
+- * the first argument, then it runs the unit tests (further arguments
+- * may affect how the tests are processed).  This routine exits with
+- * a nonzero result code if any test fails; otherwise it exits with 0.
+- * It never returns.
+- *
+- * If --run-unit-tests is not on the command line, this routine returns
+- * without doing anything.
+- */
+-
+-void unit_test_check(int argc, char **argv, zutest_proc proc)
+-{
+-	if(argc > 1 && strcmp(argv[1],"--run-unit-tests") == 0) {
+-		run_unit_tests(proc);
+-	}
+-}
+-
+-
+-
+-/* This code runs the zutest unit tests to ensure that zutest itself
+- * is working properly.
+- */
+-
+-
+-/** This macro is used to reverse the sense of the tests. 
+- *
+- * To properly test Zutest, we need to ensure that the Assert macros
+- * handle failures too.  Therefore, we occasionally want to reverse
+- * the sense of the macro, where a failure indicates a successful test
+- * and a passing assert means that the test has failed.
+- *
+- * This macro inverts the sense of the contained assertion.
+- * test_failure(AssertEq(a,b)) causes the test to pass
+- * only when the assertion fails (i.e. when a != b).
+- */
+-
+-#define test_failure(test) 				\
+-	do { 								\
+-		jmp_buf jb; 					\
+-		int val = setjmp(jb); 			\
+-		if(val == 0) { 					\
+-			inversion = &jb;			\
+-			do { test; } while(0);		\
+-			inversion = NULL;			\
+-			Fail("This test should have failed: " #test);	\
+-		}								\
+-		inversion = NULL;				\
+-	} while(0)
+-
+-
+-
+-void test_assert_int()
+-{
+-	int a=4, b=3, c=4, z=0, n=-1;
+-
+-	AssertEq(a,c);
+-	AssertNe(a,b);
+-	AssertGt(a,b);
+-	AssertGe(a,b);
+-	AssertGe(a,c);
+-	AssertLt(b,a);
+-	AssertLe(b,a);
+-	AssertLe(c,a);
+-
+-	test_failure( AssertEq(a,b) );
+-	test_failure( AssertNe(a,c) );
+-	test_failure( AssertGt(a,c) );
+-	test_failure( AssertGt(b,c) );
+-	test_failure( AssertGe(b,a) );
+-	test_failure( AssertLt(c,a) );
+-	test_failure( AssertLt(c,b) );
+-	test_failure( AssertLe(a,b) );
+-
+-	AssertZero(z);
+-	test_failure( AssertZero(a) );
+-	AssertNonzero(a);
+-	test_failure( AssertNonzero(z) );
+-
+-	AssertPositive(a);
+-	test_failure( AssertPositive(z) );
+-	test_failure( AssertPositive(n) );
+-
+-	AssertNonPositive(n);
+-	AssertNonPositive(z);
+-	test_failure( AssertNonPositive(a) );
+-
+-	AssertNegative(n);
+-	test_failure( AssertNegative(z) );
+-	test_failure( AssertNegative(a) );
+-
+-	AssertNonNegative(a);
+-	AssertNonNegative(z);
+-	test_failure( AssertNonNegative(n) );
+-}
+-
+-
+-void test_assert_hex()
+-{
+-	int a=4, b=3, c=4, z=0, n=-1;
+-
+-	AssertEqHex(a,c);
+-	AssertNeHex(a,b);
+-	AssertGtHex(a,b);
+-	AssertGeHex(a,b);
+-	AssertGeHex(a,c);
+-	AssertLtHex(b,a);
+-	AssertLeHex(b,a);
+-	AssertLeHex(c,a);
+-
+-	test_failure( AssertEqHex(a,b) );
+-	test_failure( AssertNeHex(a,c) );
+-	test_failure( AssertGtHex(a,c) );
+-	test_failure( AssertGtHex(b,c) );
+-	test_failure( AssertGeHex(b,a) );
+-	test_failure( AssertLtHex(c,a) );
+-	test_failure( AssertLtHex(c,b) );
+-	test_failure( AssertLeHex(a,b) );
+-
+-	AssertZeroHex(z);
+-	test_failure( AssertZeroHex(a) );
+-	AssertNonzeroHex(a);
+-	test_failure( AssertNonzeroHex(z) );
+-
+-	AssertPositiveHex(a);
+-	test_failure( AssertPositiveHex(z) );
+-	test_failure( AssertPositiveHex(n) );
+-
+-	AssertNonPositiveHex(n);
+-	AssertNonPositiveHex(z);
+-	test_failure( AssertNonPositiveHex(a) );
+-
+-	AssertNegativeHex(n);
+-	test_failure( AssertNegativeHex(z) );
+-	test_failure( AssertNegativeHex(a) );
+-
+-	AssertNonNegativeHex(a);
+-	AssertNonNegativeHex(z);
+-	test_failure( AssertNonNegativeHex(n) );
+-}
+-
+-
+-void test_assert_ptr()
+-{
+-	int a, b;
+-	int *ap = &a;
+-	int *bp = &b;
+-	int *cp = &a;
+-	int *n = NULL;
+-
+-	AssertPtr(ap);
+-	AssertNull(n);
+-
+-	test_failure( AssertPtr(n) );
+-	test_failure( AssertNull(ap) );
+-
+-	AssertPtrEq(ap,cp);
+-	AssertPtrNe(ap,bp);
+-	AssertPtrGt(ap,bp);
+-	AssertPtrGe(ap,bp);
+-	AssertPtrGe(ap,cp);
+-	AssertPtrLt(bp,ap);
+-	AssertPtrLe(bp,ap);
+-	AssertPtrLe(cp,ap);
+-
+-	test_failure( AssertPtrEq(ap,bp) );
+-	test_failure( AssertPtrNe(ap,cp) );
+-	test_failure( AssertPtrGt(ap,cp) );
+-	test_failure( AssertPtrGt(bp,cp) );
+-	test_failure( AssertPtrGe(bp,ap) );
+-	test_failure( AssertPtrLt(cp,ap) );
+-	test_failure( AssertPtrLt(cp,bp) );
+-	test_failure( AssertPtrLe(ap,bp) );
+-}
+-
+-
+-void test_assert_float()
+-{
+-	float a=0.0004, b=0.0003, c=0.0004;
+-
+-	AssertFloatEq(a,c);
+-	AssertFloatNe(a,b);
+-	AssertFloatGt(a,b);
+-	AssertFloatGe(a,b);
+-	AssertFloatGe(a,c);
+-	AssertFloatLt(b,a);
+-	AssertFloatLe(b,a);
+-	AssertFloatLe(c,a);
+-
+-	test_failure( AssertFloatEq(a,b) );
+-	test_failure( AssertFloatNe(a,c) );
+-	test_failure( AssertFloatGt(a,c) );
+-	test_failure( AssertFloatGt(b,c) );
+-	test_failure( AssertFloatGe(b,a) );
+-	test_failure( AssertFloatLt(c,a) );
+-	test_failure( AssertFloatLt(c,b) );
+-	test_failure( AssertFloatLe(a,b) );
+-
+-	AssertDoubleEq(a,c);
+-	AssertDoubleNe(a,b);
+-	AssertDoubleGt(a,b);
+-	AssertDoubleGe(a,b);
+-	AssertDoubleGe(a,c);
+-	AssertDoubleLt(b,a);
+-	AssertDoubleLe(b,a);
+-	AssertDoubleLe(c,a);
+-
+-	test_failure( AssertDoubleEq(a,b) );
+-	test_failure( AssertDoubleNe(a,c) );
+-	test_failure( AssertDoubleGt(a,c) );
+-	test_failure( AssertDoubleGt(b,c) );
+-	test_failure( AssertDoubleGe(b,a) );
+-	test_failure( AssertDoubleLt(c,a) );
+-	test_failure( AssertDoubleLt(c,b) );
+-	test_failure( AssertDoubleLe(a,b) );
+-}
+-
+-
+-void test_assert_strings()
+-{
+-	const char *a = "Bogozity";
+-	const char *b = "Arclamp";
+-	const char *c = "Bogozity";
+-	const char *e = "";
+-	const char *n = NULL;
+-
+-	AssertStrEq(a,c);
+-	AssertStrNe(a,b);
+-	AssertStrGt(a,b);
+-	AssertStrGe(a,b);
+-	AssertStrGe(a,c);
+-	AssertStrLt(b,a);
+-	AssertStrLe(b,a);
+-	AssertStrLe(c,a);
+-
+-	test_failure( AssertStrEq(a,b) );
+-	test_failure( AssertStrNe(a,c) );
+-	test_failure( AssertStrGt(a,c) );
+-	test_failure( AssertStrGt(b,c) );
+-	test_failure( AssertStrGe(b,a) );
+-	test_failure( AssertStrLt(c,a) );
+-	test_failure( AssertStrLt(c,b) );
+-	test_failure( AssertStrLe(a,b) );
+-
+-	AssertStrEmpty(e);
+-	test_failure( AssertStrEmpty(a) );
+-	test_failure( AssertStrEmpty(n) );
+-
+-	AssertStrNonEmpty(a);
+-	test_failure( AssertStrNonEmpty(e) );
+-	test_failure( AssertStrNonEmpty(n) );
+-}
+-
+-
+-void zutest_tests()
+-{
+-	zutest( test_assert_int() );
+-	zutest( test_assert_hex() );
+-	zutest( test_assert_ptr() );
+-	zutest( test_assert_float() );
+-	zutest( test_assert_strings() );
+-};
+-
+-
+-#ifdef ZUTEST_MAIN
+-int main(int argc, char **argv)
+-{
+-	if(argc > 1) {
+-		// "zutest -f" prints all the failures in the zutest unit tests.
+-		// This allows you to check the output of each macro.
+-		run_unit_tests_showing_failures(zutest_tests);
+-	} else {
+-		run_unit_tests(zutest_tests);
+-	}
+-	// this will never be reached
+-	return 0;
+-}
+-#endif
+
+Deleted: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-02-27 19:24:34 UTC (rev 135)
++++ trunk/zutest.h	2007-03-01 00:01:04 UTC (rev 136)
+@@ -1,280 +0,0 @@
+-/* zutest.h
+- * Scott Bronson
+- * 6 Mar 2006
+- *
+- * TODO: make tests self-documenting.  The test name is the same as the
+- * function name, but they should also have a short and long description.
+- * TODO: make zutest suites able to be arranged in a hierarchy.
+- * 
+- * This file is released under the MIT License.
+- * See http://en.wikipedia.org/wiki/MIT_License for more.
+- * 
+- * Version 0.7,  16 Feb 2007 -- turn dependency tree into functions
+- * Version 0.62, 22 Jan 2007 -- clean up failure messages
+- * Version 0.61, 30 Apr 2006 -- first version worth releasing
+- */
+-
+-
+-/* @file zutest.h
+- *
+- * This file contains the declarations and all the Assert macros
+- * required to use Zutest in your own applications.
+- *
+- * Zutest is a ground-up rewrite of Asim Jalis's "CuTest" library.
+- *
+- * To compile Zutest to run its own unit tests, do this:
+- * 
+- * <pre>
+- * 	$ cc -DZUTEST_MAIN zutest.c -o zutest
+- * 	$ ./zutest
+- * 	4 tests run, 4 successes (132 assertions).
+- * </pre>
+- *
+- * If your non-gcc compiler complains about a missing __func__ macro,
+- * add -D__func__='"test"' to the compiler's command line.
+- *
+- * See ::zutest_tests for instructions on how to add zutest's
+- * built-in unit tests to your application's test suite.
+- */
+-
+-
+-#ifndef ZUTEST_H
+-#define ZUTEST_H
+-
+-// This include is unfortunate...  TODO: try to get this out of here.
+-#include <setjmp.h>
+-
+-
+-//#define ZUTBECAUSE " failed because "
+-#define ZUTBECAUSE " failed. "
+-
+-// Note that Fail doesn't increment zutest_assertions (the number of assertions
+-// that have been made) because it doesn't assert anything.  It only fails.
+-// If you call fail, you might want to increment zutest_assertions
+-// manually if you care about this number.  Normally you won't care.
+-#define Fail(...) zutest_fail(__FILE__, __LINE__, __func__, __VA_ARGS__)
+-
+-// If the expression returns false, it is printed in the failure message.
+-#define Assert(x) do { zutest_assertions++; \
+-		if(!(x)) { Fail(#x); } } while(0)
+-
+-// If the expression returns false, the given format string is printed.
+-// This is the same as Assert, just with much more helpful error messages.
+-// For instance: AssertFmt(isdigit(x), "isdigit but x=='%c'", x);
+-#define AssertFmt(x,...) do { zutest_assertions++; \
+-		if(!(x)) { Fail(__VA_ARGS__); } } while(0)
+-
+-// integers, longs, chars...
+-#define AssertEq(x,y) AssertOp(x,==,y)
+-#define AssertNe(x,y) AssertOp(x,!=,y)
+-#define AssertGt(x,y) AssertOp(x,>,y)
+-#define AssertGe(x,y) AssertOp(x,>=,y)
+-#define AssertLt(x,y) AssertOp(x,<,y)
+-#define AssertLe(x,y) AssertOp(x,<=,y)
+-
+-#define AssertZero(x) AssertOpToZero(x,==)
+-#define AssertNonzero(x) AssertOpToZero(x,!=)
+-#define AssertNonZero(x) AssertNonzero(x)
+-#define AssertPositive(x) AssertOpToZero(x,>);
+-#define AssertNegative(x) AssertOpToZero(x,<);
+-#define AssertNonNegative(x) AssertOpToZero(x,>=);
+-#define AssertNonPositive(x) AssertOpToZero(x,<=);
+-
+-// Also integers but failure values are printed in hex rather than decimal.
+-#define AssertEqHex(x,y) AssertHexOp(x,==,y)
+-#define AssertNeHex(x,y) AssertHexOp(x,!=,y)
+-#define AssertGtHex(x,y) AssertHexOp(x,>,y)
+-#define AssertGeHex(x,y) AssertHexOp(x,>=,y)
+-#define AssertLtHex(x,y) AssertHexOp(x,<,y)
+-#define AssertLeHex(x,y) AssertHexOp(x,<=,y)
+-
+-#define AssertZeroHex(x) AssertHexOpToZero(x,==)
+-#define AssertNonzeroHex(x) AssertHexOpToZero(x,!=)
+-#define AssertNonZeroHex(x) AssertNonzeroHex(x)
+-#define AssertPositiveHex(x) AssertHexOpToZero(x,>);
+-#define AssertNegativeHex(x) AssertHexOpToZero(x,<);
+-#define AssertNonNegativeHex(x) AssertHexOpToZero(x,>=);
+-#define AssertNonPositiveHex(x) AssertHexOpToZero(x,<=);
+-
+-// Pointers...
+-#define AssertPtr(p)  AssertFmt(p != NULL, \
+-		#p" != NULL" ZUTBECAUSE #p"==0x%lX!", (unsigned long)p)
+-#define AssertNull(p) AssertFmt(p == NULL, \
+-		#p" == NULL" ZUTBECAUSE #p"==0x%lX!", (unsigned long)p)
+-#define AssertNonNull(p) AssertPtr(p)
+-
+-#define AssertPtrNull(p) AssertNull(p)
+-#define AssertPtrNonNull(p) AssertNonNull(p)
+-#define AssertPtrEq(x,y) AssertPtrOp(x,==,y)
+-#define AssertPtrNe(x,y) AssertPtrOp(x,!=,y)
+-#define AssertPtrGt(x,y) AssertPtrOp(x,>,y)
+-#define AssertPtrGe(x,y) AssertPtrOp(x,>=,y)
+-#define AssertPtrLt(x,y) AssertPtrOp(x,<,y)
+-#define AssertPtrLe(x,y) AssertPtrOp(x,<=,y)
+-
+-// These work with floats and doubles
+-// (everything is handled internally as double)
+-#define AssertFloatEq(x,y) AssertFloatOp(x,==,y)
+-#define AssertFloatNe(x,y) AssertFloatOp(x,!=,y)
+-#define AssertFloatGt(x,y) AssertFloatOp(x,>,y)
+-#define AssertFloatGe(x,y) AssertFloatOp(x,>=,y)
+-#define AssertFloatLt(x,y) AssertFloatOp(x,<,y)
+-#define AssertFloatLe(x,y) AssertFloatOp(x,<=,y)
+-// supply Doubles so people don't worry about precision when they see Float
+-#define AssertDoubleEq(x,y) AssertFloatOp(x,==,y)
+-#define AssertDoubleNe(x,y) AssertFloatOp(x,!=,y)
+-#define AssertDoubleGt(x,y) AssertFloatOp(x,>,y)
+-#define AssertDoubleGe(x,y) AssertFloatOp(x,>=,y)
+-#define AssertDoubleLt(x,y) AssertFloatOp(x,<,y)
+-#define AssertDoubleLe(x,y) AssertFloatOp(x,<=,y)
+-
+-// Strings (uses strcmp)...
+-#define AssertStrEq(x,y) AssertStrOp(x,eq,==,y)
+-#define AssertStrNe(x,y) AssertStrOp(x,ne,!=,y)
+-#define AssertStrGt(x,y) AssertStrOp(x,gt,>,y)
+-#define AssertStrGe(x,y) AssertStrOp(x,ge,>=,y)
+-#define AssertStrLt(x,y) AssertStrOp(x,lt,<,y)
+-#define AssertStrLe(x,y) AssertStrOp(x,le,<=,y)
+-
+-// ensures a string is non-null but zero-length
+-#define AssertStrEmpty(p) do { zutest_assertions++; \
+-		if(!(p)) { Fail(#p" is empty" ZUTBECAUSE #p " is NULL!"); } \
+-		if((p)[0]) { Fail(#p" is empty" ZUTBECAUSE #p " is: %s",p); } \
+-	} while(0)
+-// ensures a string is non-null and non-zero-length
+-#define AssertStrNonEmpty(p) do { zutest_assertions++; \
+-		if(!(p)) { Fail(#p" is nonempty" ZUTBECAUSE #p " is NULL!"); } \
+-		if(!(p)[0]) { Fail(#p" is nonempty" ZUTBECAUSE #p"[0] is 0!"); } \
+-	} while(0)
+-
+-// I think that "Equal" looks better than "Eq".
+-// This is probably proof that these macros need to be totally overhauled...
+-#define AssertEqual(x,y) AssertEq(x,y)
+-#define AssertEqualHex(x,y) AssertHexEq(x,y)
+-#define AssertPtrEqual(x,y) AssertPtrEq(x,y)
+-#define AssertFloatEqual(x,y) AssertFloatEq(x,y)
+-#define AssertDoubleEqual(x,y) AssertFloatEq(x,y)
+-#define AssertStrEqual(x,y) AssertStrEq(x,y)
+-
+-//
+-// helper macros, not intended to be called directly.
+-//
+-
+-#define AssertExpType(x,op,y,type,fmt) \
+-	AssertFmt((type)x op (type)y, #x" "#op" "#y ZUTBECAUSE \
+-	#x"=="fmt" and "#y"=="fmt"!", (type)x,(type)y)
+-// The failure "x==0 failed because x==1 and 0==0" s too wordy so we'll
+-// special-case checking against 0: x==0 failed because x==1).
+-#define AssertExpToZero(x,op,type,fmt) \
+-	AssertFmt((type)x op 0,#x" "#op" 0" ZUTBECAUSE #x"=="fmt"!", (type)x)
+-
+-#define AssertOp(x,op,y) AssertExpType(x,op,y,long,"%ld")
+-#define AssertHexOp(x,op,y) AssertExpType(x,op,y,long,"0x%lX")
+-#define AssertOpToZero(x,op) AssertExpToZero(x,op,long,"%ld")
+-#define AssertHexOpToZero(x,op) AssertExpToZero(x,op,long,"0x%lX")
+-#define AssertPtrOp(x,op,y) AssertExpType(x,op,y,unsigned long,"0x%lX")
+-#define AssertFloatOp(x,op,y) AssertExpType(x,op,y,double,"%lf")
+-#define AssertStrOp(x,opn,op,y) AssertFmt(strcmp(x,y) op 0, \
+-	#x" "#opn" "#y ZUTBECAUSE #x" is \"%s\" and "#y" is \"%s\"!",x,y)
+-
+-
+-
+-
+-/** Fails the current test.
+- *
+- * This function may only be called from within a ::zutest_proc.
+- *
+- * If none of the built-in Assert macros fit your fancy, you can do the
+- * check on your own and call zutest_fail in the event that it fails.
+- * 
+- * Example:
+- * 
+- * <pre>
+- * if(my_error) {
+- *    zutest_fail(__FILE__, __LINE__, __func__, "Error Message %d", 1);
+- * }
+- * </pre>
+- *
+- * But, really, it's easier just to call the Fail() macro.
+- */
+-
+-void zutest_fail(const char *file, int line, const char *func,
+-		const char *msg, ...);
+-		
+-		
+-#define zutest(test) do { zutest_tests_run += 1; 	\
+-		if(!setjmp(zutest_test_bail)) { 			\
+-			do { test; } while(0); 					\
+-			zutest_successes += 1; 					\
+-		} else { 									\
+-			zutest_failures += 1; 					\
+-		} } while(0)
+-		
+-
+-/* above this line is stuff only needed within the tests */
+-/* ------------------ */
+-/* below this line is stuff only needed to run the tests */
+-
+-
+-
+-
+-/** Keeps track of how many assertions have been made.
+- * This needs to be updated manually each time an assertion
+- * is made.  The Zutest built-in assertion macros all
+- * update this variable properly.
+- */
+-
+-extern int zutest_assertions;
+-extern int zutest_tests_run;
+-extern int zutest_successes;
+-extern int zutest_failures;
+-extern jmp_buf zutest_test_bail;
+-
+-typedef void (*zutest_proc)();
+-
+-/** Runs all the tests in a suite. */
+-void run_zutest_suite(zutest_proc proc);
+-/** Runs all the tests in all the suites passed in. */
+-void run_zutest_suites(zutest_proc proc);
+-
+-void print_zutest_results();
+-
+-
+-/** 
+- *
+- * Call this on the very first line of your application.  If the user
+- * ran your program with the first arg of "--run-unit-tests", this will
+- * run the tests and exit.  Otherwise your program will run as normal.
+- * If you would rather create a dedicated executable, just call
+- * run_zutest_suites() directly.
+- */
+-
+-void unit_test_check(int argc, char **argv, zutest_proc proc);
+-
+-/**
+- *
+- * This runs all the unit tests supplied and then exits.  Use this
+- * if you want to handle the arguments yourself.
+- */
+-
+-void run_unit_tests(zutest_proc proc);
+-void run_unit_tests_showing_failures(zutest_proc proc);
+-
+-
+-/** Zutest's built-in test suite.
+- *
+- * This allows you to add the Zutest unit test suite to your application's
+- * test suites.  This way, you can ensure that Zutest's unit tests pass
+- * before running your application's.  This is for the especially pedantic. :)
+- *
+- * Unfortunately, there is one test that cannot be run if you do this:
+- * ensuring that zutest properly handles empty test suites.
+- * Other than this one test, adding zutest_tests
+- * to your application's test suite is equivalent to causing zutest to
+- * compile and run its unit tests as described in zutest.h.
+- */
+-
+-void zutest_tests();
+-
+-
+-#endif
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Thu Mar  1 01:15:44 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Thu, 1 Mar 2007 01:15:44 +0100
+Subject: [Tmtest-commits] [137] trunk/: Need to use a publicly-accessible
+	repo for the mutest
+Message-ID: <200703010015.l210FiPN005000@sheep.berlios.de>
+
+Revision: 137
+Author:   bronson
+Date:     2007-03-01 01:15:31 +0100 (Thu, 01 Mar 2007)
+
+Log Message:
+-----------
+Need to use a publicly-accessible repo for the mutest external!
+
+Property Changed:
+----------------
+    trunk/
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:externals
+   - mutest svn+ssh://holt.dreamhost.com/home/bronson/svn/mutest/trunk
+
+   + mutest http://svn.u32.net/mutest/trunk
+
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Thu Mar  1 01:28:07 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Thu, 1 Mar 2007 01:28:07 +0100
+Subject: [Tmtest-commits] [138] trunk/.cdtproject: Get rid of obsolete
+	zutest make target in
+Message-ID: <200703010028.l210S7GH020876@sheep.berlios.de>
+
+Revision: 138
+Author:   bronson
+Date:     2007-03-01 01:28:03 +0100 (Thu, 01 Mar 2007)
+
+Log Message:
+-----------
+Get rid of obsolete zutest make target in Eclipse project.
+
+No need for framework-only unit test executables since we're now pulling mutest from upstream.
+
+Modified Paths:
+--------------
+    trunk/.cdtproject
+Modified: trunk/.cdtproject
+===================================================================
+--- trunk/.cdtproject	2007-03-01 00:15:31 UTC (rev 137)
++++ trunk/.cdtproject	2007-03-01 00:28:03 UTC (rev 138)
+@@ -54,13 +54,6 @@
+ </item>
+ <item id="org.eclipse.cdt.make.core.buildtargets">
+ <buildTargets>
+-<target name="zutest" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+-<buildCommand>make</buildCommand>
+-<buildArguments></buildArguments>
+-<buildTarget>zutest</buildTarget>
+-<stopOnError>false</stopOnError>
+-<useDefaultCommand>true</useDefaultCommand>
+-</target>
+ <target name="units" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+ <buildCommand>make</buildCommand>
+ <buildArguments></buildArguments>
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Tue Mar  6 01:18:57 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Tue, 6 Mar 2007 01:18:57 +0100
+Subject: [Tmtest-commits] [139] trunk: Split unit tests into flavors.
+Message-ID: <200703060018.l260Ivwe006162@sheep.berlios.de>
+
+Revision: 139
+Author:   bronson
+Date:     2007-03-06 01:18:48 +0100 (Tue, 06 Mar 2007)
+
+Log Message:
+-----------
+Split unit tests into flavors.
+
+Modified Paths:
+--------------
+    trunk/.cdtproject
+    trunk/Makefile
+    trunk/compare.c
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/units.c
+    trunk/units.h
+Modified: trunk/.cdtproject
+===================================================================
+--- trunk/.cdtproject	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/.cdtproject	2007-03-06 00:18:48 UTC (rev 139)
+@@ -75,6 +75,20 @@
+ <stopOnError>true</stopOnError>
+ <useDefaultCommand>true</useDefaultCommand>
+ </target>
++<target name="mutest" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments></buildArguments>
++<buildTarget>mutest</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="run-mutest" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments></buildArguments>
++<buildTarget>run-mutest</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
+ </buildTargets>
+ </item>
+ </data>
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/Makefile	2007-03-06 00:18:48 UTC (rev 139)
+@@ -39,8 +39,8 @@
+ CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+ CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
+ # unit test files
+-CSRC+=units.c mutest/mutest.c
+-CHDR+=units.h mutest/mutest.h
++CSRC+=units.c mutest/mutest.c mutest/test_Assert.c
++CHDR+=units.h mutest/mutest.h mutest/mutest_Assert.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+@@ -60,18 +60,24 @@
+ %.o: %.c
+ 	$(CC) -g -c $< -o $@
+ 
+-.PHONY: test
++.PHONY: test mutest run-mutest
+ test: tmtest
+ 	./tmtest --run-unit-tests
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/mutest.h $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
++units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/test_Assert.c mutest/mutest_Assert.h mutest/mutest.h $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/test_Assert.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+ 
++mutest:
++	(cd mutest; $(MAKE))
++
++run-mutest:
++	(cd mutest; ./mutest)
++
+ # todo -- when global variables are worked out, just compile everything
+ #units: $(CSRC) $(CHDR) $(SCANH) $(SCANC) Makefile
+ #	$(CC) $(COPTS) $(CSRC) $(SCANC) -o units -DUNITS_MAIN
+@@ -106,6 +112,7 @@
+ 
+ clean:
+ 	rm -f tmtest template.c tags
++	(cd mutest; $(MAKE) clean)
+ 
+ distclean: clean
+ 	rm -f stscan.[co]
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/compare.c	2007-03-06 00:18:48 UTC (rev 139)
+@@ -198,13 +198,13 @@
+ 
+ 	readmem_init_str(ss, "");
+ 	compare_attach(ss);
+-	AssertEq(compare_check(ss), cmp_full_match);
++	AssertEQ(compare_check(ss), cmp_full_match);
+ 
+ 	readmem_init_str(ss, "");
+ 	compare_attach(ss);
+ 	val = compare_continue(ss, "", 0);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_full_match);
++	AssertEQ(compare_check(ss), cmp_full_match);
+ }
+ 
+ 
+@@ -219,7 +219,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, "3", 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_full_match);
++	AssertEQ(compare_check(ss), cmp_full_match);
+ }
+ 
+ 
+@@ -241,7 +241,7 @@
+ 
+ 	// compare_check will never return cmp_full_match because
+ 	// the random reader will never run out of data.
+-	AssertEq(compare_check(ss), cmp_ss_has_more_data);
++	AssertEQ(compare_check(ss), cmp_ss_has_more_data);
+ }
+ 
+ 
+@@ -266,19 +266,19 @@
+ 
+ static void test_newlines()
+ {
+-	AssertEq(check_newlines("Unix\n",   "Unix\n"  ), cmp_full_match);
+-	AssertEq(check_newlines("Unix",     "Unix\n"  ), cmp_ptr_has_extra_nl);
+-	AssertEq(check_newlines("Unix\n",   "Unix"    ), cmp_ss_has_extra_nl);
+-	AssertEq(check_newlines("Unix",     "Unix"    ), cmp_full_match);
++	AssertEQ(check_newlines("Unix\n",   "Unix\n"  ), cmp_full_match);
++	AssertEQ(check_newlines("Unix",     "Unix\n"  ), cmp_ptr_has_extra_nl);
++	AssertEQ(check_newlines("Unix\n",   "Unix"    ), cmp_ss_has_extra_nl);
++	AssertEQ(check_newlines("Unix",     "Unix"    ), cmp_full_match);
+ 
+-	AssertEq(check_newlines("Unix\n\n", "Unix\n"  ), cmp_ss_has_extra_nl);
+-	AssertEq(check_newlines("Unix\n",   "Unix\n\n"), cmp_ptr_has_more_nls);
++	AssertEQ(check_newlines("Unix\n\n", "Unix\n"  ), cmp_ss_has_extra_nl);
++	AssertEQ(check_newlines("Unix\n",   "Unix\n\n"), cmp_ptr_has_more_nls);
+ 
+ 	// empty buffers (except for newlines)
+-	AssertEq(check_newlines("\n",   ""     ), cmp_ss_has_extra_nl);
+-	AssertEq(check_newlines("",     "\n"   ), cmp_ptr_has_extra_nl);
+-	AssertEq(check_newlines("\n\n", ""     ), cmp_ss_has_more_data);
+-	AssertEq(check_newlines("",     "\n\n" ), cmp_no_match);
++	AssertEQ(check_newlines("\n",   ""     ), cmp_ss_has_extra_nl);
++	AssertEQ(check_newlines("",     "\n"   ), cmp_ptr_has_extra_nl);
++	AssertEQ(check_newlines("\n\n", ""     ), cmp_ss_has_more_data);
++	AssertEQ(check_newlines("",     "\n\n" ), cmp_no_match);
+ }
+ 
+ static void test_inc()
+@@ -296,7 +296,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, "\n", 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_ptr_has_extra_nl);
++	AssertEQ(compare_check(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, "123");
+ 	compare_attach(ss);
+@@ -306,7 +306,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, "\n", 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_no_match);
++	AssertEQ(compare_check(ss), cmp_no_match);
+ }
+ 
+ 
+@@ -327,7 +327,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, "\n", 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, "123\n");
+ 	compare_attach(ss);
+@@ -337,17 +337,17 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, "3", 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
+ 
+ 	readmem_init_str(ss, "");
+ 	compare_attach(ss);
+ 	val = compare_continue(ss, "\n", 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, "\n");
+ 	compare_attach(ss);
+-	AssertEq(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
+ }
+ 
+ 
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-03-06 00:18:48 UTC (rev 139)
+@@ -10,7 +10,9 @@
+ # This doesn't work either
+ # $tmtest --show-unit-fails > >(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g) 2>&1
+ 
+-$tmtest --show-unit-fails 2>&1 | sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | sed s/mutest\\/mutest.c:[0-9]\*:/mutest.c:NNN:/
++$tmtest --show-unit-fails 2>&1 | \
++	sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | \
++	sed s/^.*\\.c:[0-9]\*:/mutest.c:NNN:/
+ 
+ STDOUT:
+ mutest.c:NNN: In test_assert_int, assert a == b failed. a==4 and b==3!
+
+Modified: trunk/units.c
+===================================================================
+--- trunk/units.c	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/units.c	2007-03-06 00:18:48 UTC (rev 139)
+@@ -4,7 +4,7 @@
+ 
+ void all_tests()
+ {
+-	mutest_tests();
++	mutest_test_assert_flavor();
+ 	compare_tests();
+ 	pathstack_tests();
+ }
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/units.h	2007-03-06 00:18:48 UTC (rev 139)
+@@ -1,4 +1,4 @@
+-#include "mutest/mutest.h"
++#include "mutest/mutest_Assert.h"
+ 
+ void compare_tests();
+ void pathstack_tests();
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Tue Mar  6 01:29:39 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Tue, 6 Mar 2007 01:29:39 +0100
+Subject: [Tmtest-commits] [140] trunk: mutest's test_Asserts was renamed to
+	test_asserts
+Message-ID: <200703060029.l260TdNV007211@sheep.berlios.de>
+
+Revision: 140
+Author:   bronson
+Date:     2007-03-06 01:29:35 +0100 (Tue, 06 Mar 2007)
+
+Log Message:
+-----------
+mutest's test_Asserts was renamed to test_asserts
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/units.h
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-03-06 00:18:48 UTC (rev 139)
++++ trunk/Makefile	2007-03-06 00:29:35 UTC (rev 140)
+@@ -39,8 +39,8 @@
+ CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+ CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
+ # unit test files
+-CSRC+=units.c mutest/mutest.c mutest/test_Assert.c
+-CHDR+=units.h mutest/mutest.h mutest/mutest_Assert.h
++CSRC+=units.c mutest/mutest.c mutest/test_assert.c
++CHDR+=units.h mutest/mutest.h mutest/mutest_assert.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+@@ -66,8 +66,8 @@
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/test_Assert.c mutest/mutest_Assert.h mutest/mutest.h $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/test_Assert.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
++units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/test_assert.c mutest/mutest_assert.h mutest/mutest.h $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/test_assert.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-03-06 00:18:48 UTC (rev 139)
++++ trunk/units.h	2007-03-06 00:29:35 UTC (rev 140)
+@@ -1,4 +1,4 @@
+-#include "mutest/mutest_Assert.h"
++#include "mutest/mutest_assert.h"
+ 
+ void compare_tests();
+ void pathstack_tests();
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Tue Mar  6 22:18:47 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Tue, 6 Mar 2007 22:18:47 +0100
+Subject: [Tmtest-commits] [141] trunk: Add mutest-config,
+	start splitting mutest.h into two files
+Message-ID: <200703062118.l26LIlHJ006584@sheep.berlios.de>
+
+Revision: 141
+Author:   bronson
+Date:     2007-03-06 22:18:39 +0100 (Tue, 06 Mar 2007)
+
+Log Message:
+-----------
+Add mutest-config, start splitting mutest.h into two files (one for people writing tests, one for people running tests)
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/main.c
+    trunk/units.h
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-03-06 00:29:35 UTC (rev 140)
++++ trunk/Makefile	2007-03-06 21:18:39 UTC (rev 141)
+@@ -32,15 +32,20 @@
+ SCANC=re2c/read.c re2c/read-fd.c re2c/read-mem.c re2c/read-rand.c re2c/scan.c re2c/scan-dyn.c
+ SCANH=re2c/read.h re2c/read-fd.h re2c/read-mem.h re2c/read-rand.h re2c/scan.h re2c/scan-dyn.h
+ 	
++# files with unit tests
++USRC=pathstack.c compare.c pathconv.c
++UHDR=pathstack.h compare.h pathconv.h
++# add the files needed to run the unit tests
++USRC+=units.c $(shell mutest/mutest-config --c --tests assert)
++UHDR+=units.h $(shell mutest/mutest-config --headers assert)
++
+ # utilities:
+-CSRC+=qscandir.c pathconv.c pathstack.c
+-CHDR+=qscandir.h pathconv.h pathstack.h
++CSRC+=qscandir.c $(USRC)
++CHDR+=qscandir.h $(UHDR)
+ # program files:
+-CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+-CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
++CSRC+=vars.c test.c rusage.c tfscan.c stscan.o main.c template.c
++CHDR+=vars.h test.h rusage.h tfscan.h stscan.h
+ # unit test files
+-CSRC+=units.c mutest/mutest.c mutest/test_assert.c
+-CHDR+=units.h mutest/mutest.h mutest/mutest_assert.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+@@ -66,8 +71,8 @@
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/test_assert.c mutest/mutest_assert.h mutest/mutest.h $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/test_assert.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
++units: $(USRC) $(UHDR) mutest/main.c $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall $(USRC) mutest/main.c $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-03-06 00:29:35 UTC (rev 140)
++++ trunk/main.c	2007-03-06 21:18:39 UTC (rev 141)
+@@ -32,7 +32,9 @@
+ #include "tfscan.h"
+ #include "pathconv.h"
+ #include "pathstack.h"
++
+ #include "units.h"
++#include "mutest/mutest.h"
+ 
+ 
+ #define DIFFPROG "/usr/bin/diff"
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-03-06 00:29:35 UTC (rev 140)
++++ trunk/units.h	2007-03-06 21:18:39 UTC (rev 141)
+@@ -1,4 +1,4 @@
+-#include "mutest/mutest_assert.h"
++#include "mutest/mu_assert.h"
+ 
+ void compare_tests();
+ void pathstack_tests();
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Wed Mar  7 08:42:01 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Wed, 7 Mar 2007 08:42:01 +0100
+Subject: [Tmtest-commits] [142] trunk: Big refactor to mutest.
+Message-ID: <200703070742.l277g1Ol008200@sheep.berlios.de>
+
+Revision: 142
+Author:   bronson
+Date:     2007-03-07 08:41:52 +0100 (Wed, 07 Mar 2007)
+
+Log Message:
+-----------
+Big refactor to mutest.  Now you need to start a subtest to run an inverted test.
+
+That's why the number of tests run jumped from 5 to 24.  We run 19 inverted tests.
+
+Modified Paths:
+--------------
+    trunk/compare.c
+    trunk/pathstack.c
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/test/02-running/03-Unit-Tests.test
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/compare.c	2007-03-07 07:41:52 UTC (rev 142)
+@@ -195,16 +195,19 @@
+ {
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+-
+-	readmem_init_str(ss, "");
+-	compare_attach(ss);
+-	AssertEQ(compare_check(ss), cmp_full_match);
+-
+-	readmem_init_str(ss, "");
+-	compare_attach(ss);
+-	val = compare_continue(ss, "", 0);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_full_match);
++	
++	mutest_start(__func__, "Ensure that two empty buffers are a full match.")
++	{
++		readmem_init_str(ss, "");
++		compare_attach(ss);
++		AssertEQ(compare_check(ss), cmp_full_match);
++	
++		readmem_init_str(ss, "");
++		compare_attach(ss);
++		val = compare_continue(ss, "", 0);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_full_match);
++	}
+ }
+ 
+ 
+@@ -213,13 +216,16 @@
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+ 
+-	readmem_init_str(ss, "123");
+-	compare_attach(ss);
+-	val = compare_continue(ss, "12", 2);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "3", 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_full_match);
++	mutest_start(__func__, "Ensure that 123 and 12,3 are a full match.")
++	{
++		readmem_init_str(ss, "123");
++		compare_attach(ss);
++		val = compare_continue(ss, "12", 2);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "3", 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_full_match);
++	}
+ }
+ 
+ 
+@@ -230,18 +236,21 @@
+ 	unsigned int seed = 47;
+ 	int num, i, val;
+ 
+-	scanstate_init(ss, buf, BUFSIZ);
+-	readrand_attach(ss, seed);
+-	compare_attach(ss);
+-	for(i=0; i<10; i++) {
+-		num = rand_r(&seed);
+-		val = compare_continue(ss, (char*)&num, sizeof(num));
+-		AssertNonNegative(val);
++	mutest_start(__func__, "Ensure that a few tens of K match.")
++	{
++		scanstate_init(ss, buf, BUFSIZ);
++		readrand_attach(ss, seed);
++		compare_attach(ss);
++		for(i=0; i<10; i++) {
++			num = rand_r(&seed);
++			val = compare_continue(ss, (char*)&num, sizeof(num));
++			AssertNonNegative(val);
++		}
++	
++		// compare_check will never return cmp_full_match because
++		// the random reader will never run out of data.
++		AssertEQ(compare_check(ss), cmp_ss_has_more_data);
+ 	}
+-
+-	// compare_check will never return cmp_full_match because
+-	// the random reader will never run out of data.
+-	AssertEQ(compare_check(ss), cmp_ss_has_more_data);
+ }
+ 
+ 
+@@ -266,47 +275,51 @@
+ 
+ static void test_newlines()
+ {
+-	AssertEQ(check_newlines("Unix\n",   "Unix\n"  ), cmp_full_match);
+-	AssertEQ(check_newlines("Unix",     "Unix\n"  ), cmp_ptr_has_extra_nl);
+-	AssertEQ(check_newlines("Unix\n",   "Unix"    ), cmp_ss_has_extra_nl);
+-	AssertEQ(check_newlines("Unix",     "Unix"    ), cmp_full_match);
+-
+-	AssertEQ(check_newlines("Unix\n\n", "Unix\n"  ), cmp_ss_has_extra_nl);
+-	AssertEQ(check_newlines("Unix\n",   "Unix\n\n"), cmp_ptr_has_more_nls);
+-
+-	// empty buffers (except for newlines)
+-	AssertEQ(check_newlines("\n",   ""     ), cmp_ss_has_extra_nl);
+-	AssertEQ(check_newlines("",     "\n"   ), cmp_ptr_has_extra_nl);
+-	AssertEQ(check_newlines("\n\n", ""     ), cmp_ss_has_more_data);
+-	AssertEQ(check_newlines("",     "\n\n" ), cmp_no_match);
++	mutest_start(__func__, "Ensure that the newline descriptions are correct")
++	{
++		AssertEQ(check_newlines("Unix\n",   "Unix\n"  ), cmp_full_match);
++		AssertEQ(check_newlines("Unix",     "Unix\n"  ), cmp_ptr_has_extra_nl);
++		AssertEQ(check_newlines("Unix\n",   "Unix"    ), cmp_ss_has_extra_nl);
++		AssertEQ(check_newlines("Unix",     "Unix"    ), cmp_full_match);
++	
++		AssertEQ(check_newlines("Unix\n\n", "Unix\n"  ), cmp_ss_has_extra_nl);
++		AssertEQ(check_newlines("Unix\n",   "Unix\n\n"), cmp_ptr_has_more_nls);
++	
++		// empty buffers (except for newlines)
++		AssertEQ(check_newlines("\n",   ""     ), cmp_ss_has_extra_nl);
++		AssertEQ(check_newlines("",     "\n"   ), cmp_ptr_has_extra_nl);
++		AssertEQ(check_newlines("\n\n", ""     ), cmp_ss_has_more_data);
++		AssertEQ(check_newlines("",     "\n\n" ), cmp_no_match);
++	}
+ }
+ 
+ static void test_inc()
+ {
+-	// Tries to ensure that packetization won't mess us up.
+-
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+ 
+-	readmem_init_str(ss, "12");
+-	compare_attach(ss);
+-	val = compare_continue(ss, "1", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "2", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "\n", 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_ptr_has_extra_nl);
+-
+-	readmem_init_str(ss, "123");
+-	compare_attach(ss);
+-	val = compare_continue(ss, "1", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "2", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "\n", 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_no_match);
++	mutest_start(__func__, "Ensures packetization won't affect non-matches.")
++	{
++		readmem_init_str(ss, "12");
++		compare_attach(ss);
++		val = compare_continue(ss, "1", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "2", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "\n", 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_ptr_has_extra_nl);
++	
++		readmem_init_str(ss, "123");
++		compare_attach(ss);
++		val = compare_continue(ss, "1", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "2", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "\n", 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_no_match);
++	}
+ }
+ 
+ 
+@@ -317,37 +330,40 @@
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+ 
+-	readmem_init_str(ss, "123");
+-	compare_attach(ss);
+-	val = compare_continue(ss, "1", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "2", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "3", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "\n", 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+-
+-	readmem_init_str(ss, "123\n");
+-	compare_attach(ss);
+-	val = compare_continue(ss, "1", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "2", 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, "3", 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
+-
+-	readmem_init_str(ss, "");
+-	compare_attach(ss);
+-	val = compare_continue(ss, "\n", 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+-
+-	readmem_init_str(ss, "\n");
+-	compare_attach(ss);
+-	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	mutest_start(__func__, "Test packetization with newlines")
++	{
++		readmem_init_str(ss, "123");
++		compare_attach(ss);
++		val = compare_continue(ss, "1", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "2", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "3", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "\n", 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	
++		readmem_init_str(ss, "123\n");
++		compare_attach(ss);
++		val = compare_continue(ss, "1", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "2", 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, "3", 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	
++		readmem_init_str(ss, "");
++		compare_attach(ss);
++		val = compare_continue(ss, "\n", 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	
++		readmem_init_str(ss, "\n");
++		compare_attach(ss);
++		AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	}
+ }
+ 
+ 
+@@ -360,11 +376,11 @@
+ 
+ void compare_tests()
+ {
+-	mutest( test_empty() );
+-	mutest( test_standard() );
+-	mutest( test_large() );
+-	mutest( test_newlines() );
+-	mutest( test_inc() );
+-	mutest( test_inc_newlines() );
++	test_empty();
++	test_standard();
++	test_large();
++	test_newlines();
++	test_inc();
++	test_inc_newlines();
+ };
+ 
+
+Modified: trunk/pathstack.c
+===================================================================
+--- trunk/pathstack.c	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/pathstack.c	2007-03-07 07:41:52 UTC (rev 142)
+@@ -177,81 +177,84 @@
+ 		// therefore, buffer can hold 23 characters, bufsiz is only 22, and the entire buffer
+ 		// can hold a maximum of 21 characters including the leading '/'.
+ 	
+-	// init the pathstack
+-	pathstack_init(ps, buf, bufsiz, origstr);
+-	AssertEqual(ps->curlen, strlen(origstr));
+-	AssertEqual(ps->maxlen, bufsiz-1);
+-	AssertStrEqual(ps->buf, origstr);
+-	
+-	
+-	// push an actual string
+-	ret = pathstack_push(ps, "/next", &save1);
+-	AssertZero(ret);
+-	AssertEqual(save1.oldlen, strlen(origstr));
+-	AssertEqual(ps->maxlen, bufsiz-1);
+-	AssertStrEqual(ps->buf, "/tryit/next");
+-	
+-	// and pop it
+-	ret = pathstack_pop(ps, &save1);
+-	AssertZero(ret);
+-	AssertEqual(ps->curlen, strlen(origstr));
+-	AssertEqual(ps->maxlen, bufsiz-1);
+-	AssertStrEqual(ps->buf, origstr);
+-	
+-	
+-	// push an empty string
+-	ret = pathstack_push(ps, "", &save1);
+-	AssertZero(ret);
+-	AssertEqual(ps->curlen, strlen(origstr));
+-	AssertEqual(ps->maxlen, bufsiz-1);
+-	AssertStrEqual(ps->buf, origstr);
+-	
+-	// and pop it.
+-	ret = pathstack_pop(ps, &save1);
+-	AssertZero(ret);
+-	AssertEqual(ps->curlen, strlen(origstr));
+-	AssertEqual(ps->maxlen, bufsiz-1);
+-	AssertStrEqual(ps->buf, origstr);
+-	
+-	
+-	// push a series of strings, hit the end of the buffer
+-	ret = pathstack_push(ps, "next/", &save1);
+-	AssertZero(ret);
+-	ret = pathstack_push(ps, "n", &save2);
+-	AssertZero(ret);
+-	ret = pathstack_push(ps, "123456789", &save3);
+-	AssertZero(ret);
+-	
+-	//                       123456789012345678901ns  (n: null terminator, s: sentinel)
+-	AssertStrEqual(ps->buf, "/tryit/next/n/1234567");
+-	AssertEqual(ps->curlen, ps->maxlen);
+-	AssertEqual(ps->maxlen, bufsiz-1);
+-	
+-	// and pop it
+-	ret = pathstack_pop(ps, &save3);
+-	AssertZero(ret);
+-	ret = pathstack_pop(ps, &save2);
+-	AssertZero(ret);
+-	
+-	// Ensure that an out-of-order pop gets ignored
+-	ret = pathstack_pop(ps, &save3);
+-	AssertEqual(ret, -1);
+-	AssertStrEqual(ps->buf, "/tryit/next/");
+-	
+-	ret = pathstack_pop(ps, &save1);
+-	AssertZero(ret);
+-	
+-	AssertEqual(ps->curlen, strlen(origstr));
+-	AssertEqual(ps->maxlen, bufsiz-1);
+-	AssertStrEqual(ps->buf, origstr);
+-	
+-	// ensure we can push without saving state without bus erroring
+-	ret = pathstack_push(ps, "123", NULL);
+-	// (can't really think of anything to test... the fact that we
+-	// reached this line at all means the test succeeded).
+-	
+-	// And finally, check the sentinel
+-	AssertEqual(buf[sizeof(buf)-1], 127);
++	mutest_start(__func__, "Tests typical pathstack operations")
++	{
++		// init the pathstack
++		pathstack_init(ps, buf, bufsiz, origstr);
++		AssertEqual(ps->curlen, strlen(origstr));
++		AssertEqual(ps->maxlen, bufsiz-1);
++		AssertStrEqual(ps->buf, origstr);
++		
++		
++		// push an actual string
++		ret = pathstack_push(ps, "/next", &save1);
++		AssertZero(ret);
++		AssertEqual(save1.oldlen, strlen(origstr));
++		AssertEqual(ps->maxlen, bufsiz-1);
++		AssertStrEqual(ps->buf, "/tryit/next");
++		
++		// and pop it
++		ret = pathstack_pop(ps, &save1);
++		AssertZero(ret);
++		AssertEqual(ps->curlen, strlen(origstr));
++		AssertEqual(ps->maxlen, bufsiz-1);
++		AssertStrEqual(ps->buf, origstr);
++		
++		
++		// push an empty string
++		ret = pathstack_push(ps, "", &save1);
++		AssertZero(ret);
++		AssertEqual(ps->curlen, strlen(origstr));
++		AssertEqual(ps->maxlen, bufsiz-1);
++		AssertStrEqual(ps->buf, origstr);
++		
++		// and pop it.
++		ret = pathstack_pop(ps, &save1);
++		AssertZero(ret);
++		AssertEqual(ps->curlen, strlen(origstr));
++		AssertEqual(ps->maxlen, bufsiz-1);
++		AssertStrEqual(ps->buf, origstr);
++		
++		
++		// push a series of strings, hit the end of the buffer
++		ret = pathstack_push(ps, "next/", &save1);
++		AssertZero(ret);
++		ret = pathstack_push(ps, "n", &save2);
++		AssertZero(ret);
++		ret = pathstack_push(ps, "123456789", &save3);
++		AssertZero(ret);
++		
++		//                       123456789012345678901ns  (n: null terminator, s: sentinel)
++		AssertStrEqual(ps->buf, "/tryit/next/n/1234567");
++		AssertEqual(ps->curlen, ps->maxlen);
++		AssertEqual(ps->maxlen, bufsiz-1);
++		
++		// and pop it
++		ret = pathstack_pop(ps, &save3);
++		AssertZero(ret);
++		ret = pathstack_pop(ps, &save2);
++		AssertZero(ret);
++		
++		// Ensure that an out-of-order pop gets ignored
++		ret = pathstack_pop(ps, &save3);
++		AssertEqual(ret, -1);
++		AssertStrEqual(ps->buf, "/tryit/next/");
++		
++		ret = pathstack_pop(ps, &save1);
++		AssertZero(ret);
++		
++		AssertEqual(ps->curlen, strlen(origstr));
++		AssertEqual(ps->maxlen, bufsiz-1);
++		AssertStrEqual(ps->buf, origstr);
++		
++		// ensure we can push without saving state without bus erroring
++		ret = pathstack_push(ps, "123", NULL);
++		// (can't really think of anything to test... the fact that we
++		// reached this line at all means the test succeeded).
++		
++		// And finally, check the sentinel
++		AssertEqual(buf[sizeof(buf)-1], 127);
++	}
+ }
+ 
+ 
+@@ -263,10 +266,13 @@
+ 	// Ensures that we won't overflow while initing.
+ 	// There are probably some other small path ops we should verify.
+ 	
+-	// Pathstacks always need to start with '/'
+-	pathstack_init(ps, buf, sizeof(buf), "/23456789");
+-	AssertStrEqual(ps->buf, "/2345");	// 5 characters plus the null byte
+-	AssertEqual(ps->curlen, ps->maxlen);
++	mutest_start(__func__, "Ensures that initializing with a long string won't overflow.")
++	{
++		// Pathstacks always need to start with '/'
++		pathstack_init(ps, buf, sizeof(buf), "/23456789");
++		AssertStrEqual(ps->buf, "/2345");	// 5 characters plus the null byte
++		AssertEqual(ps->curlen, ps->maxlen);
++	}
+ }
+ 
+ 
+@@ -290,39 +296,42 @@
+ 	// is there a way to test that passing a bufsiz of 0 will
+ 	// cause the assert to trigger?
+ 	
+-	// init the pathstack
+-	pathstack_init(ps, buf, sizeof(buf), NULL);
+-	AssertStackEmpty(ps);
+-	
+-	// push an actual string
+-	ret = pathstack_push(ps, "/next", &save);
+-	AssertEqual(ret, -1);
+-	AssertEqual(save.oldlen, 1);
+-	AssertStackEmpty(ps);
+-	
+-	// and pop it
+-	ret = pathstack_pop(ps, &save);
+-	AssertZero(ret);
+-	AssertStackEmpty(ps);
+-	
+-	// push an empty string.  It's illegal to push an empty string onto a pathstack.
+-	ret = pathstack_push(ps, "", &save);
+-	AssertEqual(ret, -1);
+-	AssertEqual(save.oldlen, 1);
+-	AssertStackEmpty(ps);
+-	
+-	// and pop it.
+-	ret = pathstack_pop(ps, &save);
+-	AssertZero(ret);
+-	AssertStackEmpty(ps);
++	mutest_start(__func__, "Ensures all operations are consistent even on a minimum-sized pathstack.")
++	{
++		// init the pathstack
++		pathstack_init(ps, buf, sizeof(buf), NULL);
++		AssertStackEmpty(ps);
++		
++		// push an actual string
++		ret = pathstack_push(ps, "/next", &save);
++		AssertEqual(ret, -1);
++		AssertEqual(save.oldlen, 1);
++		AssertStackEmpty(ps);
++		
++		// and pop it
++		ret = pathstack_pop(ps, &save);
++		AssertZero(ret);
++		AssertStackEmpty(ps);
++		
++		// push an empty string.  It's illegal to push an empty string onto a pathstack.
++		ret = pathstack_push(ps, "", &save);
++		AssertEqual(ret, -1);
++		AssertEqual(save.oldlen, 1);
++		AssertStackEmpty(ps);
++		
++		// and pop it.
++		ret = pathstack_pop(ps, &save);
++		AssertZero(ret);
++		AssertStackEmpty(ps);
++	}
+ }
+ 
+ 
+ void pathstack_tests()
+ {
+-	mutest( test_pathstack() );
+-	mutest( test_small_pathstack() );
+-	mutest( test_empty_pathstack() );
++	test_pathstack();
++	test_small_pathstack();
++	test_empty_pathstack();
+ }
+ 
+ #endif
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-03-07 07:41:52 UTC (rev 142)
+@@ -85,4 +85,4 @@
+ mutest.c:NNN: In test_assert_strings, assert n is empty failed. n is NULL!
+ mutest.c:NNN: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
+ mutest.c:NNN: In test_assert_strings, assert n is nonempty failed. n is NULL!
+-All OK.  14 tests run, 14 successes (252 assertions).
++All OK.  33 tests run, 33 successes (252 assertions).
+
+Modified: trunk/test/02-running/03-Unit-Tests.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Tests.test	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/test/02-running/03-Unit-Tests.test	2007-03-07 07:41:52 UTC (rev 142)
+@@ -3,4 +3,4 @@
+ $tmtest --run-unit-tests
+ 
+ STDOUT:
+-All OK.  14 tests run, 14 successes (252 assertions).
++All OK.  33 tests run, 33 successes (252 assertions).
+
+
+
+
+

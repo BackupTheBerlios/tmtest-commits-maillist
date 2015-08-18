@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [150] trunk/main.c: Fix an uninitialized variable	bug (would cause
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B150%5D%20trunk/main.c%3A%20Fix%20an%20uninitialized%20variable%0A%09bug%20%28would%20cause&In-Reply-To=%3C200710210056.l9L0uh10000784%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000062.html">
+   <LINK REL="Next"  HREF="000064.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [150] trunk/main.c: Fix an uninitialized variable	bug (would cause</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B150%5D%20trunk/main.c%3A%20Fix%20an%20uninitialized%20variable%0A%09bug%20%28would%20cause&In-Reply-To=%3C200710210056.l9L0uh10000784%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [150] trunk/main.c: Fix an uninitialized variable	bug (would cause">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Sun Oct 21 02:56:43 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000062.html">[Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves	turds in /tmp.
+</A></li>
+        <LI>Next message: <A HREF="000064.html">[Tmtest-commits] [151] trunk: Fix up docs a bit,	make install message a little nicer, 
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#63">[ date ]</a>
+              <a href="thread.html#63">[ thread ]</a>
+              <a href="subject.html#63">[ subject ]</a>
+              <a href="author.html#63">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 150
+Author:   bronson
+Date:     2007-10-21 02:56:40 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Fix an uninitialized variable bug (would cause tmtest to stop testing early if there were no testfiles in a particular directory)
+
+Modified Paths:
+--------------
+    trunk/main.c
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-10-20 22:29:29 UTC (rev 149)
++++ trunk/main.c	2007-10-21 00:56:40 UTC (rev 150)
+@@ -736,10 +736,9 @@
+ 	struct pathstate save;
+     mode_t *modes;
+     int i, n, ret;
+-	int keepontruckin;
++	int keepontruckin = 1;
+ 
+-    for(n=0; ents[n]; n++)
+-        ;
++    for(n=0; ents[n]; n++) { } // count n
+ 
+     modes = malloc(n * sizeof(mode_t));
+     if(!modes) {
+@@ -1150,7 +1149,7 @@
+ 	char **ents;
+ 	int i, n, oldlen;
+ 
+-    for(n=0; argv[n]; n++) { }
++    for(n=0; argv[n]; n++) { }	// count n
+ 
+ 	ents = malloc((n+1)*sizeof(*ents));
+ 	ents[n] = NULL;
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000062.html">[Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves	turds in /tmp.
+</A></li>
+	<LI>Next message: <A HREF="000064.html">[Tmtest-commits] [151] trunk: Fix up docs a bit,	make install message a little nicer, 
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#63">[ date ]</a>
+              <a href="thread.html#63">[ thread ]</a>
+              <a href="subject.html#63">[ subject ]</a>
+              <a href="author.html#63">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

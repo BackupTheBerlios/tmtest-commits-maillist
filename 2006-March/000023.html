@@ -1,0 +1,2014 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [106] trunk: Eradicate MODIFY.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B106%5D%20trunk%3A%20Eradicate%20MODIFY.&In-Reply-To=%3C200603052252.k25Mq3lT003785%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000022.html">
+   <LINK REL="Next"  HREF="000024.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [106] trunk: Eradicate MODIFY.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B106%5D%20trunk%3A%20Eradicate%20MODIFY.&In-Reply-To=%3C200603052252.k25Mq3lT003785%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [106] trunk: Eradicate MODIFY.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Sun Mar  5 23:52:03 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000022.html">[Tmtest-commits] [105] trunk: First part of the modify purge is complete: rewrite or
+</A></li>
+        <LI>Next message: <A HREF="000024.html">[Tmtest-commits] [107] trunk: Add unit testing, update re2c lib, refactor compare.c.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#23">[ date ]</a>
+              <a href="thread.html#23">[ thread ]</a>
+              <a href="subject.html#23">[ subject ]</a>
+              <a href="author.html#23">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 106
+Author:   bronson
+Date:     2006-03-05 23:52:02 +0100 (Sun, 05 Mar 2006)
+
+Log Message:
+-----------
+Eradicate MODIFY.  And there was much rejoicing.
+NOTE: the two test failures are due to broken newline checking.
+A comprehensive fix for this will be in the very next checkin.
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/TODO
+    trunk/compare.c
+    trunk/compare.h
+    trunk/main.c
+    trunk/test.c
+    trunk/test.h
+
+Removed Paths:
+-------------
+    trunk/matchval.h
+    trunk/pcrs.c
+    trunk/pcrs.h
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/Makefile	2006-03-05 22:52:02 UTC (rev 106)
+@@ -29,14 +29,14 @@
+ COPTS=-g -Wall -Werror
+ 
+ # utilities:
+-CSRC+=curdir.c qscandir.c pcrs.c pathconv.c
+-CHDR+=curdir.h qscandir.h pcrs.h pathconv.h
++CSRC+=curdir.c qscandir.c pathconv.c
++CHDR+=curdir.h qscandir.h pathconv.h
+ # scanner files
+ CSRC+=re2c/read.c re2c/read-fd.c re2c/scan.c
+ CHDR+=re2c/read.h re2c/read-fd.h re2c/scan.h
+ # program files:
+ CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c
+-CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h matchval.h
++CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/TODO	2006-03-05 22:52:02 UTC (rev 106)
+@@ -11,8 +11,6 @@
+   We will not read either config or test files from a world-writable directory.
+   Ever.
+ - Put $args into EVERY test we run.
+-- There's some sort of a bug with 10-DumpScript.test.  When running with
+-  -o or -d, sometimes it complains about a missing newline.  Odd.
+ - Write a test to ensure we can run tests named &quot;-.test&quot;
+ - Write tests to verify what FDs are still open when we run
+   config files, test files, and diff.
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/compare.c	2006-03-05 22:52:02 UTC (rev 106)
+@@ -9,38 +9,30 @@
+  * File comparison.
+  *
+  * This uses all re2c's mechanisms for creating buffers and loading
+- * them with data, but it's not an re2c scanner.
++ * them with data, but it's not actually an re2c scanner.
+  *
+  * Here's what you do:
+- * - Create a scanstate that reads from one of the files (or
+- *   whatever) that you want to compare and pass it to compare_start.
+- * - Call compare_continue with any size data block from the other
+- *   file you want to compare.  Keep calling until you're out of
+- *   data.  Check compare_in_progress to see if it failed prematurely.
+- * - Finally, when you're out of data in the other file, call
+- *   compare_end.  It will verify that it's at eof on the first
+- *   file.
+- * - Read the final result from the matchval.
+- *
+- * Well, the line buffering for the pcrs library has utterly destroyed
+- * the simplicity of this file.
+- *
++ * - Create a scanstate attached to one stream and pass it to compare_start.
++ * - Read some data from the other stream and pass it to compare_continue.
++ * - Keep reading until you're out of data.  You can check compare_in_progress
++ *   to see if the match already failed and you can bail out early.
++ * - When you're out of data, call compare_end to obtain the result.
+  */
+ 
+-#include &lt;string.h&gt;
+-#include &quot;compare.h&quot;
+-
+ #include &lt;stdio.h&gt;
+ #include &lt;stdlib.h&gt;
++#include &lt;string.h&gt;
+ #include &lt;assert.h&gt;
+ 
++#include &quot;compare.h&quot;
+ 
++
++// TODO: these are all 1-bit flags.  No need for malloc and free!
++// get rid of the output field.
++
+ typedef struct {
+ 	matchval *output;
+-	pcrs_job *jobs;
+ 	const char *pbuf;
+-	int pcursor;
+-	int plimit;
+     int no_trailing_newline;    ///&lt; true if this section isn't supposed to end with a newline
+     int nl_suppressed;          ///&lt; if no_trailing_newline is true, we need to suppress the newline in the execpted output when matching against the actual (because of the way heredocs work, the expected always ends in a newline).
+     int warn_no_newline;             ///&lt; true if the section expected a trailing newline (no_trailing_newline == false), but the last buffer seen (presumably the end of the file) didn't end with a newline.
+@@ -65,7 +57,7 @@
+ }
+ 
+ 
+-void compare_attach(scanstate *ss, matchval *mv, pcrs_job *jobs, int nonl)
++void compare_attach(scanstate *ss, matchval *mv, int nonl)
+ {
+ 	compare_state *cmp = malloc(sizeof(compare_state));
+ 	if(cmp == NULL) {
+@@ -77,7 +69,6 @@
+     *mv = match_inprogress;
+ 
+ 	cmp-&gt;output = mv;
+-	cmp-&gt;jobs = jobs;
+     cmp-&gt;no_trailing_newline = nonl;
+     cmp-&gt;nl_suppressed = 0;
+     cmp-&gt;warn_no_newline = 0;
+@@ -86,11 +77,44 @@
+ 
+ 
+ 
+-static void compare_continue_bytes(scanstate *ss, const char *ptr, int len)
++void compare_continue(scanstate *ss, const char *ptr, int len)
+ {
+ 	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+     int n;
+ 
++    if(*cmp-&gt;output != match_inprogress) {
++        // we already decided an answer
++        // so don't waste time comparing more.
++        return;
++    }
++
++    assert(len &gt;= 0);
++
++    if(cmp-&gt;no_trailing_newline) {
++        // If the incoming buffer ends in a nl, we need to suppress it
++        // for the comparison.  Note that this won't work well for
++        // MODIFY clauses but I don't care because MODIFY will never
++        // work with -n and, anyway, MODIFY is about to disappear.
++
++        if(cmp-&gt;nl_suppressed) {
++            cmp-&gt;nl_suppressed = 0;
++			if(ss-&gt;cursor &lt; ss-&gt;limit) {
++				if(ss-&gt;cursor[0] != '\n') {
++					compare_halt(ss, match_no);
++					return;
++				}
++				ss-&gt;cursor += 1;
++			} else {
++				compare_continue(ss, &quot;\n&quot;, 1);
++			}
++        }
++
++        if(ptr[len-1] == '\n') {
++            cmp-&gt;nl_suppressed = 1;
++            len -= 1;
++        }
++    }
++
+     while(len &gt; 0) {
+         n = ss-&gt;limit - ss-&gt;cursor;
+         if(!n) {
+@@ -130,155 +154,6 @@
+ }
+ 
+ 
+-char* substitute_string(pcrs_job *job, const char *cp, const char *ce, size_t *newsize)
+-{
+-	char *old, *new;
+-	int nsubs;
+-	int cnt;
+-
+-	cnt = 0;
+-	old = (char*)cp;
+-	*newsize = ce - cp;
+-
+-	while(job) {
+-		// Now, run the line through the substitutions.
+-		nsubs = pcrs_execute(job, old, *newsize, &amp;new, newsize);
+-		if(nsubs &lt; 0) {
+-			fprintf(stderr, &quot;error while substituting expr %d: %s (%d).\n&quot;,
+-					cnt, pcrs_strerror(nsubs), nsubs);
+-            if(new) {
+-                free(new);
+-                new = NULL;
+-            }
+-			break;
+-		}
+-
+-		assert(strlen(new) == *newsize);
+-
+-		if(old != cp) {
+-			// free the intermediate result.
+-			free(old);
+-		}
+-		old = new;
+-		job = job-&gt;next;
+-		cnt += 1;
+-	}
+-
+-    return new;
+-}
+-
+-
+-// This routine is hellish because neither stream is line buffered.
+-// Therefore, we line buffer the file and compare in chunks against
+-// the input.  &quot;pbuf&quot; is the substitution-modified buffer allocated
+-// by the pcre library.
+-
+-static void compare_continue_lines(scanstate *ss, compare_state *cmp,
+-		const char *ptr, size_t len)
+-{
+-	int n;
+-	const char *p;
+-    char *new;
+-    size_t newsize;
+-
+-	while(len &gt; 0) {
+-		n = cmp-&gt;plimit - cmp-&gt;pcursor;
+-		assert(n &gt;= 0);
+-		if(n) {
+-			// there's more data in the pbuf.  use it for comparison.
+-			if(len &lt; n) n = len;
+-			if(memcmp(ptr, cmp-&gt;pbuf+cmp-&gt;pcursor, n) != 0) {
+-				compare_halt(ss, match_no);
+-				return;
+-			}
+-			cmp-&gt;pcursor += n;
+-			ptr += n;
+-			len -= n;
+-			assert(len &gt;= 0);
+-			if(!len) break;
+-		}
+-
+-		// we've emptied the pbuf so we need to regenerate it.
+-		// first see if there's anther line in the line buffer.
+-		p = memchr(ss-&gt;cursor, '\n', ss-&gt;limit - ss-&gt;cursor);
+-		if(!p) {
+-			// there's no newline in the buffer.  try to refill.
+-			n = compare_fill(ss);
+-			if(n &lt; 0) {
+-				// there was an error while trying to fill the buffer
+-				// TODO: this should be propagated to the client somehow.
+-				perror(&quot;compare_continue_lines&quot;);
+-				exit(10);
+-			}
+-			if(n == 0) {
+-                compare_halt(ss, match_no);
+-                return;
+-			}
+-
+-			p = memchr(ss-&gt;cursor, '\n', ss-&gt;limit - ss-&gt;cursor);
+-			if(!p) {
+-				// we'll just have to treat the entire buffer as a full
+-				// line and hope for the best.  Subtract one because
+-				// the very next line will add one.
+-				p = ss-&gt;limit - 1;
+-			}
+-		}
+-
+-		// move p past the newline so it's at the end of the current line.
+-		p += 1;
+-		new = substitute_string(cmp-&gt;jobs, ss-&gt;cursor, p, &amp;newsize);
+-        if(!new) {
+-            // there must have been an error
+-            compare_halt(ss, match_no);
+-            return;
+-        }
+-
+-        if(cmp-&gt;pbuf) free((char*)cmp-&gt;pbuf);
+-        cmp-&gt;pbuf = new;
+-        cmp-&gt;pcursor = 0;
+-        cmp-&gt;plimit = newsize;
+-		ss-&gt;cursor = p;
+-	}
+-}
+-
+-
+-void compare_continue(scanstate *ss, const char *ptr, int len)
+-{
+-	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+-
+-    if(*cmp-&gt;output != match_inprogress) {
+-        // we already decided an answer
+-        // so don't waste time comparing more.
+-        return;
+-    }
+-
+-    assert(len &gt;= 0);
+-
+-    if(cmp-&gt;no_trailing_newline) {
+-        // If the incoming buffer ends in a nl, we need to suppress it
+-        // for the comparison.  Note that this won't work well for
+-        // MODIFY clauses but I don't care because MODIFY will never
+-        // work with -n and, anyway, MODIFY is about to disappear.
+-
+-        if(cmp-&gt;nl_suppressed) {
+-            compare_continue_bytes(ss, &quot;\n&quot;, 1);
+-            cmp-&gt;nl_suppressed = 0;
+-        }
+-
+-        if(ptr[len-1] == '\n') {
+-            cmp-&gt;nl_suppressed = 1;
+-            len -= 1;
+-        }
+-    }
+-
+-	if(cmp-&gt;jobs) {
+-		compare_continue_lines(ss, cmp, ptr, len);
+-	} else {
+-		compare_continue_bytes(ss, ptr, len);
+-	}
+-}
+-
+-
+ void compare_end(scanstate *ss, int *warn_nl)
+ {
+ 	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+@@ -290,24 +165,16 @@
+     }
+ 
+     if(*cmp-&gt;output == match_inprogress) {
+-        assert(cmp-&gt;pcursor &lt;= cmp-&gt;plimit);
+         assert(ss-&gt;cursor &lt;= ss-&gt;limit);
+ 
+         *cmp-&gt;output = match_no;
+-        if(cmp-&gt;jobs &amp;&amp; cmp-&gt;plimit - cmp-&gt;pcursor != 0) {
+-            // get rid of this asap.
+-            *cmp-&gt;output = match_no;
+-        } else if(scan_finished(ss)) {
++        if(scan_finished(ss)) {
+             // if we're totally out of data and we still don't know
+             // if they match, then they do match.
+             *cmp-&gt;output = match_yes;
+         }
+     }
+ 
+-	if(cmp-&gt;pbuf) {
+-        free((char*)cmp-&gt;pbuf);
+-    }
+-
+ 	free(cmp);
+     ss-&gt;scanref = NULL;
+ }
+
+Modified: trunk/compare.h
+===================================================================
+--- trunk/compare.h	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/compare.h	2006-03-05 22:52:02 UTC (rev 106)
+@@ -7,21 +7,35 @@
+  * See compare.c for license.
+  */
+ 
+-#include &quot;pcrs.h&quot;
+-#include &quot;matchval.h&quot;
+ #include &quot;re2c/scan.h&quot;
+ 
+ 
+-/** Returns zero if the compare has stopped (i.e. the files differed).
++
++/**
++ * a tristate that tells whether something
++ *    - matches
++ *    - doesn't match
++ *    - hasn't been checked yet.
+  */
+ 
++typedef enum {
++    match_inprogress = -2,
++    match_unknown = -1,
++    match_no = 0,
++    match_yes = 1,
++} matchval;
++
++
++
++
++/** Returns zero if the compare has stopped (i.e. the files differed),
++ *  one if we're still unsure.
++ */
++
+ #define compare_in_progress(ss) ((ss)-&gt;scanref)
+ 
+ 
+-void compare_attach(scanstate *ss, matchval *mv, pcrs_job *joblist, int nonl);
++void compare_attach(scanstate *ss, matchval *mv, int nonl);
+ void compare_continue(scanstate *ss, const char *ptr, int len);
+ void compare_end(scanstate *cmp, int *warn_nl);
+ 
+-// no better place to put this for now...
+-char* substitute_string(pcrs_job *job, const char *cp, const char *ce, size_t *newsize);
+-
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/main.c	2006-03-05 22:52:02 UTC (rev 106)
+@@ -282,7 +282,7 @@
+ 	test-&gt;diffname = buf;
+ 	fd = open_file(buf, DIFFNAME, 0);
+ 	assert(strlen(buf) == sizeof(TESTDIR)+sizeof(DIFFNAME)-1);
+-	write_raw_file(fd, 0);
++	write_file(fd, 0);
+ 	close(fd);
+ 
+ 	return fd;
+
+Deleted: trunk/matchval.h
+===================================================================
+--- trunk/matchval.h	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/matchval.h	2006-03-05 22:52:02 UTC (rev 106)
+@@ -1,27 +0,0 @@
+-/* matchval.h
+- * Scott Bronson
+- * 31 Dec 2004
+- *
+- */
+-
+-#ifndef MATCHVAL_H
+-#define MATCHVAL_H
+-
+-
+-/**
+- * a tristate that tells whether something
+- *    - matches
+- *    - doesn't match
+- *    - hasn't been checked yet.
+- */
+-
+-typedef enum {
+-    match_inprogress = -2,
+-    match_unknown = -1,
+-    match_no = 0,
+-    match_yes = 1,
+-} matchval;
+-
+-
+-#endif
+-
+
+Deleted: trunk/pcrs.c
+===================================================================
+--- trunk/pcrs.c	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/pcrs.c	2006-03-05 22:52:02 UTC (rev 106)
+@@ -1,966 +0,0 @@
+-const char pcrs_rcs[] = &quot;$Id: pcrs.c,v 1.19.2.3 2003/12/04 12:32:45 oes Exp $&quot;;
+- 
+-/*********************************************************************
+- *
+- * File        :  $Source: /cvsroot/ijbswa/current/Attic/pcrs.c,v $
+- *
+- * Purpose     :  pcrs is a supplement to the pcre library by Philip Hazel
+- *                &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">ph10 at cam.ac.uk</A>&gt; and adds Perl-style substitution. That
+- *                is, it mimics Perl's 's' operator. See pcrs(3) for details.
+- *
+- *
+- * Copyright   :  Written and Copyright (C) 2000, 2001 by Andreas S. Oesterhelt
+- *                &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">andreas at oesterhelt.org</A>&gt;
+- *
+- *                This program is free software; you can redistribute it
+- *                and/or modify it under the terms of the GNU Lesser
+- *                General Public License (LGPL), version 2.1, which  should
+- *                be included in this distribution (see LICENSE.txt), with
+- *                the exception that the permission to replace that license
+- *                with the GNU General Public License (GPL) given in section
+- *                3 is restricted to version 2 of the GPL.
+- *
+- *                This program is distributed in the hope that it will
+- *                be useful, but WITHOUT ANY WARRANTY; without even the
+- *                implied warranty of MERCHANTABILITY or FITNESS FOR A
+- *                PARTICULAR PURPOSE.  See the license for more details.
+- *
+- *                The GNU Lesser General Public License should be included
+- *                with this file.  If not, you can view it at
+- *                <A HREF="http://www.gnu.org/licenses/lgpl.html">http://www.gnu.org/licenses/lgpl.html</A>
+- *                or write to the Free Software Foundation, Inc., 59
+- *                Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+- *
+- * Revisions   :
+- *    $Log: pcrs.c,v $
+- *    Revision 1.19.2.3  2003/12/04 12:32:45  oes
+- *    Append a trailing nullbyte to result to facilitate string processing
+- *
+- *    Revision 1.19.2.2  2002/10/08 16:22:28  oes
+- *    Bugfix: Need to check validity of backreferences explicitly,
+- *    because when max_matches are reached and matches is expanded,
+- *    realloc() does not zero the memory. Fixes Bug # 606227
+- *
+- *    Revision 1.19.2.1  2002/08/10 11:23:40  oes
+- *    [Irrelevant for stand-alone pcrs]
+- *
+- *    Revision 1.19  2002/03/08 14:47:48  oes
+- *    Cosmetics
+- *
+- *    Revision 1.18  2002/03/08 14:17:14  oes
+- *    Fixing -Wconversion warnings
+- *
+- *    Revision 1.17  2002/03/08 13:45:48  oes
+- *    Hiding internal functions
+- *
+- *    Revision 1.16  2001/11/30 21:32:14  jongfoster
+- *    Fixing signed/unsigned comparison (Andreas please check this!)
+- *    One tab-&gt;space
+- *
+- *    Revision 1.15  2001/09/20 16:11:06  steudten
+- *
+- *    Add casting for some string functions.
+- *
+- *    Revision 1.14  2001/09/09 21:41:57  oes
+- *    Fixing yet another silly bug
+- *
+- *    Revision 1.13  2001/09/06 14:05:59  oes
+- *    Fixed silly bug
+- *
+- *    Revision 1.12  2001/08/18 11:35:00  oes
+- *    - Introduced pcrs_strerror()
+- *    - made some NULL arguments non-fatal
+- *    - added support for \n \r \e \b \t \f \a \0 in substitute
+- *    - made quoting adhere to standard rules
+- *    - added warning for bad backrefs
+- *    - added pcrs_execute_list()
+- *    - fixed comments
+- *    - bugfix &amp; cosmetics
+- *
+- *    Revision 1.11  2001/08/15 15:32:03  oes
+- *     - Added support for Perl's special variables $+, $' and $`
+- *     - Improved the substitute parser
+- *     - Replaced the hard limit for the maximum number of matches
+- *       by dynamic reallocation
+- *
+- *    Revision 1.10  2001/08/05 13:13:11  jongfoster
+- *    Making parameters &quot;const&quot; where possible.
+- *
+- *    Revision 1.9  2001/07/18 17:27:00  oes
+- *    Changed interface; Cosmetics
+- *
+- *    Revision 1.8  2001/06/29 21:45:41  oes
+- *    Indentation, CRLF-&gt;LF, Tab-&gt; Space
+- *
+- *    Revision 1.7  2001/06/29 13:33:04  oes
+- *    - Cleaned up, renamed and reordered functions,
+- *      improved comments
+- *    - Removed my_strsep
+- *    - Replaced globalflag with a general flags int
+- *      that holds PCRS_GLOBAL, PCRS_SUCCESS, and PCRS_TRIVIAL
+- *    - Introduced trivial option that will prevent pcrs
+- *      from honouring backreferences in the substitute,
+- *      which is useful for large substitutes that are
+- *      red in from somewhere and saves the pain of escaping
+- *      the backrefs
+- *    - Introduced convenience function pcrs_free_joblist()
+- *    - Split pcrs_make_job() into pcrs_compile(), which still
+- *      takes a complete s/// comand as argument and parses it,
+- *      and a new function pcrs_make_job, which takes the
+- *      three separate components. This should make for a
+- *      much friendlier frontend.
+- *    - Removed create_pcrs_job() which was useless
+- *    - Fixed a bug in pcrs_execute
+- *    - Success flag is now handled by pcrs instead of user
+- *
+- *    Revision 1.6  2001/06/03 19:12:45  oes
+- *    added FIXME
+- *
+- *    Revision 1.5  2001/05/29 09:50:24  jongfoster
+- *    (Fixed one int -&gt; size_t)
+- *
+- *    Revision 1.4  2001/05/25 14:12:40  oes
+- *    Fixed bug: Empty substitutes now detected
+- *
+- *    Revision 1.3  2001/05/25 11:03:55  oes
+- *    Added sanity check for NULL jobs to pcrs_exec_substitution
+- *
+- *    Revision 1.2  2001/05/22 18:46:04  oes
+- *
+- *      Added support for PCRE_UNGREEDY behaviour to pcrs,
+- *      which is selected by the (nonstandard and therefore
+- *      capital) letter 'U' in the option string.
+- *      It causes the quantifiers to be ungreedy by default.
+- *      Appending a ? turns back to greedy (!).
+- *
+- *    Revision 1.1.1.1  2001/05/15 13:59:02  oes
+- *    Initial import of version 2.9.3 source tree
+- *
+- *
+- *********************************************************************/
+-
+-
+-#include &lt;string.h&gt;
+-#include &lt;ctype.h&gt;
+-
+-#include &quot;pcrs.h&quot;
+-
+-const char pcrs_h_rcs[] = PCRS_H_VERSION;
+-
+-/*
+- * Internal prototypes
+- */
+-
+-static int              pcrs_parse_perl_options(const char *optstring, int *flags);
+-static pcrs_substitute *pcrs_compile_replacement(const char *replacement, int trivialflag,
+-                        int capturecount, int *errptr);
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_strerror
+- *
+- * Description :  Return a string describing a given error code.
+- *             
+- * Parameters  :
+- *          1  :  error = the error code
+- *
+- * Returns     :  char * to the descriptive string
+- *
+- *********************************************************************/
+-const char *pcrs_strerror(const int error)
+-{
+-   if (error &lt; 0)
+-   {
+-      switch (error)
+-      {
+-         /* Passed-through PCRE error: */
+-         case PCRE_ERROR_NOMEMORY:     return &quot;(pcre:) No memory&quot;;
+-
+-         /* Shouldn't happen unless PCRE or PCRS bug, or user messed with compiled job: */
+-         case PCRE_ERROR_NULL:         return &quot;(pcre:) NULL code or subject or ovector&quot;;
+-         case PCRE_ERROR_BADOPTION:    return &quot;(pcre:) Unrecognized option bit&quot;;
+-         case PCRE_ERROR_BADMAGIC:     return &quot;(pcre:) Bad magic number in code&quot;;
+-         case PCRE_ERROR_UNKNOWN_NODE: return &quot;(pcre:) Bad node in pattern&quot;;
+-
+-         /* Can't happen / not passed: */
+-         case PCRE_ERROR_NOSUBSTRING:  return &quot;(pcre:) Fire in power supply&quot;; 
+-         case PCRE_ERROR_NOMATCH:      return &quot;(pcre:) Water in power supply&quot;;
+-
+-         /* PCRS errors: */
+-         case PCRS_ERR_NOMEM:          return &quot;(pcrs:) No memory&quot;;
+-         case PCRS_ERR_CMDSYNTAX:      return &quot;(pcrs:) Syntax error while parsing command&quot;;
+-         case PCRS_ERR_STUDY:          return &quot;(pcrs:) PCRE error while studying the pattern&quot;;
+-         case PCRS_ERR_BADJOB:         return &quot;(pcrs:) Bad job - NULL job, pattern or substitute&quot;;
+-         case PCRS_WARN_BADREF:        return &quot;(pcrs:) Backreference out of range&quot;;
+-
+-         /* What's that? */
+-         default:  return &quot;Unknown error&quot;;
+-      }
+-   }
+-   /* error &gt;= 0: No error */
+-   return &quot;(pcrs:) Everything's just fine. Thanks for asking.&quot;;
+-
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_parse_perl_options
+- *
+- * Description :  This function parses a string containing the options to
+- *                Perl's s/// operator. It returns an integer that is the
+- *                pcre equivalent of the symbolic optstring.
+- *                Since pcre doesn't know about Perl's 'g' (global) or pcrs',
+- *                'T' (trivial) options but pcrs needs them, the corresponding
+- *                flags are set if 'g'or 'T' is encountered.
+- *                Note: The 'T' and 'U' options do not conform to Perl.
+- *             
+- * Parameters  :
+- *          1  :  optstring = string with options in perl syntax
+- *          2  :  flags = see description
+- *
+- * Returns     :  option integer suitable for pcre 
+- *
+- *********************************************************************/
+-static int pcrs_parse_perl_options(const char *optstring, int *flags)
+-{
+-   size_t i;
+-   int rc = 0;
+-   *flags = 0;
+-
+-   if (NULL == optstring) return 0;
+-
+-   for (i = 0; i &lt; strlen(optstring); i++)
+-   {
+-      switch(optstring[i])
+-      {
+-         case 'e': break; /* ToDo ;-) */
+-         case 'g': *flags |= PCRS_GLOBAL; break;
+-         case 'i': rc |= PCRE_CASELESS; break;
+-         case 'm': rc |= PCRE_MULTILINE; break;
+-         case 'o': break;
+-         case 's': rc |= PCRE_DOTALL; break;
+-         case 'x': rc |= PCRE_EXTENDED; break;
+-         case 'U': rc |= PCRE_UNGREEDY; break;
+-         case 'T': *flags |= PCRS_TRIVIAL; break;
+-         default: break;
+-      }
+-   }
+-   return rc;
+-
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_compile_replacement
+- *
+- * Description :  This function takes a Perl-style replacement (2nd argument
+- *                to the s/// operator and returns a compiled pcrs_substitute,
+- *                or NULL if memory allocation for the substitute structure
+- *                fails.
+- *
+- * Parameters  :
+- *          1  :  replacement = replacement part of s/// operator
+- *                              in perl syntax
+- *          2  :  trivialflag = Flag that causes backreferences to be
+- *                              ignored.
+- *          3  :  capturecount = Number of capturing subpatterns in
+- *                               the pattern. Needed for $+ handling.
+- *          4  :  errptr = pointer to an integer in which error
+- *                         conditions can be returned.
+- *
+- * Returns     :  pcrs_substitute data structure, or NULL if an
+- *                error is encountered. In that case, *errptr has
+- *                the reason.
+- *
+- *********************************************************************/
+-static pcrs_substitute *pcrs_compile_replacement(const char *replacement, int trivialflag, int capturecount, int *errptr)
+-{
+-   int i, k, l, quoted;
+-   size_t length;
+-   char *text;
+-   pcrs_substitute *r;
+-
+-   i = k = l = quoted = 0;
+-
+-   /*
+-    * Sanity check
+-    */
+-   if (NULL == replacement)
+-   {
+-      replacement = &quot;&quot;;
+-   }
+-
+-   /*
+-    * Get memory or fail
+-    */
+-   if (NULL == (r = (pcrs_substitute *)malloc(sizeof(pcrs_substitute))))
+-   {
+-      *errptr = PCRS_ERR_NOMEM;
+-      return NULL;
+-   }
+-   memset(r, '\0', sizeof(pcrs_substitute));
+-
+-   length = strlen(replacement);
+-
+-   if (NULL == (text = (char *)malloc(length + 1)))
+-   {
+-      free(r);
+-      *errptr = PCRS_ERR_NOMEM;
+-      return NULL;
+-   }
+-   memset(text, '\0', length + 1);
+-   
+-
+-   /*
+-    * In trivial mode, just copy the substitute text
+-    */
+-   if (trivialflag)
+-   {
+-      text = strncpy(text, replacement, length + 1);
+-      k = length;
+-   }
+-
+-   /*
+-    * Else, parse, cut out and record all backreferences
+-    */
+-   else
+-   {
+-      while (i &lt; (int)length)
+-      {
+-         /* Quoting */
+-         if (replacement[i] == '\\')
+-         {
+-            if (quoted)
+-            {
+-               text[k++] = replacement[i++];
+-               quoted = 0;
+-            }
+-            else
+-            {
+-               if (replacement[i+1] &amp;&amp; strchr(&quot;tnrfae0&quot;, replacement[i+1]))
+-               {
+-                  switch (replacement[++i])
+-                  {
+-                  case 't':
+-                     text[k++] = '\t';
+-                     break;
+-                  case 'n':
+-                     text[k++] = '\n';
+-                     break;
+-                  case 'r':
+-                     text[k++] = '\r';
+-                     break;
+-                  case 'f':
+-                     text[k++] = '\f';
+-                     break;
+-                  case 'a':
+-                     text[k++] = 7;
+-                     break;
+-                  case 'e':
+-                     text[k++] = 27;
+-                     break;
+-                  case '0':
+-                     text[k++] = '\0';
+-                     break;
+-                  }
+-                  i++;
+-               }
+-               else
+-               {
+-                  quoted = 1;
+-                  i++;
+-               }
+-            }
+-            continue;
+-         }
+-
+-         /* Backreferences */
+-         if (replacement[i] == '$' &amp;&amp; !quoted &amp;&amp; i &lt; (int)(length - 1))
+-         {
+-            char *symbol, symbols[] = &quot;'`+&amp;&quot;;
+-            r-&gt;block_length[l] = k - r-&gt;block_offset[l];
+-
+-            /* Numerical backreferences */
+-            if (isdigit((int)replacement[i + 1]))
+-            {
+-               while (i &lt; (int)length &amp;&amp; isdigit((int)replacement[++i]))
+-               {
+-                  r-&gt;backref[l] = r-&gt;backref[l] * 10 + replacement[i] - 48;
+-               }
+-               if (r-&gt;backref[l] &gt; capturecount)
+-               {
+-                  *errptr = PCRS_WARN_BADREF;
+-               }
+-            }
+-
+-            /* Symbolic backreferences: */
+-            else if (NULL != (symbol = strchr(symbols, replacement[i + 1])))
+-            {
+-               
+-               if (symbol - symbols == 2) /* $+ */
+-               {
+-                  r-&gt;backref[l] = capturecount;
+-               }
+-               else if (symbol - symbols == 3) /* $&amp; */
+-               {
+-                  r-&gt;backref[l] = 0;
+-               }
+-               else /* $' or $` */
+-               {
+-                  r-&gt;backref[l] = PCRS_MAX_SUBMATCHES + 1 - (symbol - symbols);
+-               }
+-               i += 2;
+-            }
+-
+-            /* Invalid backref -&gt; plain '$' */
+-            else
+-            {
+-               goto plainchar;
+-            }
+-
+-            /* Valid and in range? -&gt; record */
+-            if (r-&gt;backref[l] &lt; PCRS_MAX_SUBMATCHES + 2)
+-            {
+-               r-&gt;backref_count[r-&gt;backref[l]] += 1;
+-               r-&gt;block_offset[++l] = k;
+-            }
+-            else
+-            {
+-               *errptr = PCRS_WARN_BADREF;
+-            }   
+-            continue;
+-         }
+-         
+-plainchar:
+-         /* Plain chars are copied */
+-         text[k++] = replacement[i++];
+-         quoted = 0;
+-      }
+-   } /* -END- if (!trivialflag) */
+-
+-   /*
+-    * Finish &amp; return
+-    */
+-   r-&gt;text = text;
+-   r-&gt;backrefs = l;
+-   r-&gt;block_length[l] = k - r-&gt;block_offset[l];
+-
+-   return r;
+-
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_free_job
+- *
+- * Description :  Frees the memory used by a pcrs_job struct and its
+- *                dependant structures.
+- *
+- * Parameters  :
+- *          1  :  job = pointer to the pcrs_job structure to be freed
+- *
+- * Returns     :  a pointer to the next job, if there was any, or
+- *                NULL otherwise. 
+- *
+- *********************************************************************/
+-pcrs_job *pcrs_free_job(pcrs_job *job)
+-{
+-   pcrs_job *next;
+-
+-   if (job == NULL)
+-   {
+-      return NULL;
+-   }
+-   else
+-   {
+-      next = job-&gt;next;
+-      if (job-&gt;pattern != NULL) free(job-&gt;pattern);
+-      if (job-&gt;hints != NULL) free(job-&gt;hints);
+-      if (job-&gt;substitute != NULL)
+-      {
+-         if (job-&gt;substitute-&gt;text != NULL) free(job-&gt;substitute-&gt;text);
+-         free(job-&gt;substitute);
+-      }
+-      free(job);
+-   }
+-   return next;
+-
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_free_joblist
+- *
+- * Description :  Iterates through a chained list of pcrs_job's and
+- *                frees them using pcrs_free_job.
+- *
+- * Parameters  :
+- *          1  :  joblist = pointer to the first pcrs_job structure to
+- *                be freed
+- *
+- * Returns     :  N/A
+- *
+- *********************************************************************/
+-void pcrs_free_joblist(pcrs_job *joblist)
+-{
+-   while ( NULL != (joblist = pcrs_free_job(joblist)) ) {};
+-
+-   return;
+-
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_compile_command
+- *
+- * Description :  Parses a string with a Perl-style s/// command, 
+- *                calls pcrs_compile, and returns a corresponding
+- *                pcrs_job, or NULL if parsing or compiling the job
+- *                fails.
+- *
+- * Parameters  :
+- *          1  :  command = string with perl-style s/// command
+- *          2  :  errptr = pointer to an integer in which error
+- *                         conditions can be returned.
+- *
+- * Returns     :  a corresponding pcrs_job data structure, or NULL
+- *                if an error was encountered. In that case, *errptr
+- *                has the reason.
+- *
+- *********************************************************************/
+-pcrs_job *pcrs_compile_command(const char *command, int *errptr)
+-{
+-   int i, k, l, quoted = FALSE;
+-   size_t limit;
+-   char delimiter;
+-   char *tokens[4];   
+-   pcrs_job *newjob;
+-   
+-   i = k = l = 0;
+-   
+-   /*
+-    * Tokenize the perl command
+-    */
+-   limit = strlen(command);
+-   if (limit &lt; 4)
+-   {
+-      *errptr = PCRS_ERR_CMDSYNTAX;
+-      return NULL;
+-   }
+-   else
+-   {
+-      delimiter = command[1];
+-   }
+-
+-   tokens[l] = (char *) malloc(limit + 1);
+-
+-   for (i = 0; i &lt;= (int)limit; i++)
+-   {
+-      
+-      if (command[i] == delimiter &amp;&amp; !quoted)
+-      {
+-         if (l == 3)
+-         {
+-            l = -1;
+-            break;
+-         }
+-         tokens[0][k++] = '\0';
+-         tokens[++l] = tokens[0] + k;
+-         continue;
+-      }
+-      
+-      else if (command[i] == '\\' &amp;&amp; !quoted)
+-      {
+-         quoted = TRUE;
+-         if (command[i+1] == delimiter) continue;
+-      }
+-      else
+-      {
+-         quoted = FALSE;
+-      }
+-      tokens[0][k++] = command[i];
+-   }
+-
+-   /*
+-    * Syntax error ?
+-    */
+-   if (l != 3)
+-   {
+-      *errptr = PCRS_ERR_CMDSYNTAX;
+-      free(tokens[0]);
+-      return NULL;
+-   }
+-   
+-   newjob = pcrs_compile(tokens[1], tokens[2], tokens[3], errptr);
+-   free(tokens[0]);
+-   return newjob;
+-   
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_compile
+- *
+- * Description :  Takes the three arguments to a perl s/// command
+- *                and compiles a pcrs_job structure from them.
+- *
+- * Parameters  :
+- *          1  :  pattern = string with perl-style pattern
+- *          2  :  substitute = string with perl-style substitute
+- *          3  :  options = string with perl-style options
+- *          4  :  errptr = pointer to an integer in which error
+- *                         conditions can be returned.
+- *
+- * Returns     :  a corresponding pcrs_job data structure, or NULL
+- *                if an error was encountered. In that case, *errptr
+- *                has the reason.
+- *
+- *********************************************************************/
+-pcrs_job *pcrs_compile(const char *pattern, const char *substitute, const char *options, int *errptr)
+-{
+-   pcrs_job *newjob;
+-   int flags;
+-   int capturecount;
+-   const char *error;
+-
+-   *errptr = 0;
+-
+-   /* 
+-    * Handle NULL arguments
+-    */
+-   if (pattern == NULL) pattern = &quot;&quot;;
+-   if (substitute == NULL) substitute = &quot;&quot;;
+-
+-
+-   /* 
+-    * Get and init memory
+-    */
+-   if (NULL == (newjob = (pcrs_job *)malloc(sizeof(pcrs_job))))
+-   {
+-      *errptr = PCRS_ERR_NOMEM;
+-      return NULL;
+-   }
+-   memset(newjob, '\0', sizeof(pcrs_job));
+-
+-
+-   /*
+-    * Evaluate the options
+-    */
+-   newjob-&gt;options = pcrs_parse_perl_options(options, &amp;flags);
+-   newjob-&gt;flags = flags;
+-
+-
+-   /*
+-    * Compile the pattern
+-    */
+-   newjob-&gt;pattern = pcre_compile(pattern, newjob-&gt;options, &amp;error, errptr, NULL);
+-   if (newjob-&gt;pattern == NULL)
+-   {
+-      pcrs_free_job(newjob);
+-      return NULL;
+-   }
+-
+-
+-   /*
+-    * Generate hints. This has little overhead, since the
+-    * hints will be NULL for a boring pattern anyway.
+-    */
+-   newjob-&gt;hints = pcre_study(newjob-&gt;pattern, 0, &amp;error);
+-   if (error != NULL)
+-   {
+-      *errptr = PCRS_ERR_STUDY;
+-      pcrs_free_job(newjob);
+-      return NULL;
+-   }
+- 
+-
+-   /* 
+-    * Determine the number of capturing subpatterns. 
+-    * This is needed for handling $+ in the substitute.
+-    */
+-   if (0 &gt; (*errptr = pcre_fullinfo(newjob-&gt;pattern, newjob-&gt;hints, PCRE_INFO_CAPTURECOUNT, &amp;capturecount)))
+-   {
+-      pcrs_free_job(newjob);
+-      return NULL;
+-   }
+- 
+-
+-   /*
+-    * Compile the substitute
+-    */
+-   if (NULL == (newjob-&gt;substitute = pcrs_compile_replacement(substitute, newjob-&gt;flags &amp; PCRS_TRIVIAL, capturecount, errptr)))
+-   {
+-      pcrs_free_job(newjob);
+-      return NULL;
+-   }
+- 
+-   return newjob;
+-
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_execute_list
+- *
+- * Description :  This is a multiple job wrapper for pcrs_execute().
+- *                Apply the regular substitutions defined by the jobs in
+- *                the joblist to the subject.
+- *                The subject itself is left untouched, memory for the result
+- *                is malloc()ed and it is the caller's responsibility to free
+- *                the result when it's no longer needed. 
+- *
+- *                Note: For convenient string handling, a null byte is
+- *                      appended to the result. It does not count towards the
+- *                      result_length, though.
+- *
+- *
+- * Parameters  :
+- *          1  :  joblist = the chained list of pcrs_jobs to be executed
+- *          2  :  subject = the subject string
+- *          3  :  subject_length = the subject's length 
+- *          4  :  result = char** for returning  the result 
+- *          5  :  result_length = size_t* for returning the result's length
+- *
+- * Returns     :  On success, the number of substitutions that were made.
+- *                 May be &gt; 1 if job-&gt;flags contained PCRS_GLOBAL
+- *                On failiure, the (negative) pcre error code describing the
+- *                 failiure, which may be translated to text using pcrs_strerror().
+- *
+- *********************************************************************/
+-int pcrs_execute_list(pcrs_job *joblist, char *subject, size_t subject_length, char **result, size_t *result_length)
+-{
+-   pcrs_job *job;
+-   char *old, *new;
+-   int hits, total_hits;
+- 
+-   old = subject;
+-   *result_length = subject_length;
+-   hits = total_hits = 0;
+-
+-   for (job = joblist; job != NULL; job = job-&gt;next)
+-   {
+-      hits = pcrs_execute(job, old, *result_length, &amp;new, result_length);
+-
+-      if (old != subject) free(old);
+-
+-      if (hits &lt; 0)
+-      {
+-         return(hits);
+-      }
+-      else
+-      {
+-         total_hits += hits;
+-         old = new;
+-      }
+-   }
+-
+-   *result = new;
+-   return(total_hits);
+-
+-}
+-
+-
+-/*********************************************************************
+- *
+- * Function    :  pcrs_execute
+- *
+- * Description :  Apply the regular substitution defined by the job to the
+- *                subject.
+- *                The subject itself is left untouched, memory for the result
+- *                is malloc()ed and it is the caller's responsibility to free
+- *                the result when it's no longer needed.
+- *
+- *                Note: For convenient string handling, a null byte is
+- *                      appended to the result. It does not count towards the
+- *                      result_length, though.
+- *
+- * Parameters  :
+- *          1  :  job = the pcrs_job to be executed
+- *          2  :  subject = the subject (== original) string
+- *          3  :  subject_length = the subject's length 
+- *          4  :  result = char** for returning  the result 
+- *          5  :  result_length = size_t* for returning the result's length
+- *
+- * Returns     :  On success, the number of substitutions that were made.
+- *                 May be &gt; 1 if job-&gt;flags contained PCRS_GLOBAL
+- *                On failiure, the (negative) pcre error code describing the
+- *                 failiure, which may be translated to text using pcrs_strerror().
+- *
+- *********************************************************************/
+-int pcrs_execute(pcrs_job *job, char *subject, size_t subject_length, char **result, size_t *result_length)
+-{
+-   int offsets[3 * PCRS_MAX_SUBMATCHES],
+-       offset,
+-       i, k,
+-       matches_found,
+-       submatches,
+-       max_matches = PCRS_MAX_MATCH_INIT;
+-   size_t newsize;
+-   pcrs_match *matches, *dummy;
+-   char *result_offset;
+-
+-   offset = i = k = 0;
+-
+-   /* 
+-    * Sanity check &amp; memory allocation
+-    */
+-   if (job == NULL || job-&gt;pattern == NULL || job-&gt;substitute == NULL)
+-   {
+-      *result = NULL;
+-      return(PCRS_ERR_BADJOB);
+-   }
+-
+-   if (NULL == (matches = (pcrs_match *)malloc(max_matches * sizeof(pcrs_match))))
+-   {
+-      *result = NULL;
+-      return(PCRS_ERR_NOMEM);
+-   }
+-   memset(matches, '\0', max_matches * sizeof(pcrs_match));
+-
+-
+-   /*
+-    * Find the pattern and calculate the space
+-    * requirements for the result
+-    */
+-   newsize = subject_length;
+-
+-   while ((submatches = pcre_exec(job-&gt;pattern, job-&gt;hints, subject, (int)subject_length, offset, 0, offsets, 3 * PCRS_MAX_SUBMATCHES)) &gt; 0)
+-   {
+-      job-&gt;flags |= PCRS_SUCCESS;
+-      matches[i].submatches = submatches;
+-
+-      for (k = 0; k &lt; submatches; k++)
+-      {
+-         matches[i].submatch_offset[k] = offsets[2 * k];
+-
+-         /* Note: Non-found optional submatches have length -1-(-1)==0 */
+-         matches[i].submatch_length[k] = offsets[2 * k + 1] - offsets[2 * k]; 
+-
+-         /* reserve mem for each submatch as often as it is ref'd */
+-         newsize += matches[i].submatch_length[k] * job-&gt;substitute-&gt;backref_count[k];
+-      }
+-      /* plus replacement text size minus match text size */
+-      newsize += strlen(job-&gt;substitute-&gt;text) - matches[i].submatch_length[0]; 
+-
+-      /* chunk before match */
+-      matches[i].submatch_offset[PCRS_MAX_SUBMATCHES] = 0;
+-      matches[i].submatch_length[PCRS_MAX_SUBMATCHES] = offsets[0];
+-      newsize += offsets[0] * job-&gt;substitute-&gt;backref_count[PCRS_MAX_SUBMATCHES];
+-
+-      /* chunk after match */
+-      matches[i].submatch_offset[PCRS_MAX_SUBMATCHES + 1] = offsets[1];
+-      matches[i].submatch_length[PCRS_MAX_SUBMATCHES + 1] = subject_length - offsets[1] - 1;
+-      newsize += (subject_length - offsets[1]) * job-&gt;substitute-&gt;backref_count[PCRS_MAX_SUBMATCHES + 1];
+-
+-      /* Storage for matches exhausted? -&gt; Extend! */
+-      if (++i &gt;= max_matches)
+-      {
+-         max_matches = (int)(max_matches * PCRS_MAX_MATCH_GROW);
+-         if (NULL == (dummy = (pcrs_match *)realloc(matches, max_matches * sizeof(pcrs_match))))
+-         {
+-            free(matches);
+-            *result = NULL;
+-            return(PCRS_ERR_NOMEM);
+-         }
+-         matches = dummy;
+-      }
+-
+-      /* Non-global search or limit reached? */
+-      if (!(job-&gt;flags &amp; PCRS_GLOBAL)) break;
+-
+-      /* Don't loop on empty matches */
+-      if (offsets[1] == offset)
+-         if ((size_t)offset &lt; subject_length)
+-            offset++;
+-         else
+-            break;
+-      /* Go find the next one */
+-      else
+-         offset = offsets[1];
+-   }
+-   /* Pass pcre error through if (bad) failiure */
+-   if (submatches &lt; PCRE_ERROR_NOMATCH)
+-   {
+-      free(matches);
+-      return submatches;   
+-   }
+-   matches_found = i;
+-
+-
+-   /* 
+-    * Get memory for the result (must be freed by caller!)
+-    * and append terminating null byte.
+-    */
+-   if ((*result = (char *)malloc(newsize + 1)) == NULL)
+-   {
+-      free(matches);
+-      return PCRS_ERR_NOMEM;
+-   }
+-   else
+-   {
+-      (*result)[newsize] = '\0';
+-   }
+-
+-
+-   /* 
+-    * Replace
+-    */
+-   offset = 0;
+-   result_offset = *result;
+-
+-   for (i = 0; i &lt; matches_found; i++)
+-   {
+-      /* copy the chunk preceding the match */
+-      memcpy(result_offset, subject + offset, (size_t)matches[i].submatch_offset[0] - offset); 
+-      result_offset += matches[i].submatch_offset[0] - offset;
+-
+-      /* For every segment of the substitute.. */
+-      for (k = 0; k &lt;= job-&gt;substitute-&gt;backrefs; k++)
+-      {
+-         /* ...copy its text.. */
+-         memcpy(result_offset, job-&gt;substitute-&gt;text + job-&gt;substitute-&gt;block_offset[k], job-&gt;substitute-&gt;block_length[k]);
+-         result_offset += job-&gt;substitute-&gt;block_length[k];
+-
+-         /* ..plus, if it's not the last chunk, i.e.: There *is* a backref.. */
+-         if (k != job-&gt;substitute-&gt;backrefs
+-             /* ..in legal range.. */
+-             &amp;&amp; job-&gt;substitute-&gt;backref[k] &lt; PCRS_MAX_SUBMATCHES + 2
+-             /* ..and referencing a real submatch.. */
+-             &amp;&amp; job-&gt;substitute-&gt;backref[k] &lt; matches[i].submatches
+-             /* ..that is nonempty.. */
+-             &amp;&amp; matches[i].submatch_length[job-&gt;substitute-&gt;backref[k]] &gt; 0)
+-         {
+-            /* ..copy the submatch that is ref'd. */
+-            memcpy(
+-               result_offset,
+-               subject + matches[i].submatch_offset[job-&gt;substitute-&gt;backref[k]],
+-               matches[i].submatch_length[job-&gt;substitute-&gt;backref[k]]
+-            );
+-            result_offset += matches[i].submatch_length[job-&gt;substitute-&gt;backref[k]];
+-         }
+-      }
+-      offset =  matches[i].submatch_offset[0] + matches[i].submatch_length[0];
+-   }
+-
+-   /* Copy the rest. */
+-   memcpy(result_offset, subject + offset, subject_length - offset);
+-
+-   *result_length = newsize;
+-   free(matches);
+-   return matches_found;
+-
+-}
+-
+-
+-/*
+-  Local Variables:
+-  tab-width: 3
+-  end:
+-*/
+
+Deleted: trunk/pcrs.h
+===================================================================
+--- trunk/pcrs.h	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/pcrs.h	2006-03-05 22:52:02 UTC (rev 106)
+@@ -1,171 +0,0 @@
+-#ifndef PCRS_H_INCLUDED
+-#define PCRS_H_INCLUDED
+-
+-/*********************************************************************
+- *
+- * File        :  $Source: /cvsroot/ijbswa/current/pcrs.h,v $
+- *
+- * Purpose     :  Header file for pcrs.c
+- *
+- * Copyright   :  see pcrs.c
+- *
+- * Revisions   :
+- *    $Log: pcrs.h,v $
+- *    Revision 1.11  2002/03/08 14:18:23  oes
+- *    Fixing -Wconversion warnings
+- *
+- *    Revision 1.10  2002/03/08 13:44:48  oes
+- *    Hiding internal functions, preventing double inclusion of pcre.h
+- *
+- *    Revision 1.9  2001/08/18 11:35:29  oes
+- *    - Introduced pcrs_strerror()
+- *    - added pcrs_execute_list()
+- *
+- *    Revision 1.8  2001/08/15 15:32:50  oes
+- *    Replaced the hard limit for the maximum number of matches
+- *    by dynamic reallocation
+- *
+- *    Revision 1.7  2001/08/05 13:13:11  jongfoster
+- *    Making parameters &quot;const&quot; where possible.
+- *
+- *    Revision 1.6  2001/07/29 18:52:06  jongfoster
+- *    Renaming _PCRS_H, and adding &quot;extern C {}&quot;
+- *
+- *    Revision 1.5  2001/07/18 17:27:00  oes
+- *    Changed interface; Cosmetics
+- *
+- *    Revision 1.4  2001/06/29 13:33:19  oes
+- *    - Cleaned up, commented and adapted to reflect the
+- *      changes in pcrs.c
+- *    - Introduced the PCRS_* flags
+- *
+- *    Revision 1.3  2001/06/09 10:58:57  jongfoster
+- *    Removing a single unused #define which referenced BUFSIZ
+- *
+- *    Revision 1.2  2001/05/25 11:03:55  oes
+- *    Added sanity check for NULL jobs to pcrs_exec_substitution
+- *
+- *    Revision 1.1.1.1  2001/05/15 13:59:02  oes
+- *    Initial import of version 2.9.3 source tree
+- *
+- *    Revision 1.4  2001/05/11 01:57:02  rodney
+- *    Added new file header standard w/RCS control tags.
+- *
+- *    revision 1.3  2001/05/08 02:38:13  rodney
+- *    Changed C++ &quot;//&quot; style comment to C style comments.
+- *
+- *    revision 1.2  2001/04/30 02:39:24  rodney
+- *    Made this pcrs.h file conditionally included.
+- *
+- *    revision 1.1  2001/04/16 21:10:38  rodney
+- *    Initial checkin
+- *
+- *********************************************************************/
+-
+-#define PCRS_H_VERSION &quot;$Id: pcrs.h,v 1.11 2002/03/08 14:18:23 oes Exp $&quot;
+-
+-
+-#ifndef _PCRE_H
+-#include &lt;pcre.h&gt;
+-#endif
+-
+-#ifdef __cplusplus
+-extern &quot;C&quot; {
+-#endif
+-
+-/*
+- * Constants:
+- */
+-
+-#define FALSE 0
+-#define TRUE 1
+-
+-/* Capacity */
+-#define PCRS_MAX_SUBMATCHES  33     /* Maximum number of capturing subpatterns allowed. MUST be &lt;= 99! FIXME: Should be dynamic */
+-#define PCRS_MAX_MATCH_INIT  40     /* Initial amount of matches that can be stored in global searches */
+-#define PCRS_MAX_MATCH_GROW  1.6    /* Factor by which storage for matches is extended if exhausted */
+-
+-/* Error codes */
+-#define PCRS_ERR_NOMEM     -10      /* Failed to acquire memory. */
+-#define PCRS_ERR_CMDSYNTAX -11      /* Syntax of s///-command */
+-#define PCRS_ERR_STUDY     -12      /* pcre error while studying the pattern */
+-#define PCRS_ERR_BADJOB    -13      /* NULL job pointer, pattern or substitute */
+-#define PCRS_WARN_BADREF   -14      /* Backreference out of range */
+-
+-/* Flags */
+-#define PCRS_GLOBAL          1      /* Job should be applied globally, as with perl's g option */
+-#define PCRS_TRIVIAL         2      /* Backreferences in the substitute are ignored */
+-#define PCRS_SUCCESS         4      /* Job did previously match */
+-
+-
+-/*
+- * Data types:
+- */
+-
+-/* A compiled substitute */
+-
+-typedef struct {
+-  char  *text;                                   /* The plaintext part of the substitute, with all backreferences stripped */
+-  int    backrefs;                               /* The number of backreferences */
+-  int    block_offset[PCRS_MAX_SUBMATCHES];      /* Array with the offsets of all plaintext blocks in text */
+-  size_t block_length[PCRS_MAX_SUBMATCHES];      /* Array with the lengths of all plaintext blocks in text */
+-  int    backref[PCRS_MAX_SUBMATCHES];           /* Array with the backref number for all plaintext block borders */
+-  int    backref_count[PCRS_MAX_SUBMATCHES + 2]; /* Array with the number of references to each backref index */
+-} pcrs_substitute;
+-
+-
+-/*
+- * A match, including all captured subpatterns (submatches)
+- * Note: The zeroth is the whole match, the PCRS_MAX_SUBMATCHES + 0th
+- * is the range before the match, the PCRS_MAX_SUBMATCHES + 1th is the
+- * range after the match.
+- */
+-
+-typedef struct {
+-  int    submatches;                               /* Number of captured subpatterns */
+-  int    submatch_offset[PCRS_MAX_SUBMATCHES + 2]; /* Offset for each submatch in the subject */
+-  size_t submatch_length[PCRS_MAX_SUBMATCHES + 2]; /* Length of each submatch in the subject */
+-} pcrs_match;
+-
+-
+-/* A PCRS job */
+-
+-typedef struct PCRS_JOB {
+-  pcre *pattern;                            /* The compiled pcre pattern */
+-  pcre_extra *hints;                        /* The pcre hints for the pattern */
+-  int options;                              /* The pcre options (numeric) */
+-  int flags;                                /* The pcrs and user flags (see &quot;Flags&quot; above) */
+-  pcrs_substitute *substitute;              /* The compiled pcrs substitute */
+-  struct PCRS_JOB *next;                    /* Pointer for chaining jobs to joblists */
+-} pcrs_job;
+-
+-
+-/*
+- * Prototypes:
+- */
+-
+-/* Main usage */
+-extern pcrs_job        *pcrs_compile_command(const char *command, int *errptr);
+-extern pcrs_job        *pcrs_compile(const char *pattern, const char *substitute, const char *options, int *errptr);
+-extern int              pcrs_execute(pcrs_job *job, char *subject, size_t subject_length, char **result, size_t *result_length);
+-extern int              pcrs_execute_list(pcrs_job *joblist, char *subject, size_t subject_length, char **result, size_t *result_length);
+-
+-/* Freeing jobs */
+-extern pcrs_job        *pcrs_free_job(pcrs_job *job);
+-extern void             pcrs_free_joblist(pcrs_job *joblist);
+-
+-/* Info on errors: */
+-extern const char *pcrs_strerror(const int error);
+-
+-
+-#ifdef __cplusplus
+-} /* extern &quot;C&quot; */
+-#endif
+-
+-#endif /* ndef PCRS_H_INCLUDED */
+-
+-/*
+-  Local Variables:
+-  tab-width: 3
+-  end:
+-*/
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/test.c	2006-03-05 22:52:02 UTC (rev 106)
+@@ -15,8 +15,6 @@
+ #include &lt;sys/types.h&gt;
+ #include &lt;unistd.h&gt;
+ #include &lt;errno.h&gt;
+-
+-// to get PATH_MAX:
+ #include &lt;dirent.h&gt;
+ 
+ #include &quot;re2c/read-fd.h&quot;
+@@ -24,14 +22,9 @@
+ #include &quot;test.h&quot;
+ #include &quot;stscan.h&quot;
+ #include &quot;tfscan.h&quot;
+-#include &quot;compare.h&quot;
+ #include &quot;rusage.h&quot;
+ 
+ 
+-// This is the maximum line length for the eachline substitution.
+-// Lines longer than this will be parsed as 2 separate lines.
+-#define MAX_LINE_LENGTH BUFSIZ
+-
+ // utility function so you can say i.e. write_strconst(fd, &quot;/&quot;);
+ #define write_strconst(fd, str) write((fd), (str), sizeof(str)-1)
+ 
+@@ -342,8 +335,8 @@
+  * it up.
+  */
+ 
+-void compare_section_start(scanstate *cmpscan, int fd, pcrs_job *joblist,
+-		matchval *mv, const char *filename, const char *sectionname, int nonl)
++void compare_section_start(scanstate *cmpscan, int fd, matchval *mv,
++		const char *filename, const char *sectionname, int nonl)
+ {
+     assert(!compare_in_progress(cmpscan));
+ 
+@@ -355,7 +348,7 @@
+ 
+     scanstate_reset(cmpscan);
+     readfd_attach(cmpscan, fd);
+-	compare_attach(cmpscan, mv, joblist, nonl);
++	compare_attach(cmpscan, mv, nonl);
+ 
+     // we may want to check the token to see if there are any
+     // special requests (like detabbing).
+@@ -426,70 +419,7 @@
+ }
+ 
+ 
+-void parse_modify_clause(struct test *test, const char *cp, const char *ce)
+-{
+-	pcrs_job *job, **p;
+-	char *string;
+-	int err;
+ 
+-	char buf[128];	// holds the pcrs command.  We will dynamically
+-		// allocate a buffer if the entire substitution doesn't fit
+-		// into this buffer.  The vast majority of substitutions will
+-		// be less than 40 chars.
+-
+-	// skip any leading whitespace
+-	while(isspace(*cp) &amp;&amp; cp &lt; ce) cp++;
+-
+-	// ensure there's still data worth parsing
+-	if(*cp == '\n' || cp &gt;= ce) {
+-		return;
+-	}
+-
+-	// don't parse it if it's a comment
+-	if(*cp == '#') {
+-		return;
+-	}
+-
+-	// It's retarded that I can't pass a buf/len combo to pcrs_compile_command.
+-	// It's also retarded that pcrs won't tell me where it stopped parsing
+-	// so that we can have multiple substitution clauses on line line.
+-
+-	if(ce-cp-1 &lt; sizeof(buf)) {
+-		string = buf;
+-	} else {
+-		string = malloc(ce-cp+1);
+-		if(!string) {
+-			perror(&quot;malloc in parse_modify_clause&quot;);
+-			exit(10);
+-		}
+-	}
+-
+-	memcpy(string, cp, ce-cp);
+-	string[ce-cp] = '\0';
+-	job = pcrs_compile_command(string, &amp;err);
+-	if(job == NULL) {
+-        fprintf(stderr, &quot;%s line %d compile error: %s (%d).\n&quot;,
+-                get_testfile_name(test), test-&gt;testfile.line,
+-                pcrs_strerror(err), err);
+-	}
+-
+-	if(ce-cp-1 &lt; sizeof(buf)) {
+-		// nothing to do; we used the static buffer
+-	} else {
+-		free(string);
+-	}
+-
+-	if(job == NULL) {
+-		return;
+-	}
+-
+-	// link this job onto the end of the list.
+-	p = &amp;test-&gt;eachline;
+-	while(*p) p = &amp;(**p).next;
+-	*p = job;
+-}
+-
+-
+ /**
+  * Calls the given callback routine for each argument found.
+  *
+@@ -597,7 +527,7 @@
+         return 0;
+     }
+ 
+-    compare_section_start(cmpscan, fd, test-&gt;eachline, val,
++    compare_section_start(cmpscan, fd, val,
+         get_testfile_name(test), secname, suppress_trailing_newline);
+ 
+     return 1;
+@@ -699,10 +629,6 @@
+             case exRESULT:
+ 				parse_exit_clause(test, datap, len);
+                 break;
+-            case exMODIFY:
+-				parse_modify_clause(test, skip_section_name(datap,len),
+-                        datap+len);
+-                break;
+         }
+     } else {
+         // we're continuing an already started section.
+@@ -724,9 +650,6 @@
+                     // Harmless to continue.  The testfile needs to be fixed.
+ 				}
+                 break;
+-            case exMODIFY:
+-				parse_modify_clause(test, datap, datap+len);
+-                break;
+             case exCOMMAND:
+                 break;
+         }
+@@ -798,7 +721,7 @@
+ void test_results(struct test *test, const char *dispname)
+ {
+     scanstate scanner;
+-    char scanbuf[MAX_LINE_LENGTH];
++    char scanbuf[BUFSIZ];
+ 	int stdo, stde, exno;	// true if there are differences.
+ 	
+ 	if(was_aborted(test-&gt;status)) {
+@@ -886,7 +809,7 @@
+ }
+ 
+ 
+-int write_raw_file(int outfd, int infd)
++int write_file(int outfd, int infd)
+ {
+     char buf[BUFSIZ];
+     int rcnt, wcnt;
+@@ -924,81 +847,6 @@
+ }
+ 
+ 
+-static void write_modified_file(int outfd, int infd, pcrs_job *job)
+-{
+-    // this routine is fairly similar to compare_continue_lines.
+-    // it would be nice to unify them.  that would take some fairly
+-    // major surgery though.
+-
+-    scanstate scanner, *ss = &scanner;
+-    char scanbuf[MAX_LINE_LENGTH];
+-    const char *p;
+-    char *new;
+-    size_t newsize;
+-    int rcnt, wcnt;
+-
+-    // first rewind the input file
+-    if(lseek(infd, 0, SEEK_SET) &lt; 0) {
+-        fprintf(stderr, &quot;write_file lseek on %d: %s\n&quot;, infd, strerror(errno));
+-        exit(10);   // todo: consolidate with error codes in main
+-    }
+-
+-    // create the scanner we'll use to buffer the lines
+-    scanstate_init(ss, scanbuf, sizeof(scanbuf));
+-    readfd_attach(ss, infd);
+-
+-    do {
+-        p = memchr(ss-&gt;cursor, '\n', ss-&gt;limit - ss-&gt;cursor);
+-        if(!p) {
+-            rcnt = (*ss-&gt;read)(ss);
+-            if(rcnt &lt; 0) {
+-                // read error.  do something!
+-                perror(&quot;reading in write_modified_file&quot;);
+-                break;
+-            }
+-            p = memchr(ss-&gt;cursor, '\n', ss-&gt;limit - ss-&gt;cursor);
+-            if(!p) {
+-                p = ss-&gt;limit - 1;
+-            }
+-        }
+-
+-        p += 1;
+-        new = substitute_string(job, ss-&gt;cursor, p, &amp;newsize);
+-        if(!new) {
+-            // substitution error!  message already printed.
+-            break;
+-        }
+-
+-        do {
+-            wcnt = write(outfd, new, newsize);
+-        } while(wcnt &lt; 0 &amp;&amp; errno == EINTR);
+-        free(new);
+-        if(wcnt &lt; 0) {
+-            // write error.  do something!
+-            perror(&quot;writing in write_modified_file&quot;);
+-            break;
+-        }
+-        ss-&gt;cursor = p;
+-    } while(rcnt);
+-}
+-
+-
+-static int write_file(int outfd, int infd, pcrs_job *job)
+-{
+-	if(!job) {
+-		// use the simple, fast routine
+-		return write_raw_file(outfd, infd);
+-	}
+-
+-	// use the line buffered routine
+-	// (don't bother with the return value because we
+-	// know that MODIFY sections are going away in the
+-	// next release anyway)
+-	write_modified_file(outfd, infd, job);
+-	return 1;
+-}
+-
+-
+ static void write_section(struct test *test, const char *datap, int len,
+ 		int fd, const char *name)
+ {
+@@ -1010,7 +858,7 @@
+ 			start_output_section_argproc, &amp;marked_no_nl);
+ 
+ 	write(test-&gt;rewritefd, datap, len);
+-	has_nl = write_file(test-&gt;rewritefd, fd, test-&gt;eachline);
++	has_nl = write_file(test-&gt;rewritefd, fd);
+ 
+ 	if(marked_no_nl) {
+ 		// if a section is marked with --no-trailing-newline, we need
+@@ -1070,16 +918,6 @@
+             write(test-&gt;rewritefd, datap, len);
+             break;
+ 
+-        case exMODIFY|exNEW:
+-            parse_modify_clause(test, skip_section_name(datap,len), datap+len);
+-            write(test-&gt;rewritefd, datap, len);
+-            break;
+-        case exMODIFY:
+-            // parse modify sections and still print them.
+-            parse_modify_clause(test, datap, datap+len);
+-            write(test-&gt;rewritefd, datap, len);
+-            break;
+-            
+         default:
+             write(test-&gt;rewritefd, datap, len);
+     }
+@@ -1138,9 +976,6 @@
+     test-&gt;stdout_match = match_unknown;
+     test-&gt;stderr_match = match_unknown;
+ 
+-    // ensure that we haven't yet parsed any modify sections.
+-    assert(!test-&gt;eachline);
+-
+     scan_sections(test, &amp;test-&gt;testfile, parse_section_output, &amp;tempref);
+ 
+     // if any sections haven't been output, but they differ from
+@@ -1151,11 +986,11 @@
+     }
+     if(test-&gt;stderr_match == match_unknown &amp;&amp; fd_has_data(test-&gt;errfd)) {
+ 		write_strconst(test-&gt;rewritefd, &quot;STDERR:\n&quot;);
+-        write_file(test-&gt;rewritefd, test-&gt;errfd, test-&gt;eachline);
++        write_file(test-&gt;rewritefd, test-&gt;errfd);
+     }
+     if(test-&gt;stdout_match == match_unknown &amp;&amp; fd_has_data(test-&gt;outfd)) {
+ 		write_strconst(test-&gt;rewritefd, &quot;STDOUT:\n&quot;);
+-        write_file(test-&gt;rewritefd, test-&gt;outfd, test-&gt;eachline);
++        write_file(test-&gt;rewritefd, test-&gt;outfd);
+     }
+ }
+ 
+@@ -1188,11 +1023,6 @@
+ {
+ 	int err;
+ 
+-	// the buffer for the testfile scanner is allocated on the stack.
+-	if(test-&gt;eachline) {
+-		pcrs_free_joblist(test-&gt;eachline);
+-	}
+-
+ 	if(test-&gt;diffname) {
+ 		err = close(test-&gt;diff_fd);
+ 		if(err &lt; 0) {
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2006-03-05 15:30:53 UTC (rev 105)
++++ trunk/test.h	2006-03-05 22:52:02 UTC (rev 106)
+@@ -6,9 +6,7 @@
+  * This file is covered by the MIT License.
+  */
+ 
+-#include &quot;pcrs.h&quot;
+-#include &quot;matchval.h&quot;
+-#include &quot;re2c/scan.h&quot;
++#include &quot;compare.h&quot;
+ 
+ 
+ typedef enum {
+@@ -51,8 +49,6 @@
+     int exitsignal;         ///&lt; the value returned for the test by waitpid(2)
+     int exitcored;          ///&lt; if exitsignal is true, true if child core dumped.
+ 
+-	pcrs_job *eachline;		///&lt; a linked list of pcrs jobs to be applied to each line.
+-
+ 	char *diffname;			///&lt; if we're diffing against stdin, this contains the name of the required tempfile.
+ 	int diff_fd;			///&lt; if diffname is set, then this is the fd of the tempfile we're using to store stdin.
+ 
+@@ -84,5 +80,5 @@
+ 
+ // random utility function for start_diff.  Return value is true if the
+ // file ends in a newline, false if not.
+-int write_raw_file(int outfd, int infd);
++int write_file(int outfd, int infd);
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000022.html">[Tmtest-commits] [105] trunk: First part of the modify purge is complete: rewrite or
+</A></li>
+	<LI>Next message: <A HREF="000024.html">[Tmtest-commits] [107] trunk: Add unit testing, update re2c lib, refactor compare.c.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#23">[ date ]</a>
+              <a href="thread.html#23">[ thread ]</a>
+              <a href="subject.html#23">[ subject ]</a>
+              <a href="author.html#23">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

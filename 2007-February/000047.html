@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [130] trunk/Makefile: CDE requires an &quot;all&quot; target	in the makefile.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B130%5D%20trunk/Makefile%3A%20CDE%20requires%20an%20%22all%22%20target%0A%09in%20the%20makefile.&In-Reply-To=%3C200702141939.l1EJdCEo030153%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000048.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [130] trunk/Makefile: CDE requires an &quot;all&quot; target	in the makefile.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B130%5D%20trunk/Makefile%3A%20CDE%20requires%20an%20%22all%22%20target%0A%09in%20the%20makefile.&In-Reply-To=%3C200702141939.l1EJdCEo030153%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [130] trunk/Makefile: CDE requires an &quot;all&quot; target	in the makefile.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Wed Feb 14 20:39:12 CET 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000048.html">[Tmtest-commits] [131] trunk/Makefile: Eclipse wants an &quot;all&quot;	target in the Makefile.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#47">[ date ]</a>
+              <a href="thread.html#47">[ thread ]</a>
+              <a href="subject.html#47">[ subject ]</a>
+              <a href="author.html#47">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 130
+Author:   bronson
+Date:     2007-02-14 20:39:11 +0100 (Wed, 14 Feb 2007)
+
+Log Message:
+-----------
+CDE requires an &quot;all&quot; target in the makefile.
+
+Modified Paths:
+--------------
+    trunk/Makefile
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-01-25 03:14:50 UTC (rev 129)
++++ trunk/Makefile	2007-02-14 19:39:11 UTC (rev 130)
+@@ -46,6 +46,7 @@
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+ 
++all: tmtest
+ 
+ tmtest: $(CSRC) $(CHDR) $(INTERMED)
+ 	$(CC) $(COPTS) $(CSRC) -o tmtest -DVERSION=&quot;$(VERSION)&quot; -DZUTEST
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000048.html">[Tmtest-commits] [131] trunk/Makefile: Eclipse wants an &quot;all&quot;	target in the Makefile.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#47">[ date ]</a>
+              <a href="thread.html#47">[ thread ]</a>
+              <a href="subject.html#47">[ subject ]</a>
+              <a href="author.html#47">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

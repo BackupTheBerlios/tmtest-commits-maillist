@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [134] trunk: Minor cleanups lying around in an	older tree
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B134%5D%20trunk%3A%20Minor%20cleanups%20lying%20around%20in%20an%0A%09older%20tree&In-Reply-To=%3C200702171910.l1HJAx25024818%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000050.html">
+   <LINK REL="Next"  HREF="000052.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [134] trunk: Minor cleanups lying around in an	older tree</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B134%5D%20trunk%3A%20Minor%20cleanups%20lying%20around%20in%20an%0A%09older%20tree&In-Reply-To=%3C200702171910.l1HJAx25024818%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [134] trunk: Minor cleanups lying around in an	older tree">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Sat Feb 17 20:10:59 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000050.html">[Tmtest-commits] [133] trunk: Totally replaced the path handling	code.
+</A></li>
+        <LI>Next message: <A HREF="000052.html">[Tmtest-commits] [135] trunk: Experimenting with Eclipse...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#51">[ date ]</a>
+              <a href="thread.html#51">[ thread ]</a>
+              <a href="subject.html#51">[ subject ]</a>
+              <a href="author.html#51">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 134
+Author:   bronson
+Date:     2007-02-17 20:10:58 +0100 (Sat, 17 Feb 2007)
+
+Log Message:
+-----------
+Minor cleanups lying around in an older tree
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/main.c
+    trunk/test.c
+    trunk/zutest.c
+    trunk/zutest.h
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/TODO	2007-02-17 19:10:58 UTC (rev 134)
+@@ -76,9 +76,18 @@
+ - Use i/o lib for everything.  No need for temp files.
+   This means that we stream everything EXCEPT stderr, which we memory
+   buffer.  If your stderr is more than 100K or so in size, just redirect
+-  it to a file, then cat the file at the end.  We truncate stderr if it
+-  gets too big.
++  it to a file, then cat the file at the end.  We will truncate stderr if it
++  gets too big.  (new maximum, what 2 MB?)
+   - When done, verify that netknife's tests that freeze with -d now pass.
++  - The reason why this is important is that we currently do a wait_for_child
++  to wait for the test to complete.  Instead, we need to wait for EACH fd
++  to close.  The problem is, the child can dup its fds onto other children
++  (process substitution), and those children might not be done writing yet.
++  This is why files randomly get truncated when doing substitution.  So,
++  we'll just wait for all the FDs to close, then we immediately reap the
++  child.  If the child can't be reaped, that means it closed all its FDs
++  but is still runnnig, which makes no sense; print an error and keep on
++  trucking.
+ - get rid of MKFILE_EMPTY, deprecated in favor of TOUCH.
+ - Is there any way to record memory and swap usage for each test?
+   sure, it's in the rusage. prolly add a &quot;tmtest -v&quot; to print it for each test.
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/main.c	2007-02-17 19:10:58 UTC (rev 134)
+@@ -272,7 +272,7 @@
+ }
+ 
+ 
+-static int write_stdin_to_tmpfile(struct test *test)
++static void write_stdin_to_tmpfile(struct test *test)
+ {
+ 	char *buf;
+ 	int fd;
+@@ -288,8 +288,6 @@
+ 	assert(strlen(buf) == sizeof(TESTDIR)+sizeof(DIFFNAME)-1);
+ 	write_file(test, fd, 0, NULL);
+ 	close(fd);
+-
+-	return fd;
+ }
+ 
+ 
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/test.c	2007-02-17 19:10:58 UTC (rev 134)
+@@ -674,8 +674,8 @@
+     do {
+         int tokno = scan_next_token(scanner);
+         if(tokno &lt; 0) {
+-            test_abort(test, &quot;scan_sections error %d pulling status tokens: %s\n&quot;, 
+-                    tokno, strerror(errno));
++            test_abort(test, &quot;scan_sections error %d pulling status tokens: &quot;
++				&quot;%s\n&quot;, tokno, strerror(errno));
+         } else if(tokno == 0) {
+ 			break;
+ 		}
+@@ -955,8 +955,7 @@
+ }
+ 
+ 
+-/** Prints the actual result sections in the same order as they
+- * appear in the testfile.
++/** Prints the result sections as tested.
+  */
+ 
+ void dump_results(struct test *test)
+@@ -982,9 +981,7 @@
+     }
+ 
+     // The command section has already been dumped.  We just
+-    // need to dump the result sections.  The trick is, though,
+-    // that we need to dump them in the same order as they occur
+-    // in the testfile otherwise the diff will be all screwed up.
++    // need to dump the STDERR and STDOUT results.
+ 
+     test-&gt;stdout_match = match_unknown;
+     test-&gt;stderr_match = match_unknown;
+
+Modified: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/zutest.c	2007-02-17 19:10:58 UTC (rev 134)
+@@ -7,6 +7,7 @@
+  *
+  * Version 0.7,  16 Feb 2007 -- turn dependency tree into functions
+  * Version 0.6,  26 Apr 2006 -- first version worth releasing
++ * Released under the MIT License.
+  */
+ 
+ #include &lt;stdio.h&gt;
+
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/zutest.h	2007-02-17 19:10:58 UTC (rev 134)
+@@ -1,6 +1,10 @@
+ /* zutest.h
+  * Scott Bronson
+  * 6 Mar 2006
++ *
++ * TODO: make tests self-documenting.  The test name is the same as the
++ * function name, but they should also have a short and long description.
++ * TODO: make zutest suites able to be arranged in a hierarchy.
+  * 
+  * This file is released under the MIT License.
+  * See <A HREF="http://en.wikipedia.org/wiki/MIT_License">http://en.wikipedia.org/wiki/MIT_License</A> for more.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000050.html">[Tmtest-commits] [133] trunk: Totally replaced the path handling	code.
+</A></li>
+	<LI>Next message: <A HREF="000052.html">[Tmtest-commits] [135] trunk: Experimenting with Eclipse...
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#51">[ date ]</a>
+              <a href="thread.html#51">[ thread ]</a>
+              <a href="subject.html#51">[ subject ]</a>
+              <a href="author.html#51">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

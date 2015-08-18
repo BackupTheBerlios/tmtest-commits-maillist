@@ -1,0 +1,413 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [112] trunk: Rename --all-files to the much more understandable
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B112%5D%20trunk%3A%20Rename%20--all-files%20to%20the%20much%20more%20understandable&In-Reply-To=%3C200603072226.k27MQ4cm015064%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000028.html">
+   <LINK REL="Next"  HREF="000030.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [112] trunk: Rename --all-files to the much more understandable</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B112%5D%20trunk%3A%20Rename%20--all-files%20to%20the%20much%20more%20understandable&In-Reply-To=%3C200603072226.k27MQ4cm015064%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [112] trunk: Rename --all-files to the much more understandable">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Mar  7 23:26:04 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000028.html">[Tmtest-commits] [111] trunk: Repair an 8-byte memory leak (well, depending on how many
+</A></li>
+        <LI>Next message: <A HREF="000030.html">[Tmtest-commits] [113] trunk: Add two tests to check running files named - and -.test.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 112
+Author:   bronson
+Date:     2006-03-07 23:26:02 +0100 (Tue, 07 Mar 2006)
+
+Log Message:
+-----------
+Rename --all-files to the much more understandable --ignore-extension.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/main.c
+    trunk/test/01-testfile/21-TestVarsABS.test
+    trunk/test/01-testfile/22-TestVarsRel.test
+    trunk/test/01-testfile/24-TestVarsRoot.test
+    trunk/test/03-results/30-Binary.test
+    trunk/test/03-results/31-BinaryFail.test
+    trunk/test/03-results/32-BinaryLarge.test
+    trunk/test/03-results/33-BinaryHuge.test
+    trunk/test/04-diff/02-MultiDiff.test
+    trunk/test/04-diff/09-MultiLevelDiff.test
+    trunk/test/04-diff/10-Patch.test
+    trunk/test/04-diff/11-MultiPatch.test
+    trunk/test/04-diff/12-MultiLevelPatch.test
+    trunk/test/04-diff/13-MultiLevelPatch.test
+    trunk/test/04-diff/21-PatchNoNL.test
+    trunk/test/04-diff/22-PatchNoNL2.test
+    trunk/test/04-diff/23-PatchNoNL3.test
+    trunk/tmtest.pod
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/TODO	2006-03-07 22:26:02 UTC (rev 112)
+@@ -11,13 +11,15 @@
+   That's probably the most agreeable.
+   We will not read either config or test files from a world-writable directory.
+   Ever.
+-- Put $args into EVERY test we run.
++- Put $args into EVERY test we run.  NO!  This is not as useful.
++  Get rid of $args and turn every invocation of tmtest into $tmtest.
++  This allows us to run the entire suite under i.e. &quot;valgrind tmtest&quot;
++  - Figure out how to ensure that we run the binary in the project tree
++    when testing rather than the globally installed one.  What happened?
++	(this is how -- specify the executable and args using $tmtest).
+ - Write a test to ensure we can run tests named &quot;-.test&quot;
+-- Write tests to verify what FDs are still open when we run
+-  config files, test files, and diff.
+ - Add --diff and --shell to change the executables that get launched.
+-- Get rid of MODIFY clauses.  It's unnecessary complexity.
+-  And it's a LOT.  First remove it from the tests, then from the code.
++  No, that clutters the arguments up.  Take them from $DIFF and $SHELL.
+ - Add the ability to specify test arguments on the command line.
+   I'm picturing something where VAR=val on the command line would be
+   inserted without change into the template.  That way you can use the
+@@ -33,15 +35,12 @@
+   abort the test.
+   should get rid of a whole bunch in main.c as well.
+   this should prevent us from dropping turds in /tmp all the time too.
+-- Rename --all-files to --ignore-extension.
+-- Move newline suppressing out of compare.c.  If it can't be moved out,
+-  at least clean it up!   (maybe?)
+-- Figure out how to ensure that we run the binary in the project tree
+-  when testing rather than the globally installed one.  What happened?
+ - Ensure it compiles and runs on freebsd.
+ - Add some unit tests.  <A HREF="http://kooditakomo.cs.tut.fi/projects/gunit/">http://kooditakomo.cs.tut.fi/projects/gunit/</A>
+   <A HREF="http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages">http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages</A>     Actually, this looks better: <A HREF="http://cutest.sourceforge.net/">http://cutest.sourceforge.net/</A>
+   Potential units: curdir, path normalization
++    Need to rewrite curdir before it's worth unit testing it.
++	Path normalization definitely deserves it.
+ - Get rid of -g, add -O2.  Make it easy to set these for compilation.
+   Yes, have dev and prod modes.  dev would be -O0 and -g and include
+   unit tests.  Prod is -O2, stripped, and no unit tests (unless the
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/main.c	2006-03-07 22:26:02 UTC (rev 112)
+@@ -1013,7 +1013,7 @@
+ 	optidx = 0;
+ 	static struct option longopts[] = {
+ 		// name, has_arg (1=reqd,2=opt), flag, val
+-		{&quot;all-files&quot;, 0, &amp;allfiles, 1},
++		{&quot;ignore-extension&quot;, 0, &amp;allfiles, 1},
+ 		{&quot;config&quot;, 1, 0, 'c'},
+ 		{&quot;diff&quot;, 0, 0, 'd'},
+ 		{&quot;dump-script&quot;, 0, &amp;dumpscript, 1},
+
+Modified: trunk/test/01-testfile/21-TestVarsABS.test
+===================================================================
+--- trunk/test/01-testfile/21-TestVarsABS.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/01-testfile/21-TestVarsABS.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -8,7 +8,7 @@
+ 	echo TESTFILE: &quot;$TESTFILE&quot;
+ EOL
+ 
+-tmtest $args --all-files -o -q &quot;$tt&quot; &lt;&lt;-EOL | REPLACE &quot;$tt&quot; /tmp/FILE | INDENT
++tmtest $args --ignore-extension -o -q &quot;$tt&quot; &lt;&lt;-EOL | REPLACE &quot;$tt&quot; /tmp/FILE | INDENT
+ 
+ STDOUT:
+     echo MYDIR:    &quot;$MYDIR&quot;
+
+Modified: trunk/test/01-testfile/22-TestVarsRel.test
+===================================================================
+--- trunk/test/01-testfile/22-TestVarsRel.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/01-testfile/22-TestVarsRel.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -9,7 +9,7 @@
+ EOL
+ 
+ cd `dirname &quot;$tt&quot;`
+-tmtest $args --all-files -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
++tmtest $args --ignore-extension -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
+ 
+ STDOUT:
+     echo MYDIR:    &quot;$MYDIR&quot;
+
+Modified: trunk/test/01-testfile/24-TestVarsRoot.test
+===================================================================
+--- trunk/test/01-testfile/24-TestVarsRoot.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/01-testfile/24-TestVarsRoot.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -9,7 +9,7 @@
+ EOL
+ 
+ cd `dirname &quot;$tt&quot;`
+-tmtest $args --all-files -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
++tmtest $args --ignore-extension -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
+ 
+ STDOUT:
+     echo MYDIR:    &quot;$MYDIR&quot;
+
+Modified: trunk/test/03-results/30-Binary.test
+===================================================================
+--- trunk/test/03-results/30-Binary.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/03-results/30-Binary.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -14,7 +14,7 @@
+ echo -e &quot;\\0\\0\\0\\0&quot; &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ ok   /tmp/FILE 
+
+Modified: trunk/test/03-results/31-BinaryFail.test
+===================================================================
+--- trunk/test/03-results/31-BinaryFail.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/03-results/31-BinaryFail.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -14,7 +14,7 @@
+ echo -e &quot;\\0\\0\\0&quot; &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ FAIL /tmp/FILE        O..  stdout differed
+
+Modified: trunk/test/03-results/32-BinaryLarge.test
+===================================================================
+--- trunk/test/03-results/32-BinaryLarge.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/03-results/32-BinaryLarge.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -25,7 +25,7 @@
+ done &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ ok   /tmp/FILE 
+
+Modified: trunk/test/03-results/33-BinaryHuge.test
+===================================================================
+--- trunk/test/03-results/33-BinaryHuge.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/03-results/33-BinaryHuge.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -19,7 +19,7 @@
+ perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}; print &quot;\n&quot;;' &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+-tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+ ok   /tmp/FILE 
+
+Modified: trunk/test/04-diff/02-MultiDiff.test
+===================================================================
+--- trunk/test/04-diff/02-MultiDiff.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/02-MultiDiff.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -18,7 +18,7 @@
+ 	test 2 wrong output
+ EOF
+ 
+-tmtest --all-files -d &quot;$t1&quot; &quot;$t2&quot; | FIX_DIFF
++tmtest --ignore-extension -d &quot;$t1&quot; &quot;$t2&quot; | FIX_DIFF
+ 
+ 
+ STDOUT:
+
+Modified: trunk/test/04-diff/09-MultiLevelDiff.test
+===================================================================
+--- trunk/test/04-diff/09-MultiLevelDiff.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/09-MultiLevelDiff.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -51,7 +51,7 @@
+ EOL
+ 
+ 
+-tmtest --all-files -d | FIX_DIFF
++tmtest --ignore-extension -d | FIX_DIFF
+ 
+ rm -rf t.test one two
+ 
+
+Modified: trunk/test/04-diff/10-Patch.test
+===================================================================
+--- trunk/test/04-diff/10-Patch.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/10-Patch.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -15,7 +15,7 @@
+ # This is a little exotic...  Patch needs the CWD to be the directory
+ # containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
+ 
+-tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++tmtest --ignore-extension -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ echo
+ INDENT &quot;\t&quot; &lt; &quot;$tt&quot;
+
+Modified: trunk/test/04-diff/11-MultiPatch.test
+===================================================================
+--- trunk/test/04-diff/11-MultiPatch.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/11-MultiPatch.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -26,7 +26,7 @@
+ 
+ # All tt* files must be in the same directory.
+ 
+-tmtest --all-files -d &quot;$tt1&quot; &quot;$tt2&quot; &quot;$tt3&quot; | (cd `dirname &quot;$tt1&quot;` &amp;&amp; patch | FIX_PATCH)
++tmtest --ignore-extension -d &quot;$tt1&quot; &quot;$tt2&quot; &quot;$tt3&quot; | (cd `dirname &quot;$tt1&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo
+ INDENT &quot;\t&quot; &lt; &quot;$tt1&quot;
+ echo
+
+Modified: trunk/test/04-diff/12-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/12-MultiLevelPatch.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/12-MultiLevelPatch.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -51,7 +51,7 @@
+ EOL
+ 
+ 
+-tmtest --all-files -d | patch -p0 | FIX_PATCH
++tmtest --ignore-extension -d | patch -p0 | FIX_PATCH
+ echo
+ INDENT &quot;\t&quot; &lt; t.test
+ echo
+
+Modified: trunk/test/04-diff/13-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/13-MultiLevelPatch.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/13-MultiLevelPatch.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -52,7 +52,7 @@
+ 
+ cd two
+ 
+-tmtest --all-files -d .. | patch -p0 | FIX_PATCH
++tmtest --ignore-extension -d .. | patch -p0 | FIX_PATCH
+ echo
+ INDENT &quot;\t&quot; &lt; ../t.test
+ echo
+
+Modified: trunk/test/04-diff/21-PatchNoNL.test
+===================================================================
+--- trunk/test/04-diff/21-PatchNoNL.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/21-PatchNoNL.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -20,7 +20,7 @@
+ # Ignore stderr because we want to ignore the warning that tmtest prints
+ # about the sections not having matching trailing newlines.
+ 
+-tmtest --all-files -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++tmtest --ignore-extension -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+
+Modified: trunk/test/04-diff/22-PatchNoNL2.test
+===================================================================
+--- trunk/test/04-diff/22-PatchNoNL2.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/22-PatchNoNL2.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -27,7 +27,7 @@
+ # Pipe STDERR to /dev/null because we want to ignore the warning that
+ # tmtest prints (other tests ensure the warning works)
+ 
+-tmtest --all-files -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++tmtest --ignore-extension -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+
+Modified: trunk/test/04-diff/23-PatchNoNL3.test
+===================================================================
+--- trunk/test/04-diff/23-PatchNoNL3.test	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/test/04-diff/23-PatchNoNL3.test	2006-03-07 22:26:02 UTC (rev 112)
+@@ -21,7 +21,7 @@
+ # This is a little exotic...  Patch needs the CWD to be the directory
+ # containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
+ 
+-tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++tmtest --ignore-extension -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+
+Modified: trunk/tmtest.pod
+===================================================================
+--- trunk/tmtest.pod	2006-03-07 22:09:11 UTC (rev 111)
++++ trunk/tmtest.pod	2006-03-07 22:26:02 UTC (rev 112)
+@@ -14,20 +14,6 @@
+ 
+ =over 8
+ 
+-=item B&lt;--all-files&gt;
+-
+-Causes tmtest to ignore the name of the testfile while running tests.
+-
+-Normally tmtest only runs files with names that end in &quot;.test&quot;.
+-While this is often a very good thing (you wouldn't want tmtest
+-to try to run just any old random file as a test), sometimes it
+-gets in the way.  For instance, MKFILE offers no control over the
+-name of the file generated.  If you used MKFILE to create a
+-testfile, run tmtest with --all-files and name the testfile explicitly
+-on the command line.
+-
+-See 10-Patch.test for an example.  (TODO: cobble together a better example)
+-
+ =item B&lt;-c&gt; B&lt;--config&gt;
+ 
+ Specifies the config file to be read before running the test file.
+@@ -55,6 +41,12 @@
+ into your test deck.  Make sure you know exactly what you
+ changed, right down to the whitespace.
+ 
++=item B&lt;--ignore-extension&gt;
++
++Normally tmtest only runs files with names that end in &quot;.test&quot;.
++This argument causes tmtest to ignore the name of the testfile
++and run every testfile it's told to.  Be careful!
++
+ =item B&lt;-q&gt; B&lt;--quiet&gt;
+ 
+ Tells tmtest to be quiet while running tests.  tmtest only prints the
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000028.html">[Tmtest-commits] [111] trunk: Repair an 8-byte memory leak (well, depending on how many
+</A></li>
+	<LI>Next message: <A HREF="000030.html">[Tmtest-commits] [113] trunk: Add two tests to check running files named - and -.test.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

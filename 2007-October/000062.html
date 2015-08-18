@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves	turds in /tmp.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B149%5D%20trunk%3A%20Make%20tmtest%20abort%20if%20MKDIR%20leaves%0A%09turds%20in%20/tmp.&In-Reply-To=%3C200710202229.l9KMTbX4007290%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000061.html">
+   <LINK REL="Next"  HREF="000063.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves	turds in /tmp.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B149%5D%20trunk%3A%20Make%20tmtest%20abort%20if%20MKDIR%20leaves%0A%09turds%20in%20/tmp.&In-Reply-To=%3C200710202229.l9KMTbX4007290%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves	turds in /tmp.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Sun Oct 21 00:29:37 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000061.html">[Tmtest-commits] [148] trunk: Update tmtest to latest mutest.
+</A></li>
+        <LI>Next message: <A HREF="000063.html">[Tmtest-commits] [150] trunk/main.c: Fix an uninitialized variable	bug (would cause
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#62">[ date ]</a>
+              <a href="thread.html#62">[ thread ]</a>
+              <a href="subject.html#62">[ subject ]</a>
+              <a href="author.html#62">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 149
+Author:   bronson
+Date:     2007-10-21 00:29:29 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Make tmtest abort if MKDIR leaves turds in /tmp.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/test/02-running/34-Mkdir.test
+    trunk/tmlib.sh
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-10-20 19:38:59 UTC (rev 148)
++++ trunk/TODO	2007-10-20 22:29:29 UTC (rev 149)
+@@ -1,4 +1,6 @@
+ 0.96:
++- Disabled tests are not ignored when running tmtest -d?
++  /home/bronson/workspace-tmtest/tmtest/test/02-running/50-OpenFDsTest.test
+ - The installed .tmtestrc has, at the very top:
+   # This is the system-wide configuration file for tmtest.
+   Uh, no.  It's certainly not system-wide!
+
+Modified: trunk/test/02-running/34-Mkdir.test
+===================================================================
+--- trunk/test/02-running/34-Mkdir.test	2007-10-20 19:38:59 UTC (rev 148)
++++ trunk/test/02-running/34-Mkdir.test	2007-10-20 22:29:29 UTC (rev 149)
+@@ -6,7 +6,7 @@
+ dn=`mktemp -d -t`
+ 
+ cd &quot;$TESTDIR&quot;
+-$tmtest $cfg -q - &lt;&lt;-EOL
++$tmtest $cfg -q - &lt;&lt;-EOL | sed 's/MKDIR: .* was not empty/MKDIR: TMPDIR was not empty/'
+ 
+ 	# normally we run tests in pedantic mode, where any single error
+ 	# will cause the test to bail and return a nonzero result code.
+@@ -55,9 +55,9 @@
+ 
+ 
+ STDOUT:
+-ok   (STDIN) 
++ABRT (STDIN)                   MKDIR: TMPDIR was not empty, cant delete it!
+ 
+-1 test run, 1 success, 0 failures.
++1 test run, 0 successes, 1 failure.
+ 
+ Dir still exists after test ran.  Good.
+ Directory was successfully deleted.
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2007-10-20 19:38:59 UTC (rev 148)
++++ trunk/tmlib.sh	2007-10-20 22:29:29 UTC (rev 149)
+@@ -204,7 +204,7 @@
+ 	fi
+ 
+ 	eval &quot;$1='$name'&quot;
+-	ATEXIT &quot;rmdir '$name'&quot;
++	ATEXIT &quot;rmdir '$name' || ABORT 'MKDIR: '$name' was not empty, can't delete it!&quot;
+ }
+ 
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000061.html">[Tmtest-commits] [148] trunk: Update tmtest to latest mutest.
+</A></li>
+	<LI>Next message: <A HREF="000063.html">[Tmtest-commits] [150] trunk/main.c: Fix an uninitialized variable	bug (would cause
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#62">[ date ]</a>
+              <a href="thread.html#62">[ thread ]</a>
+              <a href="subject.html#62">[ subject ]</a>
+              <a href="author.html#62">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

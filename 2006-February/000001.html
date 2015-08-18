@@ -1,0 +1,2586 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [84] TRUNK: Added --no-trailing-newline, cleaned some things up
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B84%5D%20TRUNK%3A%20Added%20--no-trailing-newline%2C%20cleaned%20some%20things%20up&In-Reply-To=%3C200602272300.k1RN0aQ3007636%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000002.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [84] TRUNK: Added --no-trailing-newline, cleaned some things up</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B84%5D%20TRUNK%3A%20Added%20--no-trailing-newline%2C%20cleaned%20some%20things%20up&In-Reply-To=%3C200602272300.k1RN0aQ3007636%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [84] TRUNK: Added --no-trailing-newline, cleaned some things up">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Feb 28 00:00:36 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000002.html">[Tmtest-commits] [85] TRUNK: Make a simple rename, break the build.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1">[ date ]</a>
+              <a href="thread.html#1">[ thread ]</a>
+              <a href="subject.html#1">[ subject ]</a>
+              <a href="author.html#1">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 84
+Author:   bronson
+Date:     2006-02-28 00:00:34 +0100 (Tue, 28 Feb 2006)
+
+Log Message:
+-----------
+Added --no-trailing-newline, cleaned some things up
+
+Modified Paths:
+--------------
+    TRUNK/BUGS
+    TRUNK/CHANGES
+    TRUNK/Makefile
+    TRUNK/TODO
+    TRUNK/compare.c
+    TRUNK/compare.h
+    TRUNK/matchval.h
+    TRUNK/re2c/read.c
+    TRUNK/re2c/scan.h
+    TRUNK/test/01-testfile/10-DumpScript.test
+    TRUNK/test/02-running/00-Empty.test
+    TRUNK/test/02-running/11-Assert.test
+    TRUNK/test/02-running/13-DisabledDir.test
+    TRUNK/test/02-running/14-AbortConf.test
+    TRUNK/test/02-running/15-DisabledDir.test
+    TRUNK/test/02-running/16-ConfigError.test
+    TRUNK/test/02-running/18-TestError.test
+    TRUNK/test/02-running/21-QuoteFile.test
+    TRUNK/test/03-results/02-Nstdout.test
+    TRUNK/test/03-results/09-NoNL.test
+    TRUNK/test/03-results/20-Modify.test
+    TRUNK/test/03-results/21-Modify.test
+    TRUNK/test/04-diff/00-NoDiff.test
+    TRUNK/test/04-diff/02-MultiDiff.test
+    TRUNK/test/04-diff/09-MultiLevelDiff.test
+    TRUNK/test/04-diff/10-Patch.test
+    TRUNK/test/04-diff/11-MultiPatch.test
+    TRUNK/test/04-diff/12-MultiLevelPatch.test
+    TRUNK/test/04-diff/13-MultiLevelPatch.test
+    TRUNK/test.c
+    TRUNK/tfscan.c
+    TRUNK/tfscan.h
+    TRUNK/tmtest.conf
+
+Added Paths:
+-----------
+    TRUNK/examples/
+    TRUNK/examples/README
+    TRUNK/examples/docs/
+    TRUNK/examples/docs/Modify1.test
+    TRUNK/examples/docs/Modify2.test
+    TRUNK/examples/docs/Modify3.test
+    TRUNK/examples/tutorial/
+    TRUNK/examples/tutorial/20-ArgSuppressNL.test
+    TRUNK/test/01-testfile/08-GarbageInStdout.test
+    TRUNK/test/01-testfile/09-GarbageInStderr.test
+    TRUNK/test/03-results/01-Ystderr.test
+    TRUNK/test/03-results/02-Nstderr.test
+    TRUNK/test/03-results/03-Nstderr.test
+    TRUNK/test/03-results/04-Nstderr.test
+    TRUNK/test/03-results/09-NoNLMod.test
+    TRUNK/test/03-results/09-NoNLStderr.test
+    TRUNK/test/03-results/10-NoNLErrFail.test
+    TRUNK/test/03-results/10-NoNLFFail.test
+    TRUNK/test/03-results/10-NoNLFail.test
+    TRUNK/test/03-results/11-NoNLOutput.test
+    TRUNK/test/03-results/11-NoNLOutput2.test
+    TRUNK/test/03-results/12-0pre.test
+    TRUNK/test/03-results/12-NoNLTwice.test
+    TRUNK/test/03-results/12-NoNLTwiceErr.test
+    TRUNK/test/03-results/13-MultiNL.test
+    TRUNK/test/03-results/13-MultiNL2.test
+    TRUNK/test/03-results/13-MultiNL2Err.test
+    TRUNK/test/03-results/13-MultiNLErr.test
+    TRUNK/test/README
+
+Removed Paths:
+-------------
+    TRUNK/tfscan.re
+    TRUNK/tutorial/
+Modified: TRUNK/BUGS
+===================================================================
+--- TRUNK/BUGS	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/BUGS	2006-02-27 23:00:34 UTC (rev 84)
+@@ -2,16 +2,18 @@
+ word &quot;Disabled&quot; in its stderr.  If you blindly pipe this diff to patch,
+ it will destroy the output section of your test file.  This is easy enough
+ to fix -- just re-enable the test and patch it again.  This will be
+-fixed in tmtest 2.2 when we parse the status file asynchronously.
++fixed in tmtest 1.2 when we parse the status file asynchronously.  We
++will notice that the test is disabled and refuse to produce the diff.
+ 
+ 
+-Bash Bugs:
++Bash Gotchas:
+ 
++
+ Bash3 has removed the ability to set LINENO, so you may see the
+-wrong line number be printed if there's an error.  The workaround
+-suggested by the Bash author is far too large and complex.
+-Downgrading to Bash2 works much better.  I don't understand why
+-this functionality was removed in the first place!
++wrong line number be printed if there's an error.  If you want to
++see the correct line numbers, use Bash2.  It's an unfortunate
++regression but since it only affects tests scripts being piped
++on stdin it won't affect many people.
+ 
+ 
+ The &lt;&lt;-EOL operator strips ALL tabs from the front of each line.
+@@ -24,13 +26,16 @@
+ 	EOL
+ 
+ The first heredoc flattens everything and then the EOLs get mixed up.
+-What bash SHOULD do is discover the whitespace sequence indenting the
+-first line of a heredoc, then remove that sequence from all subsequent
+-lines.  If a line doesn't begin with exactly that sequence, then
+-it is unchanged.  This would be much safer and more useful than just
+-blowing away all tabs wholesale!
++What bash *SHOULD* do (and what tmtest did before it was integrated
++with Bash) is discover the whitespace sequence indenting the
++first line of a heredoc, then remove exactly that sequence from all
++subsequent lines.  If a line doesn't begin with that sequence, then
++it is unchanged.  This is safer and more useful than just blowing away
++all tabs wholesale!
+ 
+ 
++Bashisms:
++
+ Why does &amp;&gt; redirect both stdout and stderr to a file, but &amp;| doesn't
+ redirect both stdout and stderr to a pipe?
+ 
+
+Modified: TRUNK/CHANGES
+===================================================================
+--- TRUNK/CHANGES	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/CHANGES	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,4 +1,14 @@
+-- Get rid of all AUTHOR and DATE automation.  Too heavyhanded.
++- rename TRUNK to trunk
++- write some tests to ensure diff works with files that don't end in CR.
++- Fix 99-Misc.
++- move INDENT from 04-diff into the stdlib.  Add to docs.
++- Eradicate the MODIFY clause from the documentation.  Mark it deprecated.
++----
++- Bash3 has made it so that the RE can no longer appear on the same line as
++  the MODIFY command.  I updated all tests and accelerated MODIFY deprecation.
++- Added -n (--no-trailing-newline) capability to STDOUT and STDERR sections.
++- Rewrote the re2c parser in C so we should now be totally binary transparent.
++- Got rid of all AUTHOR and DATE automation.  Too heavyhanded.
+ - Standardized licensing: everything under my control is MIT, package is LGPL.
+ - When installing locally, it's ~/.tmlib.sh instead of ~/share/tmtest/tmlib.sh
+ - Bump to 0.92
+
+Modified: TRUNK/Makefile
+===================================================================
+--- TRUNK/Makefile	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/Makefile	2006-02-27 23:00:34 UTC (rev 84)
+@@ -55,9 +55,9 @@
+ %.o: %.c
+ 	$(CC) -g -c $&lt; -o $@
+ 
+-
++.PHONY: test
+ test: tmtest
+-	tmtest --config=./tmtest.conf test
++	./tmtest test
+ 
+ run: tmtest
+ 	./tmtest
+
+Modified: TRUNK/TODO
+===================================================================
+--- TRUNK/TODO	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/TODO	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,29 +1,13 @@
+-1.0:
+-- Add to faq: limitation on line length when using MODIFY clause.
+-  (MODIFY is memory-based, so a single line must fit into memory).
+-  If you're working with big testfiles, don't use MODIFY.
+-  - No, we fucking line buffer everything thanks to the scanner.
+-  - I'd say it's time to hand-code the scanners so they don't
+-    have to be line-buffered.  There's nothing we can do about MODIFY
+-	of course.
+-- Why is compare_continue not called??
+-	Somehow we abandon the newline on the input buffer.
+-	The problem is that the scanner REQUIRES a newline on the end.
+-	    Shit, I wonder if it's time to just junk the scanner entirely.
+-- what do we do when stdout is missing a newline at the end?
+-  Test that both raw and modified work when stdout doesn't have a newline.
+-  Check that diff works too.
+-- Make &quot;make test&quot; work.
++0.94:
++- An empty test with a STDOUT clause should fail without the -n right?
++  I mean, there's no newline in the actual output, but there is in the
++  expected...
++- Add tests for binary transparency.
+ - write tests for nesting testfiles with --config.
+         // If the user specifies a config file, we only check directories
+         // not above the given config file.  i.e. if user specifies
+         // &quot;tmtest -c /a/b/cc /a/t/u/t.test&quot;, we will look for config files
+         // in /a/t/tmtest.conf and /a/t/u/tmtest.conf.
+-- merge tmtestlib and tmtestrc.  They're now basically the same file.
+-- get rid of all the exit(10) calls in test.c.  We need a better way to
+-  abort the test.
+-  should get rid of a whole bunch in main.c as well.
+-  this should prevent us from dropping turds in /tmp all the time too.
+ - Add the ability to specify test arguments on the command line.
+   I'm picturing something where VAR=val on the command line would be
+   inserted without change into the template.  That way you can use the
+@@ -31,65 +15,74 @@
+   - This would allow us to test almost every test to ensure it
+     supports the --config argument (make them DISABLED or something).
+ 
+-1.2:
++0.96:
+ - stdin is all buggered up.  why is it that &quot;cat&quot; with no args will print
+   the rest of the test script?  And why is it that if you fork, diff freezes?
+   They're related problems I suspect.
+-- Could take tests from tarfiles.  We would decompress the tarfile into
+-  a temporary directory, run the test, and delete the tarfile.  This will
+-  make it easier to maintain tests that all need to be run in a certain
+-  directory hierarchy.
++    Is it because I'm forgetting to close all open filehandles before forking?
+ - Tighten up printing a folder name when there are no testfiles in it.
+   No need for double spacing.
+-- Change the I/O scheme to be event based.  Get rid of the tempfiles.
+-  Convert to using the async io library.  Don't use temporary files.
+-  This would allow us to recognize that the test is disabled before
+-  producing a partial diff, blowing away output sections.
+-  - I'd say it's time to hand-code the scanners so they don't
+-    have to be line-buffered.  There's nothing we can do about MODIFY
+-	of course.  But don't line-buffer if we don't have to.  Should
+-	simplify things quite a bit to get rid of re2c.
+ - Add the ability to run multiple tests from one testfile.
+   See tmtest 0.8 for a potential implementation of this.
+   All we'd need to add is a framework to notify the user that multiple
+   tests are in progress; bash can take care of the rest.
+-- add the ability to run valgrind over each test and print success/failure
+-  of that.  (gives deep valgrind coverage)
+-  - One problem with this will be all the false warnings.
+-- add gcov support so you can see what sort of coverage your tests provide.
+ - Shouldn't run every test in a dir if the DISABLED directive is in a config
+   file.
+   Should discover what dir the DISABLED directive came from and refuse
+   to run anything below that.
+   - Yes, if a config file returns DISABLED, then that folder and all its
+-    subfolders are skipped.  Just make the test itself return the DISABLED
++    subfolders are skipped.  Just make the test itself call the DISABLED
+ 	command if you want testing to continue in that subfolder.
+ 
++0.98:
++- Change the I/O scheme to be event based.  Get rid of the tempfiles.
++  Convert to using the async io library.  Don't use temporary files.
++  This would allow us to recognize that the test is disabled before
++  producing a partial diff, blowing away output sections.
++- Use i/o lib for everything.  No need for temp files.
++  This means that we stream everything EXCEPT stderr, which we memory
++  buffer.  If your stderr is more than 100K or so in size, just redirect
++  it to stdout.
++
++2.0:
++- get rid of all the exit(10) calls in test.c.  We need a better way to
++  abort the test.
++  should get rid of a whole bunch in main.c as well.
++  this should prevent us from dropping turds in /tmp all the time too.
++- Get rid of MODIFY clauses.  It's unnecessary complexity.
++  And it's a LOT.  First remove it from the tests, then from the code.
++
+ ?:
+-- should probably indent stdout and stderr clauses two spaces.  otherwise
+-  we might misinterpret STDOUT: and STDERR: in a stdout or stderr clause.
+-  - True, but this is easy enough to mock with a MODIFY clause.  The
+-    downside to this is that 
+-- Provide some sort of automatable XML output.
++- add gcov support so you can see what sort of coverage your tests provide.
++- Provide some sort of automatable XML output?
++- Could take tests from tarfiles.  We would decompress the tarfile into
++  a temporary directory, run the test, and delete the tarfile.  This will
++  make it easier to maintain tests that all need to be run in a certain
++  directory hierarchy.
++- add the ability to run valgrind over each test and print success/failure
++  of that.  (gives deep valgrind coverage)
++  - One problem with this will be all the false warnings.
++
++No longer a problem when we dump pcrs:
+ - allow multiple s/// expressions on a single line.  will probably require
+   modifications to pcrs_compile_command, so make it support buf/len at the
+   same time.  These might be non-trivial changes...
+ - it's stupid to dup the str just to null-terminate it so it can be passed
+   to pcrs.  Modify pcrs to compile buffers too.
++- Unify the line modifier in compare.c and test.c.  It's hackish now.
++- Wow, the pcrs error messages truly suck.  Is there any way to improve them?
++  &quot;(pcrs:) Syntax error while parsing command (-11).&quot;
++- add a CLEAR_EACHLINE or CLEAR_MODIFY option to to turn off all substitutions.
++  It would be easy to do.  I'm just not convinced that anyone would find it
++  useful.
+ 
+ ????:
+-- Unify the line modifier in compare.c and test.c.  It's hackish now.
+ - There should be a way to repeatedly run a single test with only tiny
+   differences.  i.e. test all permeutations of DISABLE DISABLE:
+   DISABLED DISABLED:  Hopefully that will clean up 05-08-Disable/Abort.test
+-- Add a timeout that will terminate stalled tests.  You can set the timeout in the config file.
++- Add a timeout that will terminate stalled tests.  You can set the timeout
++  in the config file or the test itself.
+ 
+-
+-
+-- Wow, the pcrs error messages suck.  Is there any way to improve them?
+-  &quot;(pcrs:) Syntax error while parsing command (-11).&quot;
+-
+-
+ maybe never:
+ - Add STDOUT: trimws and STDERR: trimws - to trim whitespace from
+   the front of each output line.
+@@ -98,6 +91,8 @@
+   realize that this problem is pretty much solved from the other direction.
+   Instead of removing indentation from the heredoc, simply add indentation
+   using a MODIFY section (as detailed in the FAQ).
+-- add a CLEAR_EACHLINE or CLEAR_MODIFY option to to turn off all substitutions.
+-  It would be easy to do.  I'm just not convinced that anyone would find it useful.
+-
++- Add a &quot;FAILURE-OK&quot; flag for when failure IS an option.  This would print
++  that the test failed, but would not highlight it, and would not count
++  either positively or negatively toward the test results.  That way you
++  can include experimental tests in a production test stack (say you're
++  developing a test and want to know if it's a good idea...)
+
+Modified: TRUNK/compare.c
+===================================================================
+--- TRUNK/compare.c	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/compare.c	2006-02-27 23:00:34 UTC (rev 84)
+@@ -41,6 +41,8 @@
+ 	const char *pbuf;
+ 	int pcursor;
+ 	int plimit;
++    int no_trailing_newline;
++    int nl_suppressed;
+ } compare_state;
+ 
+ 
+@@ -60,7 +62,7 @@
+ }
+ 
+ 
+-void compare_attach(scanstate *ss, matchval *mv, pcrs_job *jobs)
++void compare_attach(scanstate *ss, matchval *mv, pcrs_job *jobs, int nonl)
+ {
+ 	compare_state *cmp = malloc(sizeof(compare_state));
+ 	if(cmp == NULL) {
+@@ -73,10 +75,13 @@
+ 
+ 	cmp-&gt;output = mv;
+ 	cmp-&gt;jobs = jobs;
+-	ss-&gt;scanref = cmp;
++    cmp-&gt;no_trailing_newline = nonl;
++    cmp-&gt;nl_suppressed = 0;;
++    ss-&gt;scanref = cmp;
+ }
+ 
+ 
++
+ static void compare_continue_bytes(scanstate *ss, const char *ptr, int len)
+ {
+     int n;
+@@ -92,7 +97,6 @@
+                 exit(10);
+             }
+             if(n == 0) {
+-				// there's more input data but we're at eof.
+                 compare_halt(ss, match_no);
+                 return;
+             }
+@@ -195,9 +199,8 @@
+ 				exit(10);
+ 			}
+ 			if(n == 0) {
+-				// there's more input data but we're at eof.
+-				compare_halt(ss, match_no);
+-				return;
++                compare_halt(ss, match_no);
++                return;
+ 			}
+ 
+ 			p = memchr(ss-&gt;cursor, '\n', ss-&gt;limit - ss-&gt;cursor);
+@@ -237,6 +240,25 @@
+         return;
+     }
+ 
++    assert(len &gt;= 0);
++
++    if(cmp-&gt;no_trailing_newline) {
++        // If the incoming buffer ends in a nl, we need to suppress it
++        // for the comparison.  Note that this won't work well for
++        // MODIFY clauses but I don't care because MODIFY will never
++        // work with -n and, anyway, MODIFY is about to disappear.
++
++        if(cmp-&gt;nl_suppressed) {
++            compare_continue_bytes(ss, &quot;\n&quot;, 1);
++            cmp-&gt;nl_suppressed = 0;
++        }
++
++        if(ptr[len-1] == '\n') {
++            cmp-&gt;nl_suppressed = 1;
++            len -= 1;
++        }
++    }
++
+ 	if(cmp-&gt;jobs) {
+ 		compare_continue_lines(ss, cmp, ptr, len);
+ 	} else {
+@@ -267,7 +289,7 @@
+ 	}
+ 
+ 	// if we have no data left in the scan buffer
+-	if(ss-&gt;limit - ss-&gt;cursor == 0) {
++	if(ss-&gt;cursor == ss-&gt;limit) {
+ 		// and our input file is at eof
+ 		if(compare_fill(ss) == 0) {
+ 			// then the two data streams match
+
+Modified: TRUNK/compare.h
+===================================================================
+--- TRUNK/compare.h	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/compare.h	2006-02-27 23:00:34 UTC (rev 84)
+@@ -18,7 +18,7 @@
+ #define compare_in_progress(ss) ((ss)-&gt;scanref)
+ 
+ 
+-void compare_attach(scanstate *ss, matchval *mv, pcrs_job *joblist);
++void compare_attach(scanstate *ss, matchval *mv, pcrs_job *joblist, int nonl);
+ void compare_continue(scanstate *ss, const char *ptr, int len);
+ void compare_end(scanstate *cmp);
+ 
+
+Added: TRUNK/examples/README
+===================================================================
+--- TRUNK/examples/README	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/examples/README	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,5 @@
++This directory contains many examples of testfiles.
++
++docs -- testfiles used as examples in the tmtest documentation.
++tutorial -- testfiles used as examples in the tmtest tutorial.
++
+
+Added: TRUNK/examples/docs/Modify1.test
+===================================================================
+--- TRUNK/examples/docs/Modify1.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/examples/docs/Modify1.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,5 @@
++echo RESULT
++MODIFY:
++   s/^(.)/   $1/
++STDOUT:
++   RESULT
+
+Added: TRUNK/examples/docs/Modify2.test
+===================================================================
+--- TRUNK/examples/docs/Modify2.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/examples/docs/Modify2.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,7 @@
++# This is from <A HREF="http://tmtest.berlios.de/wiki/index.php/MODIFY">http://tmtest.berlios.de/wiki/index.php/MODIFY</A>
++
++echo RESULT
++MODIFY:
++   s/^RESULT/xRESULT/
++STDOUT:
++xRESULT
+
+Added: TRUNK/examples/docs/Modify3.test
+===================================================================
+--- TRUNK/examples/docs/Modify3.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/examples/docs/Modify3.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,7 @@
++# This is from <A HREF="http://tmtest.berlios.de/wiki/index.php/MODIFY">http://tmtest.berlios.de/wiki/index.php/MODIFY</A>
++
++date
++MODIFY:
++  s/... +... +[0-9][0-9] +[0-9]?[0-9]:[0-9][0-9]:[0-9][0-9] +... +20[0-9][0-9]/date date date/
++STDOUT:
++date date date
+
+Copied: TRUNK/examples/tutorial (from rev 81, TRUNK/tutorial)
+
+Added: TRUNK/examples/tutorial/20-ArgSuppressNL.test
+===================================================================
+--- TRUNK/tutorial/20-ArgSuppressNL.test	2005-12-21 01:42:47 UTC (rev 81)
++++ TRUNK/examples/tutorial/20-ArgSuppressNL.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,3 @@
++echo -n &quot;No newline&quot;
++STDOUT:
++No newline
+\ No newline at end of file
+
+Modified: TRUNK/matchval.h
+===================================================================
+--- TRUNK/matchval.h	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/matchval.h	2006-02-27 23:00:34 UTC (rev 84)
+@@ -9,7 +9,7 @@
+ 
+ 
+ /**
+- * Simply a tristate that tells whether something
++ * a tristate that tells whether something
+  *    - matches
+  *    - doesn't match
+  *    - hasn't been checked yet.
+
+Modified: TRUNK/re2c/read.c
+===================================================================
+--- TRUNK/re2c/read.c	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/re2c/read.c	2006-02-27 23:00:34 UTC (rev 84)
+@@ -22,6 +22,17 @@
+  * Returns the number of bytes available to read in the buffer.
+  */
+ 
++/* TODO: could optimize for the fast case (no data that needs
++ * to be shifted).  However, there's no burning need -- it wouldn't
++ * offer much speedup  Bigger buffers would help a lot more.
++ * NOTE: the middle line of this macro is incomplete!  Don't use!
++
++#define read_shiftbuf(ss) (ss-&gt;token == ss-&gt;limit ? \
++    (ss-&gt;token = ss-&gt;cursor = ss-&gt;bufptr, 0) : \
++    _read_shiftbuf(ss)) 
++
++ */
++
+ int read_shiftbuf(scanstate *ss)
+ {
+     int cnt = ss-&gt;token - ss-&gt;bufptr;
+
+Modified: TRUNK/re2c/scan.h
+===================================================================
+--- TRUNK/re2c/scan.h	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/re2c/scan.h	2006-02-27 23:00:34 UTC (rev 84)
+@@ -3,6 +3,12 @@
+  * 27 Dec 2004
+  *
+  * This part of support code to make writing re2c scanners much easier.
++ *
++ * TODO: probably want to split the re2c-specific code from the general
++ * code.  This file is overall very useful, but it's got a few limitations
++ * imposed by re2c that should probably be placed in its own layer.
++ * That way, future versions of re2c won't have to suffer the same
++ * limitations.
+  */
+ 
+ /** @file scan.h
+@@ -53,21 +59,32 @@
+ #define YYLIMIT     (ss-&gt;limit)
+ #define YYMARKER    (ss-&gt;marker)
+ 
+-// This routine needs to force a return if 0 bytes were read because
+-// otherwise we might end up scanning garbage waaay off the end of
+-// the buffer.  We ignore n because there can be cases where there
+-// are less than n bytes left in the file, but it's perfectly valid
+-// data and one or more tokens will match.  n is useless (right?).
+-// We also don't want to return prematurely.  If there's still data
+-// in the buffer, even if the read returned 0, we'll continue parsing.
+-// But, if read is at eof and there's no data left in the buffer, then
+-// there's nothing to do BUT return 0.
++/** Fills the scan buffer with more data.
++ *
++ * This routine needs to force a return if 0 bytes were read because
++ * otherwise the re2c scanner will end up scanning garbage way off
++ * the end of the buffer.  There's no (good) way to tell the scanner
++ * &quot;the file is at eof so just finish the token that you're on&quot; (right?).
++ * It will always lose the token at the end of the file unless the file
++ * ends in a token delimiter (usually a newline).
++ *
++ * We ignore n because there can be less than n bytes left in the file,
++ * yet one or more tokens will still match.  Therefore, we should always
++ * read as much data as we can, and we should return success even if we
++ * have less than n bytes in the buffer.  N is totally useless.
++ *
++ * The last line is the limitation.  If it weren't there, YYFILL would
++ * return with an empty buffer so re2c would know it's at EOF and
++ * shut down gracefully.  But re2c can't handle that.
++ *
++ * If you're using the re2c lib but writing your own re2c scanners,
++ * call ss-&gt;read directly.
++ */
+ 
+ #define YYFILL(n)   do { \
+ 		int r = (*ss-&gt;read)(ss); \
+-		if(r &lt;= 0 &amp;&amp; (ss)-&gt;cursor &gt;= (ss)-&gt;limit) { \
+-			return r; \
+-		} \
++		if(r &lt; 0) return r; \
++		if((ss)-&gt;cursor &gt;= (ss)-&gt;limit) return 0; \
+ 	} while(0);
+ 
+ 
+@@ -83,6 +100,14 @@
+  * first shift the pointers in ss to make room (see read_shiftbuffer())
+  * then load new data into the unused bytes at the end of the buffer.
+  *
++ * I chose the shift technique over a ringbuffer because we should rarely
++ * have to shift data.  If you find that your file has gigantic tokens
++ * and you're burning a lot of cpu shifting partial tokens from the end
++ * of the buffer to the start, you might want to use a ring buffer instead
++ * of a shift buffer.  However, re2c itself can't handle ringbuffers or
++ * split tokens (nor can most scanners that I'm aware of), so shift
++ * buffers are the best we can do.
++ *
+  * This routine returns 0 when there's no more data (EOF).
+  * If it returns a value less than 0, that value will be returned
+  * to the caller instead of a token.  This can indicate an error
+@@ -97,8 +122,17 @@
+  * ensure that you don't
+  * accidentally end up modifying the buffer as it's being scanned.
+  * This means that your read routine must cast them to be mutable
+- * (char*) before reading them.  Only the readproc may modify the
++ * (char*) before reading them.  Only the readproc should modify the
+  * data that's in the scan buffer.
++ *
++ * The caller assumes that the read routine will always fill the buffer
++ * up as much as possible.  Therefore, if the buffer isn't entirely full,
++ * then it knows that the EOF is probably at the end of the data.  This
++ * is a fine assumption for files but not so good for pipes, network
++ * sockets, anything that is packetized or works in realtime.  It would
++ * take a rewrite of re2c to remove this limitation. So, yes, your
++ * scanner can assume that the read routine will always fill the buffer
++ * up as much as it possibly can.
+  */
+ 
+ typedef int (*readproc)(struct scanstate *ss);
+@@ -134,7 +168,7 @@
+  * to cast the pointers to be nonconst.
+  */
+ 
+-typedef struct scanstate {
++struct scanstate {
+     const char *cursor; ///&lt; The current character being looked at by the scanner
+     const char *limit;  ///&lt; The last valid character in the current buffer.  If the previous read was short, then this will not point to the end of the actual buffer (bufptr + bufsiz).
+     const char *marker; ///&lt; Used internally by re2c engine to handle backtracking.
+@@ -151,11 +185,12 @@
+     readproc read;      ///&lt; The routine the scanner calls when the buffer needs to be reread.
+ 
+     void *scanref;      ///&lt; Data specific to the scanner
+-    scanproc state;     ///&lt; some scanners are made up of multiple individual scan routines.  They store their state here.
++    scanproc state;     ///&lt; The entrypoint for the scanning routine.  The name is now anachronistic but might still fit (some scanners are made up of multiple individual scan routines -- they store their state here).
+ 
+     void *userref;      ///&lt; Never touched by any of our routines (except scanstate_init, which clears both fields).  This can be used to associate a parser with this scanner.
+     void *userproc;     ///&lt; That's just a suggestion though.  These fields are totally under your control.
+-} scanstate;
++};
++typedef struct scanstate scanstate;
+ 
+ 
+ void scanstate_init(scanstate *ss, const char *bufptr, int bufsiz);
+@@ -166,11 +201,11 @@
+  *
+  * How what this macro does:
+  *
+- * If the reader has already marked the stream at eof, then we're finished.
+- * Otherwise, if there's still more data in the buffer, then we're not
+- * finished.  Finally, if there's no data in the buffer but we're not at
+- * eof, then we need te execute a read to determine.  If the read doesn't
+- * return any data, then we're finished.
++ * If there's still more data in the buffer, then we're not finished.
++ * If there's no data in the buffer and we're at EOF, then we're finished.
++ * If there's no data in the buffer but we're not at eof, then we need
++ * to execute a read to see if there's more data available.  If so, we're
++ * not finished.  Otherwise, we're all done.
+  */
+ 
+ #define scan_finished(ss) \
+@@ -183,6 +218,7 @@
+  */
+ 
+ #define scan_token(ss) ((*((ss)-&gt;state))(ss))
++#define scan_next_token(ss) ((*((ss)-&gt;state))(ss))
+ 
+ 
+ /** Returns a pointer to the first character of the
+@@ -190,6 +226,7 @@
+  */
+ 
+ #define token_start(ss) ((ss)-&gt;token)
++#define current_token_start(ss) ((ss)-&gt;token)
+ 
+ /** Returns a pointer to one past the last character of the
+  *  most recently scanned token.
+@@ -198,13 +235,22 @@
+  */
+ 
+ #define token_end(ss) ((ss)-&gt;cursor)
++#define current_token_end(ss) ((ss)-&gt;cursor)
+ 
+ /** Returns the length of the most recently scanned token.
+  */
+ 
+ #define token_length(ss) ((ss)-&gt;cursor - (ss)-&gt;token)
++#define current_token_length(ss) ((ss)-&gt;cursor - (ss)-&gt;token)
+ 
++/** Returns the current token in a malloc'd buffer.
++ * (just calls strdup(3) internally).
++ */
+ 
++#define token_dup(ss) strndup(token_start(ss), token_length(ss))
++#define current_token_dup(ss) token_dup(ss)
++
++
+ /** Pushes the current token back onto the stream
+  *
+  * Calling scan_pushback returns the scanner to the state it had
+@@ -215,15 +261,28 @@
+  * Note that this only works once.  You cannot push multiple tokens back
+  * into the scanner.  Also, the scanner may have internal state of its
+  * own that does not get reset.  If so, the scanner may or may not provide
+- * a routine to back its state up as well.
++ * a routine to back its internal state up as well.  Beware!!
+  *
+  * Finally, this doesn't back the line number up.  If you're pushing
+  * a token back and you care about having the correct line nubmer,
+- * then you'll have to restore the line number to what it was before
+- * you scanned the token that you're pushing back.
++ * then you'll have to manually restore the line number to what it
++ * was before you scanned the token that you're pushing back.
+  *
+- * Yes, it takes some pretty serious research to call this function safely.
+- * However, when you need to, it can be amazingly useful.
++ * i.e.
++ *
++ *     // First ensure that the scanner you're using doesn't
++ *     // have internal state that will be screwed up if you
++ *     // re-scan the current token!
++ *
++ *     oldline = ss-&gt;line;
++ *     tok = scan_token(ss);
++ *     if(tok == push_me_back) {
++ *         scan_pushback(ss);
++ *         ss-&gt;line = oldline;
++ *     }
++ *
++ * Yes, it takes some effort to call this function safely.
++ * But it can be worth it when you need it.
+  */
+ 
+ #define scan_pushback(ss) ((ss)-&gt;cursor = (ss)-&gt;token)
+@@ -232,18 +291,18 @@
+ /** Sets the current line number in the scanner to the given value.
+  */
+ 
+-#define set_line(ss,n) (ss-&gt;line=(n));
++#define scan_set_line(ss,n) (ss-&gt;line=(n));
+ 
+ 
+ /** Increments the current line number by 1.
+  */
+ 
+-#define inc_line(ss)   (ss-&gt;line++);
++#define scan_inc_line(ss)   (ss-&gt;line++);
+ 
+ 
+-/** This should be called by ever scanproc
+- *
+- * This prepares the scanstate to scan a new token.
++/**
++ * Prepares the scanner to scan a new token.
++ * This should be called at the beginning of every scanproc.
+  */
+ 
+ #define scanner_enter(ss) ((ss)-&gt;token = (ss)-&gt;cursor)
+
+Added: TRUNK/test/01-testfile/08-GarbageInStdout.test
+===================================================================
+--- TRUNK/test/01-testfile/08-GarbageInStdout.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/01-testfile/08-GarbageInStdout.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,16 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that we recognize when the stdout clause contains garbage.
++
++tmtest -q - &lt;&lt;-EOL
++    echo crapola
++	STDOUT: crapola
++    crapola
++EOL
++STDERR:
++(STDIN) line 2: unknown arguments &quot;crapola&quot;
++STDOUT:
++FAIL (STDIN)                   O..  stdout differed
++
++1 test run, 0 successes, 1 failure.
+
+Added: TRUNK/test/01-testfile/09-GarbageInStderr.test
+===================================================================
+--- TRUNK/test/01-testfile/09-GarbageInStderr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/01-testfile/09-GarbageInStderr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,18 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that we recognize when the stdout clause contains garbage.
++
++tmtest -q - &lt;&lt;-EOL
++    echo crapola
++    echo crapola
++    echo crapola
++	STDERR: crapola
++    crapola
++EOL
++STDERR:
++(STDIN) line 4: unknown arguments &quot;crapola&quot;
++STDOUT:
++FAIL (STDIN)                   OE.  stdout and stderr differed
++
++1 test run, 0 successes, 1 failure.
+
+Modified: TRUNK/test/01-testfile/10-DumpScript.test
+===================================================================
+--- TRUNK/test/01-testfile/10-DumpScript.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/01-testfile/10-DumpScript.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,6 +1,6 @@
+ # Ensures that the dumpscript is what we expect.
+ # This is just so we don't surprise ourselves...  Any time you modify
+-# template.sh, you should expect test to fial.
++# template.sh, you should expect test to fail.
+ 
+ tmtest $args --dump-script - &lt;&lt;-EOL
+ THE-SCRIPT THE-SCRIPT THE-SCRIPT 1
+@@ -9,8 +9,9 @@
+ THE-SCRIPT THE-SCRIPT THE-SCRIPT 4
+ EOL
+ 
+-MODIFY: s/DATE='.*'/Date='BLAH BLAH'/
+-        s/^(.)/	$1/
++MODIFY:
++  s/DATE='.*'/Date='BLAH BLAH'/
++  s/^(.)/	$1/
+ 
+ STDOUT:
+ 	echo START &gt;&amp;7
+
+Modified: TRUNK/test/02-running/00-Empty.test
+===================================================================
+--- TRUNK/test/02-running/00-Empty.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/00-Empty.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,4 +1,4 @@
+-# What happens when we run an empty test file?
++# What happens when we run an empty (totally blank) test file?
+ 
+ # It should succeed since all the defaults are met: no stdout,
+ # no stderr, and an exit code of 0.
+
+Modified: TRUNK/test/02-running/11-Assert.test
+===================================================================
+--- TRUNK/test/02-running/11-Assert.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/11-Assert.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -11,7 +11,8 @@
+ # Furthermore, the filename and line are never even displayed
+ # on bash2.  Therefore, just wipe the filename and line nuber out
+ # completely and this test should pass everywhere.
+-MODIFY: s/ on.*line \d+//
++MODIFY:
++  s/ on.*line \d+//
+ 
+ STDOUT:
+ ABRT (STDIN)                   assertion failed: &quot;-1 -eq 1&quot;
+
+Modified: TRUNK/test/02-running/13-DisabledDir.test
+===================================================================
+--- TRUNK/test/02-running/13-DisabledDir.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/13-DisabledDir.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -23,7 +23,8 @@
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY: s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
++MODIFY:
++  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+
+Modified: TRUNK/test/02-running/14-AbortConf.test
+===================================================================
+--- TRUNK/test/02-running/14-AbortConf.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/14-AbortConf.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -26,7 +26,8 @@
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY: s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
++MODIFY:
++  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+
+Modified: TRUNK/test/02-running/15-DisabledDir.test
+===================================================================
+--- TRUNK/test/02-running/15-DisabledDir.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/15-DisabledDir.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -24,7 +24,8 @@
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY: s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
++MODIFY:
++  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+
+Modified: TRUNK/test/02-running/16-ConfigError.test
+===================================================================
+--- TRUNK/test/02-running/16-ConfigError.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/16-ConfigError.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -25,7 +25,8 @@
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY: s/^\/.*\/tmtest.conf/TMTEST.CONF/
++MODIFY:
++  s/^\/.*\/tmtest.conf/TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+
+Modified: TRUNK/test/02-running/18-TestError.test
+===================================================================
+--- TRUNK/test/02-running/18-TestError.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/18-TestError.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -10,8 +10,9 @@
+ EOL
+ 
+ # stupid bash3 won't allow LINENO=0 to set the proper lineno.
+-MODIFY: s/: line \d+:/: line BLAH:/
+-MODIFY: s/^(\S)/  $1/
++MODIFY:
++  s/: line \d+:/: line BLAH:/
++  s/^(\S)/  $1/
+ 
+ STDOUT:
+   set -e
+
+Modified: TRUNK/test/02-running/21-QuoteFile.test
+===================================================================
+--- TRUNK/test/02-running/21-QuoteFile.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/02-running/21-QuoteFile.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -19,7 +19,8 @@
+ rm &quot;vl'hurg.test&quot; '12&quot;.test'
+ 
+ 
+-MODIFY: s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
++MODIFY:
++  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+
+Added: TRUNK/test/03-results/01-Ystderr.test
+===================================================================
+--- TRUNK/test/03-results/01-Ystderr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/01-Ystderr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,9 @@
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR :
++	Howdy
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: TRUNK/test/03-results/02-Nstderr.test
+===================================================================
+--- TRUNK/test/03-results/02-Nstderr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/02-Nstderr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,16 @@
++#!/usr/bin/tmtest
++
++# This test ensures we fail a test whose stderr doesn't match.
++# (Howdy vs. howdy).
++
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR:
++	howdy
++EOL
++STDOUT:
++FAIL (STDIN)                   .E.  stderr differed
++
++1 test run, 0 successes, 1 failure.
++RESULT: 0
+
+Modified: TRUNK/test/03-results/02-Nstdout.test
+===================================================================
+--- TRUNK/test/03-results/02-Nstdout.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/02-Nstdout.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -6,7 +6,6 @@
+ 
+ tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+-
+ 	STDOUT :
+ 	howdy
+ EOL
+
+Added: TRUNK/test/03-results/03-Nstderr.test
+===================================================================
+--- TRUNK/test/03-results/03-Nstderr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/03-Nstderr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,16 @@
++#!/usr/bin/tmtest
++
++# This test ensures we fail a test whose stderr doesn't match.
++# there's an extra space after the Howdy in the stderr.
++
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR:
++	Howdy 
++EOL
++STDOUT:
++FAIL (STDIN)                   .E.  stderr differed
++
++1 test run, 0 successes, 1 failure.
++RESULT: 0
+
+Added: TRUNK/test/03-results/04-Nstderr.test
+===================================================================
+--- TRUNK/test/03-results/04-Nstderr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/04-Nstderr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,17 @@
++#!/usr/bin/tmtest
++
++# This test ensures we fail a test whose stdout doesn't match.
++# there's an extra newline in the expected stdout.
++
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR:
++	Howdy
++
++EOL
++STDOUT:
++FAIL (STDIN)                   .E.  stderr differed
++
++1 test run, 0 successes, 1 failure.
++RESULT: 0
+
+Modified: TRUNK/test/03-results/09-NoNL.test
+===================================================================
+--- TRUNK/test/03-results/09-NoNL.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/09-NoNL.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,4 +1,13 @@
+-DISABLED: need the STDOUT -n feature
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that a test's stdout need not end in &quot;\n&quot; for the test
++# to pass (see --no-trailing-newline in testfile(5).
++#
++# Also see: 09-NoNL.test
++#
++# (back when we were parsing tests using re2c, lines needed to be
++# less than BUFSIZ and the results always had to end in a newline).
+ 
+ tmtest -q - &lt;&lt;-EOL
+ 	echo -n Howdy
+@@ -6,6 +15,6 @@
+ 	Howdy
+ EOL
+ STDOUT : 
+-ok   (STDIN)
++ok   (STDIN) 
+ 
+ 1 test run, 1 success, 0 failures.
+
+Added: TRUNK/test/03-results/09-NoNLMod.test
+===================================================================
+--- TRUNK/test/03-results/09-NoNLMod.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/09-NoNLMod.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,27 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that a test's stdout need not end in &quot;\n&quot; for the test
++# to pass (see --no-trailing-newline in testfile(5).  This adds a
++# modify clause because, alas, using a modify clause changes the
++# code path for the comparison.  This is one reason why modify
++# clauses are evil...
++#
++# Also see: 09-NoNL.test
++#
++# (back when we were parsing tests using re2c, lines needed to be
++# less than BUFSIZ and the results always had to end in a newline).
++
++DISABLED &quot;MODIFY won't work here.&quot;
++
++tmtest -q - &lt;&lt;-EOL
++    echo -n Howdy
++    MODIFY:
++      s/How/Wen/
++    STDOUT: -n
++    Wendy
++EOL
++STDOUT: 
++ok   (STDIN)
++
++1 test run, 1 success, 0 failures.
+
+Added: TRUNK/test/03-results/09-NoNLStderr.test
+===================================================================
+--- TRUNK/test/03-results/09-NoNLStderr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/09-NoNLStderr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,20 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that a test's stderr need not end in &quot;\n&quot;.
++#
++# Also see: 09-NoNL.test
++#
++# (back when we were parsing tests using re2c, lines needed to be
++# less than BUFSIZ and the results always had to end in a newline).
++
++
++tmtest -q - &lt;&lt;-EOL
++	echo -n Howdy 1&gt;&amp;2
++	STDERR: --no-trailing-newline
++	Howdy
++EOL
++STDOUT: 
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: TRUNK/test/03-results/10-NoNLErrFail.test
+===================================================================
+--- TRUNK/test/03-results/10-NoNLErrFail.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/10-NoNLErrFail.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,17 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that if we specify -n in the STDERR section, but the test
++# DOES produce a trailing newline on its stderr, we fail the test.
++#
++# Also see: 09-NoNL.test
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR: -n
++	Howdy
++EOL
++STDOUT : 
++FAIL (STDIN)                   .E.  stderr differed
++
++1 test run, 0 successes, 1 failure.
+
+Added: TRUNK/test/03-results/10-NoNLFFail.test
+===================================================================
+--- TRUNK/test/03-results/10-NoNLFFail.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/10-NoNLFFail.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,14 @@
++# This is kind of an interesting test...  There are two newlines after
++# Howdy.  The test clearly only produces one.  However, because we
++# suppress one, the test succeeds.
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy
++	STDOUT: -n
++	Howdy
++
++EOL
++STDOUT : 
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: TRUNK/test/03-results/10-NoNLFail.test
+===================================================================
+--- TRUNK/test/03-results/10-NoNLFail.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/10-NoNLFail.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,21 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that if we specify -n in the STDOUT section, but the test
++# DOES produce a trailing newline on its stderr, we fail the test.
++#
++# Also see: 09-NoNL.test
++#
++# (back when we were parsing tests using re2c, lines needed to be
++# less than BUFSIZ and the results always had to end in a newline).
++
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy
++	STDOUT: -n
++	Howdy
++EOL
++STDOUT : 
++FAIL (STDIN)                   O..  stdout differed
++
++1 test run, 0 successes, 1 failure.
+
+Added: TRUNK/test/03-results/11-NoNLOutput.test
+===================================================================
+--- TRUNK/test/03-results/11-NoNLOutput.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/11-NoNLOutput.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,24 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that we correctly add the trailing newline when outputting
++# the test.
++#
++# Also see: 09-NoNL.test
++#
++# (back when we were parsing tests using re2c, lines needed to be
++# less than BUFSIZ and the results always had to end in a newline).
++
++tmtest -o -q - &lt;&lt;-EOL
++	echo -n Howdy
++	STDOUT: -n
++	Howdy
++EOL
++
++MODIFY:
++   s/^(.)/   $1/
++
++STDOUT:
++   echo -n Howdy
++   STDOUT: -n
++   Howdy
+
+Added: TRUNK/test/03-results/11-NoNLOutput2.test
+===================================================================
+--- TRUNK/test/03-results/11-NoNLOutput2.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/11-NoNLOutput2.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,24 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Ensures that we correctly add the trailing newline when outputting
++# the test.
++#
++# Also see: 09-NoNL.test
++#
++# (back when we were parsing tests using re2c, lines needed to be
++# less than BUFSIZ and the results always had to end in a newline).
++
++tmtest -o -q - &lt;&lt;-EOL
++	echo -n Howdy
++	STDOUT: --no-trailing-newline
++	Howdy
++EOL
++
++MODIFY:
++   s/^(.)/   $1/
++
++STDOUT:
++   echo -n Howdy
++   STDOUT: --no-trailing-newline
++   Howdy
+
+Added: TRUNK/test/03-results/12-0pre.test
+===================================================================
+--- TRUNK/test/03-results/12-0pre.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/12-0pre.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,16 @@
++# Ensure that we can use head to trim the final newline from
++# the testfile.
++
++DISABLED
++
++head -c -1 &lt;&lt;-EOL
++    echo -n Howdy
++    STDOUT:
++    Howdy
++
++EOL
++
++STDOUT:
++echo -n Howdy
++STDOUT:
++Howdy
+
+Added: TRUNK/test/03-results/12-NoNLTwice.test
+===================================================================
+--- TRUNK/test/03-results/12-NoNLTwice.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/12-NoNLTwice.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,23 @@
++# This test verifies that if we specify -n AND the file doesn't end in a
++# newline that the test will still succeed.
++
++# This file does not end in a newline!  If there's a newline at the end of
++# this file then some editor or version control program messed it up.
++
++# NOTE: it is unfortunate that we're testing the currently installed
++# tmtest, not the tmtest that we SHOULD be testing.
++
++# Uses the head command to trim the final \r from the testfile.
++
++DISABLED
++
++head -c -1 &lt;&lt;-EOL | tmtest -d -q -
++    echo -n Howdy
++    STDOUT:
++    Howdy
++EOL
++
++STDOUT:
++FAIL (STDIN)                   O..  stdout differed
++
++1 test run, 0 successes, 1 failure.
+
+Added: TRUNK/test/03-results/12-NoNLTwiceErr.test
+===================================================================
+--- TRUNK/test/03-results/12-NoNLTwiceErr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/12-NoNLTwiceErr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,11 @@
++# This test verifies that if we specify -n AND the file doesn't end in a
++# newline that the test will still succeed.
++#
++# This file does not end in a newline!  If there's a newline at the end of
++# this file then some editor or version control program messed it up.
++
++DISABLED
++
++echo Howdy 1&gt;&amp;2
++STDERR: -n
++Howdy
+
+Added: TRUNK/test/03-results/13-MultiNL.test
+===================================================================
+--- TRUNK/test/03-results/13-MultiNL.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/13-MultiNL.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,14 @@
++# If you specify -n, we only suppress ONE newline.  Therefore, if the
++# test produces one newline, and the expected results end in two newlines,
++# one of the two newlines will match and the test will succeed.
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy
++	STDOUT: -n
++	Howdy
++
++EOL
++STDOUT: 
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: TRUNK/test/03-results/13-MultiNL2.test
+===================================================================
+--- TRUNK/test/03-results/13-MultiNL2.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/13-MultiNL2.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,16 @@
++# This is like MultiNL.test except that we include 3 newlines!
++# Since the test is only expecting a single newline, and only
++# one will be suppressed, this test will fail.
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy
++	STDOUT: -n
++	Howdy
++
++
++EOL
++
++STDOUT: 
++FAIL (STDIN)                   O..  stdout differed
++
++1 test run, 0 successes, 1 failure.
+
+Added: TRUNK/test/03-results/13-MultiNL2Err.test
+===================================================================
+--- TRUNK/test/03-results/13-MultiNL2Err.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/13-MultiNL2Err.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,16 @@
++# This is like MultiNL.test except that we include 3 newlines!
++# Since the test is only expecting a single newline, and only
++# one will be suppressed, this test will fail.
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR: -n
++	Howdy
++
++
++EOL
++
++STDOUT:
++FAIL (STDIN)                   .E.  stderr differed
++
++1 test run, 0 successes, 1 failure.
+
+Added: TRUNK/test/03-results/13-MultiNLErr.test
+===================================================================
+--- TRUNK/test/03-results/13-MultiNLErr.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/13-MultiNLErr.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,14 @@
++# If you specify -n, we only suppress ONE newline.  Therefore, if the
++# test produces one newline, and the expected results end in two newlines,
++# one of the two newlines will match and the test will succeed.
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR: -n
++	Howdy
++
++EOL
++STDOUT: 
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Modified: TRUNK/test/03-results/20-Modify.test
+===================================================================
+--- TRUNK/test/03-results/20-Modify.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/20-Modify.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -3,7 +3,8 @@
+ 
+ tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+-	MODIFY : s/Howdy/HOWDY/
++	MODIFY:
++      s/Howdy/HOWDY/
+ 	STDOUT :
+ 	HOWDY
+ EOL
+
+Modified: TRUNK/test/03-results/21-Modify.test
+===================================================================
+--- TRUNK/test/03-results/21-Modify.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/03-results/21-Modify.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -3,9 +3,9 @@
+ 
+ tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+-	MODIFY :
++	MODIFY:
+ 		s/Howdy/HOWDY/
+-	STDOUT :
++	STDOUT:
+ 	HOWDY
+ EOL
+ STDOUT:
+
+Modified: TRUNK/test/04-diff/00-NoDiff.test
+===================================================================
+--- TRUNK/test/04-diff/00-NoDiff.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/04-diff/00-NoDiff.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -12,10 +12,4 @@
+ 	right output
+ EOL
+ 
+-
+-MODIFY:
+-    s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-    s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDOUT:
+
+Modified: TRUNK/test/04-diff/02-MultiDiff.test
+===================================================================
+--- TRUNK/test/04-diff/02-MultiDiff.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/04-diff/02-MultiDiff.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -21,8 +21,9 @@
+ tmtest --all-files -d &quot;$t1&quot; &quot;$t2&quot;
+ 
+ 
+-MODIFY:   s/^\-\-\-.*\/tmp\/tmtest.*/--- \/tmp\/testfile DATE TIME TZ/,
+-          s/^\+\+\+.*/+++ - DATE TIME TZ/
++MODIFY:
++  s/^\-\-\-.*\/tmp\/tmtest.*/--- \/tmp\/testfile DATE TIME TZ/,
++  s/^\+\+\+.*/+++ - DATE TIME TZ/
+ 
+ STDOUT:
+ --- /tmp/testfile DATE TIME TZ
+
+Modified: TRUNK/test/04-diff/09-MultiLevelDiff.test
+===================================================================
+--- TRUNK/test/04-diff/09-MultiLevelDiff.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/04-diff/09-MultiLevelDiff.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -59,8 +59,9 @@
+ rm -rf t.test one two
+ 
+ 
+-MODIFY:   s/^\-\-\- .*/--- TESTFILE DATE TIME TZ/,
+-          s/^\+\+\+.*/+++ - DATE TIME TZ/
++MODIFY:
++  s/^\-\-\- .*/--- TESTFILE DATE TIME TZ/,
++  s/^\+\+\+.*/+++ - DATE TIME TZ/
+ 
+ STDOUT:
+ --- TESTFILE DATE TIME TZ
+
+Modified: TRUNK/test/04-diff/10-Patch.test
+===================================================================
+--- TRUNK/test/04-diff/10-Patch.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/04-diff/10-Patch.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -22,7 +22,8 @@
+ echo
+ INDENT &lt; &quot;$tt&quot;
+ 
+-MODIFY: s/^patching .*/patching FILE/
++MODIFY:
++  s/^patching .*/patching FILE/
+ 
+ STDOUT:
+ patching FILE
+
+Modified: TRUNK/test/04-diff/11-MultiPatch.test
+===================================================================
+--- TRUNK/test/04-diff/11-MultiPatch.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/04-diff/11-MultiPatch.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -36,7 +36,8 @@
+ echo
+ INDENT &lt; &quot;$tt3&quot;
+ 
+-MODIFY: s/^patching .*/patching FILE/
++MODIFY:
++  s/^patching .*/patching FILE/
+ 
+ STDOUT:
+ patching FILE
+
+Modified: TRUNK/test/04-diff/12-MultiLevelPatch.test
+===================================================================
+--- TRUNK/test/04-diff/12-MultiLevelPatch.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/04-diff/12-MultiLevelPatch.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -69,7 +69,8 @@
+ rm -rf t.test one two
+ 
+ 
+-MODIFY: s/^patching .*/patching FILE/
++MODIFY:
++  s/^patching .*/patching FILE/
+ 
+ STDOUT:
+ patching FILE
+
+Modified: TRUNK/test/04-diff/13-MultiLevelPatch.test
+===================================================================
+--- TRUNK/test/04-diff/13-MultiLevelPatch.test	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/04-diff/13-MultiLevelPatch.test	2006-02-27 23:00:34 UTC (rev 84)
+@@ -70,7 +70,8 @@
+ rm -rf ../t.test ../one ../two
+ 
+ 
+-MODIFY: s/^patching .*/patching FILE/
++MODIFY:
++  s/^patching .*/patching FILE/
+ 
+ STDOUT:
+ patching FILE
+
+Added: TRUNK/test/README
+===================================================================
+--- TRUNK/test/README	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test/README	2006-02-27 23:00:34 UTC (rev 84)
+@@ -0,0 +1,30 @@
++NOTE: If you are looking for examples of testfiles, this is NOT the
++directory for you!  Due to the recursive nature of tmtest testing
++itself, many of these testfiles are very difficult to understand.
++
++See the examples directory instead.
++
++
++These are the test subcategories:
++
++00-cmdline: tests parsing command-line arguments
++    Mostly tests illegal command-line arguments.
++
++01-testfile: tests the parsing of test files.
++    Mostly tests illegal testfiles and ensures proper errors are printed.
++
++02-running: tests running the actual tests
++    Ensures that the test environment is set up properly.
++    For instance, checks that disabled tests are not run, the tmlib
++    calls are performed properly, etc.
++
++03-results: tests the results
++    Ensures that we compare the test results properly.
++    For instance, verifies that we handle results that don't
++    end in newlines, binary characters, etc. properly.
++
++04-diff: ensures diffing and patching works
++
++09-docs: tests that appear in our documentation.
++    This ensures that tmtest behaves exactly like our docs say it will.
++
+
+Modified: TRUNK/test.c
+===================================================================
+--- TRUNK/test.c	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/test.c	2006-02-27 23:00:34 UTC (rev 84)
+@@ -249,11 +249,22 @@
+ }
+ 
+ 
+-/** Prints the command section of the test suitable for how the test is being run.
++/**
++ * Prints the command section of the test suitable for how the test
++ * is being run.
+  *
+  * If the user is just running the test, nothing is printed.  If the
+  * user is diffing or dumping the test, however, the modified command
+  * section needs to be printed to the appropriate command.
++ *
++ * @param test The test being run.
++ * @param tok The type of data this is (from tfscan.h).  If 0 then 
++ *            this is the EOF and this routine won't be called anymore.
++ * @param ptr The data to write.  If tok==0 then ptr is undefined.
++ * @param len The amount of data to write.  If tok==0 then len==0.
++ *
++ * Hm, a year later it ooks like rewriting is a feature that will
++ * never need to be implemented...?
+  */
+ 
+ void rewrite_command_section(struct test *test, int tok, const char *ptr, int len)
+@@ -306,6 +317,9 @@
+             // the new SECTION token it marks it NEW.  Reattaching resets
+             // the state to a command state, so we can just do that.
+             tfscan_attach(&amp;test-&gt;testfile);
++            // Now we're done dumping the command and the scanner
++            // is poised to return the correct section start to the
++            // next client.
+             break;
+         }
+ 
+@@ -329,7 +343,7 @@
+  */
+ 
+ void compare_section_start(scanstate *cmpscan, int fd, pcrs_job *joblist,
+-		matchval *mv, const char *filename, const char *sectionname)
++		matchval *mv, const char *filename, const char *sectionname, int nonl)
+ {
+     assert(!compare_in_progress(cmpscan));
+ 
+@@ -348,7 +362,7 @@
+ 
+     scanstate_reset(cmpscan);
+     readfd_attach(cmpscan, fd);
+-	compare_attach(cmpscan, mv, joblist);
++	compare_attach(cmpscan, mv, joblist, nonl);
+ 
+     // we may want to check the token to see if there are any
+     // special requests (like detabbing).
+@@ -427,7 +441,8 @@
+ 
+ 	char buf[128];	// holds the pcrs command.  We will dynamically
+ 		// allocate a buffer if the entire substitution doesn't fit
+-		// into this buffer.  The vast majority will be &lt;30 chars.
++		// into this buffer.  The vast majority of substitutions will
++		// be less than 40 chars.
+ 
+ 	// skip any leading whitespace
+ 	while(isspace(*cp) &amp;&amp; cp &lt; ce) cp++;
+@@ -482,6 +497,114 @@
+ }
+ 
+ 
++/**
++ * Calls the given callback routine for each argument found.
++ *
++ * For now, we just split on whitespace.  In the future, if needed,
++ * this routine could be modified to handle \, &quot;, ', etc just like bash.
++ */
++
++int parse_section_args(const char *tok, int toklen, const char *file, int line,
++        int (*argproc)(int index, const char *buf, const char *end, 
++            const char *file, int line, void *refcon),
++        void *refcon)
++{
++    const char *end = tok + toklen;
++    const char *cb, *ce;
++    int index = 0;
++    int val = 0;
++
++    ce = tok;
++    while(ce &lt; end) {
++        cb = ce;
++        while(!isspace(*ce) &amp;&amp; ce &lt; end) {
++            ce++;
++        }
++
++        val = (*argproc)(index, cb, ce, file, line, refcon);
++        if(val) {
++            break;
++        }
++        index += 1;
++
++        while(isspace(*ce) &amp;&amp; ce &lt; end) {
++            ce++;
++        }
++    }
++
++    return val;
++}
++
++
++int constreq(const char *cp, const char *ce, const char *str)
++{
++    int len = strlen(str);
++
++    if(ce - cp != len) {
++        return 0;
++    }
++
++    if(memcmp(cp, str, len) != 0) {
++        return 0;
++    }
++
++    return 1;
++}
++
++
++int start_output_section_argproc(int i, const char *cp, const char *ce,
++        const char *file, int line, void *refcon)
++{
++    if(i == 0) {
++        // index == 0 is the name of this section
++        return 0;
++    }
++
++    // trim colons from arguments...  they can appear anywhere you want.
++    while(*cp == ':' &amp;&amp; cp &lt; ce) {
++        cp++;
++    }
++    while(ce[-1] == ':' &amp;&amp; ce &gt; cp) {
++        ce--;
++    }
++
++    if(constreq(cp,ce,&quot;-n&quot;) || constreq(cp,ce,&quot;--no-trailing-newline&quot;)) {
++        *(int*)refcon = 1;
++    } else if(cp &lt; ce) {
++        fprintf(stderr, &quot;%s line %d: unknown arguments \&quot;%.*s\&quot;\n&quot;,
++                file, line, ce-cp, cp);
++    }
++
++    return 0;
++}
++
++
++void start_output_section(struct test *test, const char *tok,
++        int toklen, scanstate *cmpscan, int fd, matchval *val,
++        const char *secname)
++{
++    int suppress_trailing_newline = 0;
++
++    parse_section_args(tok, toklen,
++            get_testfile_name(test), test-&gt;testfile.line,
++            start_output_section_argproc, 
++            (void*)&amp;suppress_trailing_newline);
++
++    if(*val != match_unknown) {
++        // we've already obtained a value for this section!
++        fprintf(stderr, &quot;%s line %d Error: duplicate %s &quot;
++                &quot;section.  Ignored.\n&quot;, get_testfile_name(test),
++                test-&gt;testfile.line, secname);
++        // as long as scanref == null, no comparison will happen.
++        assert(!cmpscan-&gt;scanref);
++        return;
++    }
++
++    compare_section_start(cmpscan, fd, test-&gt;eachline, val,
++        get_testfile_name(test), secname, suppress_trailing_newline);
++}
++
++
+ /** This routine parses the tokens returned by scan_sections() and
+  * compares them against the actual test results.  It stores the
+  * results in test-&gt;match_stdout, match_stderr, and match_result.
+@@ -489,6 +612,7 @@
+  * The refcon needs to be an allocated scanner.  It need not be
+  * attached to anything -- this routine will take care of attaching
+  * and detaching it as needed.
++ *
+  */
+ 
+ void parse_section_compare(struct test *test, int sec,
+@@ -497,7 +621,11 @@
+     #define get_cur_state(ss)    ((int)(ss)-&gt;userref)
+     #define set_cur_state(ss,x)  ((ss)-&gt;userref=(void*)(x))
+ 
++    // compscan is the comparison scanner -- it is used to diff the
++    // current output section (either stdout or stderr).
+     scanstate *cmpscan = refcon;
++
++    // the section that we're entering (without the NEW flag attached)
+     int newsec = EX_TOKEN(sec);
+ 
+     if(get_cur_state(cmpscan) == 0) {
+@@ -526,35 +654,26 @@
+         set_cur_state(cmpscan, newsec);
+         switch(get_cur_state(cmpscan)) {
+             case exSTDOUT:
+-				if(test-&gt;stdout_match == match_unknown) {
+-					compare_section_start(cmpscan, test-&gt;outfd, test-&gt;eachline,
+-							&amp;test-&gt;stdout_match, get_testfile_name(test), &quot;STDOUT&quot;);
+-				} else {
+-					fprintf(stderr, &quot;%s line %d Error: duplicate STDOUT section.  Ignored.\n&quot;,
+-							get_testfile_name(test), test-&gt;testfile.line);
+-					// as long as scanref == null, no comparison will happen.
+-					assert(!cmpscan-&gt;scanref);
+-				}
++                start_output_section(test, datap, len, cmpscan,
++                        test-&gt;outfd, &amp;test-&gt;stdout_match, &quot;STDOUT&quot;);
+                 break;
+             case exSTDERR:
+-				if(test-&gt;stderr_match == match_unknown) {
+-					compare_section_start(cmpscan, test-&gt;errfd, test-&gt;eachline,
+-							&amp;test-&gt;stderr_match, get_testfile_name(test), &quot;STDERR&quot;);
+-				} else {
+-					fprintf(stderr, &quot;%s line %d Error: duplicate STDERR section.  Ignored.\n&quot;,
+-							get_testfile_name(test), test-&gt;testfile.line);
+-					// as long as scanref == null, no comparison will happen.
+-					assert(!cmpscan-&gt;scanref);
+-				}
++                start_output_section(test, datap, len, cmpscan,
++                        test-&gt;errfd, &amp;test-&gt;stderr_match, &quot;STDERR&quot;);
+                 break;
+             case exRESULT:
+ 				parse_exit_clause(test, datap, len);
+                 break;
+             case exMODIFY:
+-				parse_modify_clause(test, skip_section_name(datap,len), datap+len);
++				parse_modify_clause(test, skip_section_name(datap,len),
++                        datap+len);
+                 break;
+             case exCOMMAND:
+-                assert(!&quot;Well, this is impossible.  How did you start a new command section??&quot;);
++                fprintf(stderr, &quot;%s line %d Error: Well, this is impossible.  &quot;
++                        &quot;How did you start a new command section??\n&quot;,
++                        get_testfile_name(test), test-&gt;testfile.line);
++                // it should be harmless to continue but this definitely
++                // indicates a bug in the scanner.
+                 break;
+         }
+     } else {
+@@ -568,9 +687,10 @@
+                 break;
+             case exRESULT:
+ 				if(contains_nws(datap, len)) {
+-					fprintf(stderr, &quot;%s line %d Error: RESULT clause contains garbage.\n&quot;,
++					fprintf(stderr, &quot;%s line %d Error: RESULT clause &quot;
++                            &quot;contains garbage.\n&quot;,
+ 							get_testfile_name(test), test-&gt;testfile.line);
+-					//exit(10);
++                    // Harmless to continue.  The testfile needs to be fixed.
+ 				}
+                 break;
+             case exMODIFY:
+@@ -839,26 +959,46 @@
+ void parse_section_output(struct test *test, int sec,
+         const char *datap, int len, void *refcon)
+ {
++    int *needs_nl = (int*)refcon;
++
+     assert(sec &gt;= 0);
+ 
++    if(sec &amp; exNEW) {
++        // check to see if previous section needs a newline appended.
++        if(*needs_nl) {
++            write_strconst(test-&gt;rewritefd, &quot;\n&quot;);
++        }
++
++        *needs_nl = 0;
++    }
++
+     switch(sec) {
+         case 0:
+-            // don't need to worry about eof
++            if(*needs_nl) {
++                write_strconst(test-&gt;rewritefd, &quot;\n&quot;);
++            }
+             break;
+ 
+         case exSTDOUT|exNEW:
++            parse_section_args(datap, len,
++                    get_testfile_name(test), test-&gt;testfile.line,
++                    start_output_section_argproc, needs_nl);
++            write(test-&gt;rewritefd, datap, len);
++            write_file(test-&gt;rewritefd, test-&gt;outfd, test-&gt;eachline);
+             test-&gt;stdout_match = match_yes;
+-			write_strconst(test-&gt;rewritefd, &quot;STDOUT:\n&quot;);
+-            write_file(test-&gt;rewritefd, test-&gt;outfd, test-&gt;eachline);
+             break;
+         case exSTDOUT:
+             // ignore all data in the expected stdout.
+             break;
+ 
+         case exSTDERR|exNEW:
++            parse_section_args(datap, len,
++                    get_testfile_name(test), test-&gt;testfile.line,
++                    start_output_section_argproc, needs_nl);
++            write(test-&gt;rewritefd, datap, len);
++            write_file(test-&gt;rewritefd, test-&gt;errfd, test-&gt;eachline);
+             test-&gt;stderr_match = match_yes;
+-			write_strconst(test-&gt;rewritefd, &quot;STDERR:\n&quot;);
+-            write_file(test-&gt;rewritefd, test-&gt;errfd, test-&gt;eachline);
++            break;
+         case exSTDERR:
+             // ignore all data in the expected stderr
+             break;
+@@ -867,7 +1007,6 @@
+             test-&gt;exitno_match = match_yes;
+             write_exit_no(test-&gt;rewritefd, test-&gt;exitno);
+             break;
+-
+         case exRESULT:
+             // allow random garbage in result section to pass
+             write(test-&gt;rewritefd, datap, len);
+@@ -877,7 +1016,6 @@
+             parse_modify_clause(test, skip_section_name(datap,len), datap+len);
+             write(test-&gt;rewritefd, datap, len);
+             break;
+-
+         case exMODIFY:
+             // parse modify sections and still print them.
+             parse_modify_clause(test, datap, datap+len);
+@@ -912,6 +1050,8 @@
+ 
+ void dump_results(struct test *test)
+ {
++    int tempref = 0;
++
+ 	if(was_aborted(test-&gt;status)) {
+ 		dump_reason(test, &quot;was aborted&quot;);
+ 		test-&gt;aborted = 1;
+@@ -943,7 +1083,7 @@
+     // ensure that we haven't yet parsed any modify sections.
+     assert(!test-&gt;eachline);
+ 
+-    scan_sections(test, &amp;test-&gt;testfile, parse_section_output, NULL);
++    scan_sections(test, &amp;test-&gt;testfile, parse_section_output, &amp;tempref);
+ 
+     // if any sections haven't been output, but they differ from
+     // the default, then they need to be output here at the end.
+
+Modified: TRUNK/tfscan.c
+===================================================================
+--- TRUNK/tfscan.c	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/tfscan.c	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,243 +1,205 @@
+-/* Generated by re2c 0.5 on Sun Dec 18 12:25:00 2005 */
+-
+-/* tfscan.re
++/* tfscan.c
+  * Scott Bronson
+  * 30 Dec 2004
+  *
+- * Scanner for test files.
+- * This file needs to be processed by re2c, <A HREF="http://re2c.org">http://re2c.org</A>
++ * Scanner for test files.  This used to be a re2c scanner but
++ * I couldn't get it to work with no LF at the end of file.
+  *
+  * This file is covered by the MIT License.
+  */
+ 
++// TOTEST: &gt;8K token not containing a cr
++// STDOUT:, STDERR:, etc at the EOF with no data.
++// STDOUT at the beginning of the file.
++// keyword without a colon
++// 		NO NO NO keyword without a colon is still the keyword.
++// 		And a keyword without a NL is still the keyword.
++// 		But it must always start at the beginning of a new line.
++// exit clauses with invalid numbers
++// What happens with a MODIFY larger than BUFSIZ.
++// DOS/Mac/Unix line endings.
++// 		What happes when platform doesn't match the testfile?
++// 	Get rid of rewrite_command_section
++
++// NOTE: because we linebuffer the MODIFY clause, a single MODIFY
++// may not be larger than the BUFSIZ on your system (usually 8192 bytes).
++// Technically this is true of RESULT as well but when are you ever going
++// to run into an 8K result code?
++
+ #include &quot;tfscan.h&quot;
+ 
+ 
+ #define START(x) (ss-&gt;scanref=(void*)(x))
+ 
++#ifndef NULL
++#define NULL ((void*)0)
++#endif
+ 
+-/* This scanner scans lines.  When it finds a line that begins
++
++int tfscan_tok_start(scanstate *ss);
++int tfscan_nontok_start(scanstate *ss);
++
++
++/*!re2c
++ 
++  // This is almost the scanner that this file implements, except that
++  // this file handles data at EOF correctly.
++
++WS      = [ \t];
++ANYN    = [\000-\377]\[\n];
++
++&quot;STDOUT&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exSTDOUT); return exNEW|exSTDOUT; }
++&quot;STDERR&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exSTDERR); return exNEW|exSTDERR; }
++&quot;RESULT&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exRESULT); return exNEW|exRESULT; }
++&quot;MODIFY&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exMODIFY); return exNEW|exMODIFY; }
++
++ANYN* &quot;\n&quot;                  { return (int)ss-&gt;scanref; }
++
++
++// What it does:
++// Returns exCOMMAND for all data chunks.
++// When it sees the start of a section, it returns exNEW|TOK
++// (i.e. (exNEW|exSTDOUT).  This tells you that the old section
++// has ended and a new one is starting.  Then it continues
++// returning exSTDOUT without the exNEW flag until another
++// seciton starts.
++
++*/
++
++
++
++static int scan_to_end_of_keyword(scanstate *ss, int tok)
++{
++	// We assume that we're immediately at the end of a keyword
++	// section.  The first six bytes just guarantees the keyword.
++
++	// skip all characters up to the final nl.
++
++	while(*YYCURSOR != '\r' &amp;&amp; *YYCURSOR != '\n') {
++		YYCURSOR++;
++		if(YYCURSOR &gt;= YYLIMIT) {
++			break;
++		}
++	}
++
++	if(*YYCURSOR == '\r') YYCURSOR++;
++	if(*YYCURSOR == '\n') YYCURSOR++;
++
++    ss-&gt;line += 1;
++
++	START(tok);
++	return exNEW|tok;
++}
++
++
++/* When it finds a line that begins
+  * with a new section, it returns the token name of that section
+  * with the exNEW flag turned on.  After that, it returns each
+  * line in the section with the token's identifier.  Then, when it
+  * finds a new section, you get a exNEW+TOKEN of the new section.
+  */
+ 
+-int tfscan_start(scanstate *ss)
++int tfscan_tok_start(scanstate *ss)
+ {
+     scanner_enter(ss);
+-    inc_line(ss);
+ 
+-{
+-	YYCTYPE yych;
+-	unsigned int yyaccept;
+-	goto yy0;
+-yy1:	++YYCURSOR;
+-yy0:
+-	if((YYLIMIT - YYCURSOR) &lt; 6) YYFILL(6);
+-	yych = *YYCURSOR;
+-	switch(yych){
+-	case '\n':	goto yy7;
+-	case 'M':	goto yy4;
+-	case 'R':	goto yy3;
+-	case 'S':	goto yy2;
+-	default:	goto yy5;
++    // if we can read at least 8 more bytes from the current buffer,
++    // we won't bother reloading it.  This should cut down drastically
++    // on the number of small reads we make.
++	if(YYCURSOR+8 &gt;= YYLIMIT) {
++		int r = (*ss-&gt;read)(ss);
++		// if there was an error, return an error token.
++		if(r &lt; 0) return r;
++		// Only if we're _completely_ out of data, return eof.
++		// (this is why we can't use re2c for this scanner)
++		if(ss-&gt;token &gt;= ss-&gt;limit) return 0;
+ 	}
+-yy2:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'T':	goto yy29;
+-	default:	goto yy6;
+-	}
+-yy3:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'E':	goto yy19;
+-	default:	goto yy6;
+-	}
+-yy4:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'O':	goto yy9;
+-	default:	goto yy6;
+-	}
+-yy5:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy6;
+-yy6:	switch(yych){
+-	case '\n':	goto yy7;
+-	default:	goto yy5;
+-	}
+-yy7:	yych = *++YYCURSOR;
+-	goto yy8;
+-yy8:
+ 
+-	{ return (int)ss-&gt;scanref; }
+-yy9:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'D':	goto yy10;
+-	default:	goto yy6;
+-	}
+-yy10:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'I':	goto yy11;
+-	default:	goto yy6;
+-	}
+-yy11:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'F':	goto yy12;
+-	default:	goto yy6;
+-	}
+-yy12:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'Y':	goto yy13;
+-	default:	goto yy6;
+-	}
+-yy13:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy14;
+-yy14:	switch(yych){
+-	case '\t':	case ' ':	goto yy13;
+-	case '\n':	goto yy7;
+-	case ':':	goto yy15;
+-	default:	goto yy5;
+-	}
+-yy15:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy16;
+-yy16:	switch(yych){
+-	case '\n':	goto yy17;
+-	default:	goto yy15;
+-	}
+-yy17:	yych = *++YYCURSOR;
+-	goto yy18;
+-yy18:
++	// At this point in the scanner, we know that we are at the beginning
++    // of a line (previous character was either start-of-file or \n).
++	// So check to see if there's a token.
+ 
+-	{ START(exMODIFY); return exNEW|exMODIFY; }
+-yy19:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'S':	goto yy20;
+-	default:	goto yy6;
++	if(YYCURSOR + 8 &lt; YYLIMIT) {
++		// There's enough data in this buffer to contain a keyword.
++		// If there are less than 8 bytes in the buffer then it means
++		// that we're 7 bytes from the EOF and there's no chance that
++		// there's another keyword to scan.  (6 bytes for the keyword,
++		// 1 byte for the colon, one byte for the newline).
++		switch(*YYCURSOR) {
++			case 'S':
++				if(YYCURSOR[1] == 'T' &amp;&amp; YYCURSOR[2] == 'D') {
++					if(YYCURSOR[3]=='O' &amp;&amp; YYCURSOR[4]=='U' &amp;&amp; YYCURSOR[5]=='T') {
++						return scan_to_end_of_keyword(ss, exSTDOUT);
++					}
++					if(YYCURSOR[3]=='E' &amp;&amp; YYCURSOR[4]=='R' &amp;&amp; YYCURSOR[5]=='R') {
++						return scan_to_end_of_keyword(ss, exSTDERR);
++					}
++				}
++				// else it wasn't a token so we can just keep scanning.
++				break;
++			case 'R':
++				if(YYCURSOR[1]=='E' &amp;&amp; YYCURSOR[2]=='S' &amp;&amp;
++					YYCURSOR[3]=='U' &amp;&amp; YYCURSOR[4]=='L' &amp;&amp; YYCURSOR[5]=='T')
++				{
++					return scan_to_end_of_keyword(ss, exRESULT);
++				}
++				break;
++			case 'M':
++				if(YYCURSOR[1]=='O' &amp;&amp; YYCURSOR[2]=='D' &amp;&amp;
++					YYCURSOR[3]=='I' &amp;&amp; YYCURSOR[4]=='F' &amp;&amp; YYCURSOR[5]=='Y')
++				{
++					return scan_to_end_of_keyword(ss, exMODIFY);
++				}
++				break;
++			default:
++				break;
++		}
+ 	}
+-yy20:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'U':	goto yy21;
+-	default:	goto yy6;
+-	}
+-yy21:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'L':	goto yy22;
+-	default:	goto yy6;
+-	}
+-yy22:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'T':	goto yy23;
+-	default:	goto yy6;
+-	}
+-yy23:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy24;
+-yy24:	switch(yych){
+-	case '\t':	case ' ':	goto yy23;
+-	case '\n':	goto yy7;
+-	case ':':	goto yy25;
+-	default:	goto yy5;
+-	}
+-yy25:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy26;
+-yy26:	switch(yych){
+-	case '\n':	goto yy27;
+-	default:	goto yy25;
+-	}
+-yy27:	yych = *++YYCURSOR;
+-	goto yy28;
+-yy28:
+ 
+-	{ START(exRESULT); return exNEW|exRESULT; }
+-yy29:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'D':	goto yy30;
+-	default:	goto yy6;
++	// So there wasn't a keyword at this point in the buffer.
++	// We just treat it as random data.  Since we haven't moved the
++    // cursor we can just call straight into the nontok routine.
++	ss-&gt;state = tfscan_nontok_start;
++	return tfscan_nontok_start(ss);
++}
++
++
++int tfscan_nontok_start(scanstate *ss)
++{
++	scanner_enter(ss);
++
++	if(YYCURSOR &gt;= YYLIMIT) {
++		int r = (*ss-&gt;read)(ss);
++		// if there was an error, return an error token.
++		if(r &lt; 0) return r;
++		// if we're completely out of data, return eof.
++		// (this is why we can't use re2c for this scanner)
++		if(ss-&gt;token &gt;= ss-&gt;limit) return 0;
+ 	}
+-yy30:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'E':	goto yy31;
+-	case 'O':	goto yy32;
+-	default:	goto yy6;
+-	}
+-yy31:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'R':	goto yy40;
+-	default:	goto yy6;
+-	}
+-yy32:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'U':	goto yy33;
+-	default:	goto yy6;
+-	}
+-yy33:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'T':	goto yy34;
+-	default:	goto yy6;
+-	}
+-yy34:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy35;
+-yy35:	switch(yych){
+-	case '\t':	case ' ':	goto yy34;
+-	case '\n':	goto yy7;
+-	case ':':	goto yy36;
+-	default:	goto yy5;
+-	}
+-yy36:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy37;
+-yy37:	switch(yych){
+-	case '\n':	goto yy38;
+-	default:	goto yy36;
+-	}
+-yy38:	yych = *++YYCURSOR;
+-	goto yy39;
+-yy39:
+ 
+-	{ START(exSTDOUT); return exNEW|exSTDOUT; }
+-yy40:	yych = *++YYCURSOR;
+-	switch(yych){
+-	case 'R':	goto yy41;
+-	default:	goto yy6;
++	// Since it's impossible to have a token at this point so we
++	// scan forward to the next CR/LF.
++	while(YYCURSOR &lt; YYLIMIT) {
++		if(*YYCURSOR == '\r' || *YYCURSOR == '\n') break;
++		YYCURSOR++;
+ 	}
+-yy41:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy42;
+-yy42:	switch(yych){
+-	case '\t':	case ' ':	goto yy41;
+-	case '\n':	goto yy7;
+-	case ':':	goto yy43;
+-	default:	goto yy5;
++	if(YYCURSOR &gt;= YYLIMIT) {
++		// We have to assume that we previously read as much data as
++		// possible.  So the entire buffer is just data with no tokens
++		// and no CR/LF.
++		return (int)ss-&gt;scanref;
+ 	}
+-yy43:	++YYCURSOR;
+-	if(YYLIMIT == YYCURSOR) YYFILL(1);
+-	yych = *YYCURSOR;
+-	goto yy44;
+-yy44:	switch(yych){
+-	case '\n':	goto yy45;
+-	default:	goto yy43;
+-	}
+-yy45:	yych = *++YYCURSOR;
+-	goto yy46;
+-yy46:
+ 
+-	{ START(exSTDERR); return exNEW|exSTDERR; }
+-}
++	if(*YYCURSOR == '\r') YYCURSOR++;
++	if(*YYCURSOR == '\n') YYCURSOR++;
+ 
++    ss-&gt;line += 1;
+ 
++	// We have potential for finding a token at this point.
++	ss-&gt;state = tfscan_tok_start;
++	return (int)ss-&gt;scanref;
+ }
++	
+ 
+ 
+ /** Prepares the given scanner to scan a testfile.
+@@ -250,9 +212,50 @@
+ {
+     if(ss) {
+         START(exCOMMAND);
+-        ss-&gt;state = tfscan_start;
++        ss-&gt;state = tfscan_tok_start;
+     }
+ 
+     return ss;
+ }
+ 
++/*
++
++SOME MORE THOUGHTS ON SCANNING:
++
++
++We know we're at the beginning of the buffer or immediately
++after a newline.
++	Do we have enough data for a keyword?
++		No: fill buffer with more data.
++	We know we have enough data for a keyword.  Use strstr.
++	
++See if a keyword is here.
++If 
++
++
++So what's the problem?
++	Read might return:
++		error, just return error code as negative number.
++		0, eof.
++			If we have more data in the buffer, we need to make sure
++			to return that data.
++			(actaully, with re2c, that's not the case.  It screws up the
++			last token in the file unless the file ends on a token delimiter).
++			- If there's no more data in the buffer then we just return 0.
++		positive number: we read data.
++
++So the problem is that re2c scanners can't handle it if the file doesn't
++end on a token delim.  We can't return if we hit eol and haven't scanned
++more data even if there's more data in the buffer.  The stupid re2c
++scanner will just start scanning in the garbage past the end of the buffer.
++Sigh.
++
++That means I can't use it for the testfile scanner.
++
++That furthermore means that I can't use YYFILL on the non-broken scanner.
++I should probably add a different macro that can be used everywhere,
++zero-length reads (as in a network packet), file ending with a non-delim
++character, etc.
++
++*/
++
+
+Modified: TRUNK/tfscan.h
+===================================================================
+--- TRUNK/tfscan.h	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/tfscan.h	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,4 +1,4 @@
+-/* tfscan.h
++/* tfscan.h (testfile scanner)
+  * Scott Bronson
+  */
+ 
+@@ -33,7 +33,7 @@
+ 
+ #define EX_TOKEN(x) ((x)&amp;0xFF)
+ #define EX_ISNEW(x) ((x)&amp;exNEW)
+-#define is_command_token(x) (EX_TOKEN(x)&gt;=exCOMMAND &amp;&amp; EX_TOKEN(x)&lt;ex_COMMAND_TOKEN_END)
++#define is_command_token(x) (EX_TOKEN(x)&gt;=exCOMMAND &amp;&amp; EX_TOKEN(x)&lt;exCOMMAND_TOKEN_END)
+ #define is_section_token(x) (EX_TOKEN(x)&gt;=exSTDOUT &amp;&amp; EX_TOKEN(x)&lt;exRESULT_TOKEN_END)
+ 
+ scanstate* tfscan_attach(scanstate *ss);
+
+Deleted: TRUNK/tfscan.re
+===================================================================
+--- TRUNK/tfscan.re	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/tfscan.re	2006-02-27 23:00:34 UTC (rev 84)
+@@ -1,60 +0,0 @@
+-/* tfscan.re
+- * Scott Bronson
+- * 30 Dec 2004
+- *
+- * Scanner for test files.
+- * This file needs to be processed by re2c, <A HREF="http://re2c.org">http://re2c.org</A>
+- *
+- * This file is covered by the MIT License.
+- */
+-
+-#include &quot;tfscan.h&quot;
+-
+-
+-#define START(x) (ss-&gt;scanref=(void*)(x))
+-
+-
+-/* This scanner scans lines.  When it finds a line that begins
+- * with a new section, it returns the token name of that section
+- * with the exNEW flag turned on.  After that, it returns each
+- * line in the section with the token's identifier.  Then, when it
+- * finds a new section, you get a exNEW+TOKEN of the new section.
+- */
+-
+-int tfscan_start(scanstate *ss)
+-{
+-    scanner_enter(ss);
+-    inc_line(ss);
+-
+-/*!re2c
+-
+-WS      = [ \t];
+-ANYN    = [\000-\377]\[\n];
+-
+-&quot;STDOUT&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exSTDOUT); return exNEW|exSTDOUT; }
+-&quot;STDERR&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exSTDERR); return exNEW|exSTDERR; }
+-&quot;RESULT&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exRESULT); return exNEW|exRESULT; }
+-&quot;MODIFY&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exMODIFY); return exNEW|exMODIFY; }
+-
+-ANYN* &quot;\n&quot;                  { return (int)ss-&gt;scanref; }
+-
+-*/
+-}
+-
+-
+-/** Prepares the given scanner to scan a testfile.
+- *
+- *  @param ss the scanstate to attach to.  Passing NULL is safely ignored.
+- *  @returns ss.  Always.  This routine makes no calls that can fail.
+- */
+-
+-scanstate* tfscan_attach(scanstate *ss)
+-{
+-    if(ss) {
+-        START(exCOMMAND);
+-        ss-&gt;state = tfscan_start;
+-    }
+-
+-    return ss;
+-}
+-
+
+Modified: TRUNK/tmtest.conf
+===================================================================
+--- TRUNK/tmtest.conf	2005-12-21 02:17:48 UTC (rev 83)
++++ TRUNK/tmtest.conf	2006-02-27 23:00:34 UTC (rev 84)
+@@ -38,7 +38,7 @@
+ # This means that while the test is running, any executables in this
+ # directory will take priority over similarly-named executables anywhere
+ # else (like /usr/bin or ~/bin).  This ensures that we lauch the unstable
+-# copy of tmtest to handle each test.
++# copy of tmtest to handle each subtest.
+ 
+ PATH=&quot;$MYDIR:$PATH&quot;;
+ 
+@@ -54,3 +54,10 @@
+ 
+ args=&quot;--config=$MYPATH/test/tmtest.sub.conf&quot;
+ 
++
++# This allows us to run tests without installing tmtest first.
++# (todo: will this cause problems if you DO have a currently-installed
++# tmtest?)
++
++. tmlib.sh
++
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000002.html">[Tmtest-commits] [85] TRUNK: Make a simple rename, break the build.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1">[ date ]</a>
+              <a href="thread.html#1">[ thread ]</a>
+              <a href="subject.html#1">[ subject ]</a>
+              <a href="author.html#1">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

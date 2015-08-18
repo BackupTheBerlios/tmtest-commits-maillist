@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [141] trunk: Add mutest-config,	start splitting mutest.h into two files
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B141%5D%20trunk%3A%20Add%20mutest-config%2C%0A%09start%20splitting%20mutest.h%20into%20two%20files&In-Reply-To=%3C200703062118.l26LIlHJ006584%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000057.html">
+   <LINK REL="Next"  HREF="000059.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [141] trunk: Add mutest-config,	start splitting mutest.h into two files</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B141%5D%20trunk%3A%20Add%20mutest-config%2C%0A%09start%20splitting%20mutest.h%20into%20two%20files&In-Reply-To=%3C200703062118.l26LIlHJ006584%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [141] trunk: Add mutest-config,	start splitting mutest.h into two files">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Tue Mar  6 22:18:47 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000057.html">[Tmtest-commits] [140] trunk: mutest's test_Asserts was renamed to	test_asserts
+</A></li>
+        <LI>Next message: <A HREF="000059.html">[Tmtest-commits] [142] trunk: Big refactor to mutest.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 141
+Author:   bronson
+Date:     2007-03-06 22:18:39 +0100 (Tue, 06 Mar 2007)
+
+Log Message:
+-----------
+Add mutest-config, start splitting mutest.h into two files (one for people writing tests, one for people running tests)
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/main.c
+    trunk/units.h
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-03-06 00:29:35 UTC (rev 140)
++++ trunk/Makefile	2007-03-06 21:18:39 UTC (rev 141)
+@@ -32,15 +32,20 @@
+ SCANC=re2c/read.c re2c/read-fd.c re2c/read-mem.c re2c/read-rand.c re2c/scan.c re2c/scan-dyn.c
+ SCANH=re2c/read.h re2c/read-fd.h re2c/read-mem.h re2c/read-rand.h re2c/scan.h re2c/scan-dyn.h
+ 	
++# files with unit tests
++USRC=pathstack.c compare.c pathconv.c
++UHDR=pathstack.h compare.h pathconv.h
++# add the files needed to run the unit tests
++USRC+=units.c $(shell mutest/mutest-config --c --tests assert)
++UHDR+=units.h $(shell mutest/mutest-config --headers assert)
++
+ # utilities:
+-CSRC+=qscandir.c pathconv.c pathstack.c
+-CHDR+=qscandir.h pathconv.h pathstack.h
++CSRC+=qscandir.c $(USRC)
++CHDR+=qscandir.h $(UHDR)
+ # program files:
+-CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+-CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
++CSRC+=vars.c test.c rusage.c tfscan.c stscan.o main.c template.c
++CHDR+=vars.h test.h rusage.h tfscan.h stscan.h
+ # unit test files
+-CSRC+=units.c mutest/mutest.c mutest/test_assert.c
+-CHDR+=units.h mutest/mutest.h mutest/mutest_assert.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+@@ -66,8 +71,8 @@
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/test_assert.c mutest/mutest_assert.h mutest/mutest.h $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/test_assert.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
++units: $(USRC) $(UHDR) mutest/main.c $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall $(USRC) mutest/main.c $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-03-06 00:29:35 UTC (rev 140)
++++ trunk/main.c	2007-03-06 21:18:39 UTC (rev 141)
+@@ -32,7 +32,9 @@
+ #include &quot;tfscan.h&quot;
+ #include &quot;pathconv.h&quot;
+ #include &quot;pathstack.h&quot;
++
+ #include &quot;units.h&quot;
++#include &quot;mutest/mutest.h&quot;
+ 
+ 
+ #define DIFFPROG &quot;/usr/bin/diff&quot;
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-03-06 00:29:35 UTC (rev 140)
++++ trunk/units.h	2007-03-06 21:18:39 UTC (rev 141)
+@@ -1,4 +1,4 @@
+-#include &quot;mutest/mutest_assert.h&quot;
++#include &quot;mutest/mu_assert.h&quot;
+ 
+ void compare_tests();
+ void pathstack_tests();
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000057.html">[Tmtest-commits] [140] trunk: mutest's test_Asserts was renamed to	test_asserts
+</A></li>
+	<LI>Next message: <A HREF="000059.html">[Tmtest-commits] [142] trunk: Big refactor to mutest.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

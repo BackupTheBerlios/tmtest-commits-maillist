@@ -1,0 +1,2136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [103] trunk: Tmtest would get confused by .
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B103%5D%20trunk%3A%20Tmtest%20would%20get%20confused%20by%20.&In-Reply-To=%3C200603050431.k254VIOi008571%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000019.html">
+   <LINK REL="Next"  HREF="000021.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [103] trunk: Tmtest would get confused by .</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B103%5D%20trunk%3A%20Tmtest%20would%20get%20confused%20by%20.&In-Reply-To=%3C200603050431.k254VIOi008571%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [103] trunk: Tmtest would get confused by .">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Sun Mar  5 05:31:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000019.html">[Tmtest-commits] [102] releases: Release 0.94
+</A></li>
+        <LI>Next message: <A HREF="000021.html">[Tmtest-commits] [104] trunk: Remove MODIFY from the template, update tests to match.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 103
+Author:   bronson
+Date:     2006-03-05 05:30:56 +0100 (Sun, 05 Mar 2006)
+
+Log Message:
+-----------
+Tmtest would get confused by . and .. passed on the command line.
+Fix that, make the path handling regular.  As if main.c could get
+any more messy...
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/TODO
+    trunk/curdir.c
+    trunk/curdir.h
+    trunk/main.c
+    trunk/sample.conf
+    trunk/test/02-running/05-Running.test
+    trunk/test/03-results/30-Binary.test
+    trunk/test/03-results/31-BinaryFail.test
+    trunk/test/03-results/32-BinaryLarge.test
+    trunk/test/03-results/33-BinaryHuge.test
+    trunk/test/04-diff/02-MultiDiff.test
+    trunk/test/04-diff/05-AbortDiff.test
+    trunk/test/tmtest.sub.conf
+    trunk/test.c
+    trunk/test.h
+    trunk/tmlib.sh
+    trunk/tmtest.conf
+
+Added Paths:
+-----------
+    trunk/pathconv.c
+    trunk/pathconv.h
+    trunk/test/01-testfile/23-TestVarsDeep.test
+    trunk/test/01-testfile/24-TestVarsRoot.test
+    trunk/test/01-testfile/dumpscript/
+    trunk/test/01-testfile/dumpscript/10-Stdout.test
+    trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+    trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+    trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+    trunk/test/01-testfile/dumpscript/14-DeepDir.test
+    trunk/test/01-testfile/dumpscript/15-PathOps.test
+    trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+    trunk/test/01-testfile/dumpscript/README
+    trunk/test/01-testfile/dumpscript/tmtest.conf
+    trunk/test/02-running/50-OpenFDsTest.test
+    trunk/test/02-running/51-OpenFDsConfig.tst
+
+Removed Paths:
+-------------
+    trunk/rel2abs.c
+    trunk/rel2abs.h
+    trunk/test/01-testfile/10-DumpScript.test
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/Makefile	2006-03-05 04:30:56 UTC (rev 103)
+@@ -5,19 +5,19 @@
+ # This software is distributed under the LGPL.  See COPYING for more.
+ 
+ 
+-VERSION=0.94
++VERSION=0.95
+ 
+-# override this when installing: &quot;make install prefix=/usr/local&quot;
++# override this for make install.  &quot;make install prefix=/usr/local&quot;
+ #prefix=/usr
+ prefix=$(HOME)
+ 
+-
++# figure out where to install the software:
+ bindir=$(prefix)/bin
+ lib_src=tmlib.sh
+ 
+ ifeq ($(prefix), $(HOME))
+-	libdir=$(prefix)
+-	stdlib=$(libdir)/.tmlib.sh
++	libdir=$(HOME)
++	stdlib=$(HOME)/.tmlib.sh
+ 	conf_dst=$(HOME)/.tmtestrc
+ else
+ 	libdir=$(prefix)/share/tmtest
+@@ -29,8 +29,8 @@
+ COPTS=-g -Wall -Werror
+ 
+ # utilities:
+-CSRC+=curdir.c qscandir.c pcrs.c rel2abs.c
+-CHDR+=curdir.h qscandir.h pcrs.h rel2abs.h
++CSRC+=curdir.c qscandir.c pcrs.c pathconv.c
++CHDR+=curdir.h qscandir.h pcrs.h pathconv.h
+ # scanner files
+ CSRC+=re2c/read.c re2c/read-fd.c re2c/scan.c
+ CHDR+=re2c/read.h re2c/read-fd.h re2c/scan.h
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/TODO	2006-03-05 04:30:56 UTC (rev 103)
+@@ -1,4 +1,15 @@
+ 0.96:
++- Make tmtest only execute config files owned by either the user or root.
++  Print a big fat warning when the config file is skipped.  This prevents
++  a malicious user from putting a config file in /tmp and having it
++  executed.  But is this a good idea?  I may want to run tests in another
++  user's directory.  Would it be better to just ensure that we never
++  read a config file from /tmp?  No, cause sticky dirs could be anywhere.
++  Maybe here's the deal: if a config file is in or below a world-writable
++  dir, it must be owned by the current user to be exectued.  Not even root.
++  That's probably the most agreeable.
++  We will not read either config or test files from a world-writable directory.
++  Ever.
+ - Put $args into EVERY test we run.
+ - There's some sort of a bug with 10-DumpScript.test.  When running with
+   -o or -d, sometimes it complains about a missing newline.  Odd.
+@@ -29,6 +40,9 @@
+ - Figure out how to ensure that we run the binary in the project tree
+   when testing rather than the globally installed one.  What happened?
+ - Ensure it compiles and runs on freebsd.
++- Add some unit tests.  <A HREF="http://kooditakomo.cs.tut.fi/projects/gunit/">http://kooditakomo.cs.tut.fi/projects/gunit/</A>
++  <A HREF="http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages">http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages</A>     Actually, this looks better: <A HREF="http://cutest.sourceforge.net/">http://cutest.sourceforge.net/</A>
++  Potential units: curdir, path normalization
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+@@ -44,6 +58,8 @@
+   buffer.  If your stderr is more than 100K or so in size, just redirect
+   it to a file, then cat the file at the end.  We truncate stderr if it
+   gets too big.
++- Is there any way to record memory and swap usage for each test?
++  sure, it's in the rusage. prolly add a &quot;tmtest -v&quot; to print it for each test.
+ - stdin is all buggered up.  why is it that &quot;cat&quot; with no args will print
+   the rest of the test script?  And why is it that if you fork, diff freezes?
+   They're related problems I suspect.
+
+Modified: trunk/curdir.c
+===================================================================
+--- trunk/curdir.c	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/curdir.c	2006-03-05 04:30:56 UTC (rev 103)
+@@ -10,6 +10,36 @@
+  * Unfortunately this file got hacked to shreds when tmtest was
+  * made to run with /tmp as the constant cwd.  It's pretty
+  * incomprehensible and in dire dire DIRE need of a rewrite.
++ *
++ * There's also now a pretty serious impedance mismatch...
++ * The caller must handle all occurrences of &quot;//&quot; &quot;/.&quot;, &quot;..&quot;
++ * etc. in the partial path before passing it here.  But
++ * that's stupid because properly handling those requires
++ * converting the parital to an absolute path before normalizing.
++ * This library should normalize the path after catting, then
++ * return the number of normalized directories added.  This is
++ * pretty decidedly nontrivial, of course, because if I push
++ * &quot;..&quot;, a directory gets removed from the path, then I push
++ * &quot;dir&quot;, then I pop twice, I need to return to the original
++ * directory.
++ *
++ * So for now, alas, it's hacked in main.c.
++ *
++ * What this file should have been:
++ *
++ * A completely flexible path lib.  You can init the path with an
++ * arbitrary string or from the cwd.  You can push an arbitrary
++ * path onto the end (including &quot;..&quot;) and it will return a pointer
++ * to an &quot;undo&quot; struct.  Then, when you want to pop the pushed
++ * path, you pass the undo struct, and everything is reverted to
++ * the way it was before.  You can push an arbitrary number of
++ * times.  Push/pop must always be nested of course.  And, of
++ * course, you must be able to save and restore the state of the
++ * curdir.  Finally, it should not use globals so multiple threads
++ * etc. can all maintain their own curdirs.
++ *
++ * If we had a module that could do this, main.c could be
++ * *drastically* cleaned up.  Sigh.
+  */
+ 
+ #include &lt;stdio.h&gt;
+@@ -98,19 +128,6 @@
+ }
+ 
+ 
+-/** Resets the curdir so that curabsolute() and currelative()
+- *  return what they did after curinit() was first called.
+- */
+-
+-void curreset()
+-{
+-	if(curpart) {
+-		curpart[-1] = '\0';
+-		curpart[0] = '\0';
+-	}
+-}
+-
+-
+ void cursave(struct cursave *save)
+ {
+ 	strcpy(save-&gt;buf, curdir);
+
+Modified: trunk/curdir.h
+===================================================================
+--- trunk/curdir.h	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/curdir.h	2006-03-05 04:30:56 UTC (rev 103)
+@@ -18,7 +18,6 @@
+ int curinit(const char *path);
+ int curpush(const char *dir);
+ void curpop(int keep);
+-void curreset();
+ void cursave(struct cursave *save);
+ void currestore(struct cursave *save);
+ const char *curabsolute();
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/main.c	2006-03-05 04:30:56 UTC (rev 103)
+@@ -29,7 +29,7 @@
+ #include &quot;qscandir.h&quot;
+ #include &quot;vars.h&quot;
+ #include &quot;tfscan.h&quot;
+-#include &quot;rel2abs.h&quot;
++#include &quot;pathconv.h&quot;
+ 
+ 
+ #define DIFFPROG &quot;/usr/bin/diff&quot;
+@@ -46,9 +46,12 @@
+ int allfiles = 0;
+ int dumpscript = 0;
+ int quiet = 0;
++const char *orig_cwd;		// tmtest runs with the cwd pointed to /tmp
+ char *config_file;	// absolute path to the user-specified config file
+ 					// null if user didn't specify a config file.
+ 
++int arg_was_absolute;	// this is an absolutely awful hack.  it's true
++		// if the current path is absolute, false if it's relative.
+ 
+ #define TESTDIR &quot;/tmp/tmtest-XXXXXX&quot;
+ char g_testdir[sizeof(TESTDIR)];
+@@ -136,7 +139,6 @@
+ 		st = &sts;
+ 	}
+ 
+-
+ 	if(stat(file, st) &lt; 0) {
+ 		fprintf(stderr, &quot;Could not locate %s: %s\n&quot;, file, strerror(errno));
+ 		return 0;
+@@ -339,9 +341,10 @@
+ 					perror(&quot;strdup in start_diff&quot;);
+ 					exit(runtime_error);
+ 				}
+-				curreset();
++				curpop(1);
+ 				if(0 != chdir(curabsolute())) {
+-					fprintf(stderr, &quot;Could not chdir 1 to %s: %s\n&quot;, curabsolute(), strerror(errno));
++					fprintf(stderr, &quot;Could not chdir 1 to %s: %s\n&quot;,
++							curabsolute(), strerror(errno));
+ 					exit(runtime_error);
+ 				}
+ 			}
+@@ -405,7 +408,7 @@
+  * @returns 1 if we should keep testing, 0 if we should stop now.
+  */
+ 
+-static int run_test(const char *name, int warn_suffix)
++static int run_test(const char *name, const char *dispname, int warn_suffix)
+ {
+     struct test test;
+     char buf[BUFSIZ];   // scan buffer for the testfile
+@@ -550,7 +553,7 @@
+         // process and output the test results
+         switch(outmode) {
+             case outmode_test:
+-                test_results(&amp;test);
++                test_results(&amp;test, dispname);
+                 break;
+             case outmode_dump:
+                 dump_results(&amp;test);
+@@ -589,15 +592,11 @@
+ }
+ 
+ 
+-// forward declaration for recursion
+-int process_dir();
+-
+-
+ /**
+  * Sucks the dirname from an absolute file path and calls curinit with it.
+  */
+ 
+-static void init_path(const char *path)
++static void init_absolute_filepath(const char *path)
+ {
+ 	const char *cp;
+ 	int loc;
+@@ -620,9 +619,12 @@
+ 	curinit(buf);
+ }
+ 
+-/** Processes a directory specified using an absolute path.
++
++/** Processes a directory specified using an absolute or deep
++ * path.  We need to save and restore curpath to do this.
+  *
+- * We need to save and restore curpath to do this.
++ * It's illegal to call this routine with a path that doesn't
++ * include at least one / character.
+  *
+  * @returns 1 if we should continue testing, 0 if we should abort.
+  */
+@@ -633,33 +635,115 @@
+ 	int keepontruckin;
+ 
+ 	cursave(&amp;save);
+-	init_path(path);
++	init_absolute_filepath(path);
+ 
++	keepontruckin = run_test(strrchr(path,'/')+1, path, warn_suffix);
++
++	currestore(&amp;save);
++	return keepontruckin;
++}
++
++
++static void init_path(const char *base, const char *path)
++{
++	char buf[PATH_MAX];
++
++	strncpy(buf, curabsolute(), PATH_MAX);
++	strncat(buf, &quot;/&quot;, PATH_MAX);
++	strncat(buf, path, PATH_MAX);
++	buf[PATH_MAX-1] = '\0';
++
++	normalize_absolute_path(buf);
++
++	curinit(buf);
++}
++
++
++
++/**
++ * This is actually a hassle.  The user may have specified
++ * &quot;../..&quot; which means we need to normalize an absolute path
++ * and use that.
++ */
++
++static int process_deep_file(const char *path, int warn_suffix)
++{
++	struct cursave save;
++	int keepontruckin;
++
++	cursave(&amp;save);
++	init_path(orig_cwd, path);
++	curpop(1);	// get rid of the filename
++
++	keepontruckin = run_test(strrchr(path,'/')+1, path, warn_suffix);
++
++	currestore(&amp;save);
++	return keepontruckin;
++}
++
++
++// forward declaration for recursion
++int process_dir();
++
++static int process_absolute_dir(const char *path)
++{
++	struct cursave save;
++	int keepontruckin;
++
++	cursave(&amp;save);
++	curinit(path);
++
++	// we are certain the fullpath has already been normalized.
++	// no need to do it again.
++
+ 	if(outmode == outmode_test) {
+ 		printf(&quot;\nProcessing %s\n&quot;, path);
+ 	}
+-	keepontruckin = run_test(path, warn_suffix);
++	keepontruckin = process_dir();
+ 
+ 	currestore(&amp;save);
++
+ 	return keepontruckin;
+ }
+ 
+ 
+-/** Processes a directory specified using an absolute path.
++static void print_relative_dir()
++{
++	char buf[PATH_MAX];
++
++	if(arg_was_absolute) {
++		printf(&quot;\nProcessing %s\n&quot;, curabsolute());
++	} else {
++		if(!abs2rel(curabsolute(), orig_cwd, buf, PATH_MAX)) {
++			printf(&quot;Path couldn't be converted \&quot;\%s\&quot;\n&quot;, curabsolute());
++			exit(runtime_error);
++		}
++		printf(&quot;\nProcessing ./%s\n&quot;, buf);
++	}
++}
++
++
++/**
++ * This routine used to be a simple &quot;push the dir onto curpath,
++ * run, and pop&quot; affair.  Now, with &quot;..&quot; being fairly nontrivial,
++ * we just need to save and restore.  Arg.  But at least this
++ * works.
+  *
+- * We need to save and restore curpath to do this.
++ * The relative path can't be normalied because it might be
++ * simply &quot;..&quot;.  Therefore, it's one above whatever the cwd
++ * is.  Gotta figure that out at runtime.
+  */
+ 
+-static int process_absolute_dir(const char *path)
++static int process_relative_dir(const char *path)
+ {
+ 	struct cursave save;
+ 	int keepontruckin;
+ 
+ 	cursave(&amp;save);
+-	curinit(path);
++	init_path(curabsolute(), path);
+ 
+ 	if(outmode == outmode_test) {
+-		printf(&quot;\nProcessing %s\n&quot;, path);
++		print_relative_dir();
+ 	}
+ 	keepontruckin = process_dir();
+ 
+@@ -671,10 +755,13 @@
+ 
+ /** Process all entries in a directory.
+  *
+- * See run_test() for an explanation of warn_suffix.
++ * @param is_topmost True if we are not recursing.  This allows us to
++ * tell whether we should display pathnames absolute or relative
++ * (if the user specified them relative on the command line, we
++ * show them relative, and vice versa).
+  */
+ 
+-static int process_ents(char **ents, int warn_suffix)
++static int process_ents(char **ents, int is_topmost)
+ {
+ 	struct stat st;
+     mode_t *modes;
+@@ -718,9 +805,12 @@
+     for(i=0; i&lt;n; i++) {
+         if(is_dash(ents[i]) || S_ISREG(modes[i])) {
+ 			if(ents[i][0] == '/') {
+-				keepontruckin = process_absolute_file(ents[i], warn_suffix);
++				// we know the path has already been fully normalized.
++				keepontruckin = process_absolute_file(ents[i], is_topmost);
++			} else if(strchr(ents[i], '/')) {
++				keepontruckin = process_deep_file(ents[i], is_topmost);
+ 			} else {
+-				keepontruckin = run_test(ents[i], warn_suffix);
++				keepontruckin = run_test(ents[i], ents[i], is_topmost);
+ 			}
+ 			if(!keepontruckin) {
+ 				goto abort;
+@@ -733,19 +823,16 @@
+     for(i=0; i&lt;n; i++) {
+         if(is_dash(ents[i]) || modes[i] == 0) continue;
+         if(S_ISDIR(modes[i])) {
++			if(is_topmost) {
++				// this is an unfortunate hack.  we display the path the same
++				// way the user specified (absolute or relative) so we need
++				// to remember which one it is.
++				arg_was_absolute = (ents[i][0] == '/');
++			}
+ 			if(ents[i][0] == '/') {
+ 				keepontruckin = process_absolute_dir(ents[i]);
+ 			} else {
+-				int keep = curpush(ents[i]);
+-				if(keep &lt;= 0) {
+-					fprintf(stderr, &quot;Path is too long.&quot;);
+-					exit(runtime_error);
+-				}
+-				if(outmode == outmode_test) {
+-					printf(&quot;\nProcessing ./%s\n&quot;, currelative());
+-				}
+-				keepontruckin = process_dir();
+-				curpop(keep);
++				keepontruckin = process_relative_dir(ents[i]);
+ 			}
+ 			if(!keepontruckin) {
+ 				goto abort;
+@@ -861,35 +948,33 @@
+ 
+ static void set_config_file(const char *cfg)
+ {
+-	char cwd[PATH_MAX];
+-	char out[PATH_MAX];
+-	char *path;
++	char buf[PATH_MAX];
+ 
+ 	if(cfg[0] == '\0') {
+ 		fprintf(stderr, &quot;You must specify a directory for --config.\n&quot;);
+ 		exit(argument_error);
+ 	}
+ 
+-	if(!getcwd(cwd, PATH_MAX)) {
+-		perror(&quot;Couldn't get current working directory&quot;);
+-		exit(runtime_error);
++	if(cfg[0] == '/') {
++		strncpy(buf, cfg, PATH_MAX);
++		buf[PATH_MAX-1] = '\0';
++	} else {
++		strncpy(buf, orig_cwd, PATH_MAX);
++		strncat(buf, &quot;/&quot;, PATH_MAX);
++		strncat(buf, cfg, PATH_MAX);
++		buf[PATH_MAX-1] = '\0';
+ 	}
+ 
+-	path = rel2abs(cfg, cwd, out, PATH_MAX);
+-	if(!path) {
+-		fprintf(stderr, &quot;Got %d figuring out absolute path for \&quot;%s\&quot;: %s&quot;,
+-				errno, cfg, strerror(errno));
+-		exit(runtime_error);
+-	}
++	normalize_absolute_path(buf);
+ 
+ 	// need to ensure as well as we can that the file is readable because
+ 	// we don't open it ourselves.  Bash does.  And that can lead to some
+ 	// really cryptic error messages.
+-	if(!verify_readable(out,NULL,1)) {
++	if(!verify_readable(buf,NULL,1)) {
+ 		exit(runtime_error);
+ 	}
+ 
+-	config_file = strdup(out);
++	config_file = strdup(buf);
+ 	if(!config_file) {
+ 		perror(&quot;strdup&quot;);
+ 		exit(runtime_error);
+@@ -924,7 +1009,6 @@
+ 		{&quot;dump-script&quot;, 0, &amp;dumpscript, 1},
+ 		{&quot;help&quot;, 0, 0, 'h'},
+ 		{&quot;output&quot;, 0, 0, 'o'},
+-		{&quot;patch&quot;, 0, 0, 'p'},
+ 		{&quot;quiet&quot;, 0, 0, 'q'},
+ 		{&quot;version&quot;, 0, 0, 'V'},
+ 		{0, 0, 0, 0},
+@@ -963,10 +1047,6 @@
+                 outmode = outmode_dump;
+ 				break;
+ 
+-			case 'p':
+-                outmode = outmode_diff;
+-                break;
+-
+ 			case 'q':
+ 				quiet++;
+ 				break;
+@@ -991,13 +1071,109 @@
+ }
+ 
+ 
++/*
++ * I wish I could use canonicalize_path(3), but that routine resolves
++ * symbolic links and provides no way to turn that behavior off.
++ * How stupid!  This isn't as much of a hack as it looks because
++ * &quot;./../..&quot; still needs to resolve to a real directory.
++ *
++ * @param original: the path to be normalized
++ * @param outpath: the normalized path.  this may or may not be the same
++ *     as original.
++ */
++
++static void normalize_path(char *original, char **outpath)
++{
++    char buf[PATH_MAX];
++    char normalized[PATH_MAX];
++
++    if(original[0] == '/') {
++		if(strlen(original) &gt; PATH_MAX-1) {
++			fprintf(stderr, &quot;Path is too long: %s\n&quot;, original);
++			exit(runtime_error);
++		}
++		strcpy(normalized, original);
++		normalize_absolute_path(normalized);
++    } else {
++        strncpy(buf, curabsolute(), PATH_MAX);
++		strncat(buf, &quot;/&quot;, PATH_MAX);
++		strncat(buf, original, PATH_MAX);
++		buf[PATH_MAX-1] = '\0';
++		normalize_absolute_path(buf);
++
++		// convert it back to a relative path so it prints the
++		// way the user intends.  We need to beware later on
++		// to trim .. from the leading path.
++		if(!abs2rel(buf, curabsolute(), normalized, PATH_MAX)) {
++            fprintf(stderr, &quot;Could not reabsize %s: %s\n&quot;,
++				original, strerror(errno));
++			exit(runtime_error);
++		}
++    }
++
++	if(strcmp(original,normalized) == 0) {
++		*outpath = original;
++	} else {
++		*outpath = strdup(normalized);
++	}
++}
++
++
++static void normalize_free(const char *original, char *outpath)
++{
++    if(outpath != original) {
++        free(outpath);
++    }
++}
++
++
++/**
++ * Normalize all the passed-in paths, then call process_ents()
++ * with the normalized paths.  It's easiest to just dup argv
++ * and modify that.
++ */
++
++static void process_argv(char **argv)
++{
++	char **ents;
++	int i, n;
++
++    for(n=0; argv[n]; n++) { }
++
++	ents = malloc((n+1)*sizeof(*ents));
++	ents[n] = NULL;
++
++	for(i=0; i&lt;n; i++) { normalize_path(argv[i], &amp;ents[i]); }
++	process_ents(ents, 1);
++	for(i=0; i&lt;n; i++) { normalize_free(argv[i], ents[i]); }
++}
++
++
++/**
++ * The Gnu version of getcwd can do this for us but that's not portable.
++ */
++
++static const char* dup_cwd()
++{
++	char buf[PATH_MAX];
++
++	if(!getcwd(buf, PATH_MAX)) {
++		perror(&quot;Couldn't get current working directory&quot;);
++		exit(runtime_error);
++	}
++
++	return strdup(buf);
++}
++
++
+ int main(int argc, char **argv)
+ {
++	orig_cwd = dup_cwd();
+ 	process_args(argc, argv);
+ 
+     start_tests();
+     if(optind &lt; argc) {
+-        process_ents(argv+optind, 1);
++		process_argv(argv+optind);
+     } else {
+         if(outmode == outmode_test) {
+             printf(&quot;\nProcessing .\n&quot;);
+@@ -1010,6 +1186,7 @@
+         print_test_summary();
+     }
+ 
++	free((char*)orig_cwd);
+ 	return 0;
+ }
+ 
+
+Added: trunk/pathconv.c
+===================================================================
+--- trunk/pathconv.c	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/pathconv.c	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,184 @@
++/* Copyright (c) 1997 Shigio Yamaguchi. All rights reserved.
++   Copyright (c) 1999 Tama Communications Corporation. All rights reserved.
++
++   The Pathconvert Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The Pathconvert Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, write to the Free
++   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++   02111-1307 USA.  */
++
++#include &lt;errno.h&gt;
++#include &lt;stdlib.h&gt;
++#include &lt;string.h&gt;
++#include &quot;pathconv.h&quot;
++
++
++/*
++ * abs2rel: convert an absolute path name into relative.
++ *
++ *	i)	path	absolute path
++ *	i)	base	base directory (must be absolute path)
++ *	o)	result	result buffer
++ *	i)	size	size of result buffer
++ *	r)		!= NULL: relative path
++ *			== NULL: error
++ */
++char *
++abs2rel(path, base, result, size)
++	const char *path;
++	const char *base;
++	char *result;
++	const size_t size;
++{
++	const char *pp, *bp, *branch;
++	/*
++	 * endp points the last position which is safe in the result buffer.
++	 */
++	const char *endp = result + size - 1;
++	char *rp;
++
++	if (*path != '/') {
++		if (strlen(path) &gt;= size)
++			goto erange;
++		strcpy(result, path);
++		goto finish;
++	} else if (*base != '/' || !size) {
++		errno = EINVAL;
++		return (NULL);
++	} else if (size == 1)
++		goto erange;
++	/*
++	 * seek to branched point.
++	 */
++	branch = path;
++	for (pp = path, bp = base; *pp &amp;&amp; *bp &amp;&amp; *pp == *bp; pp++, bp++)
++		if (*pp == '/')
++			branch = pp;
++	if ((*pp == 0 || (*pp == '/' &amp;&amp; *(pp + 1) == 0)) &amp;&amp;
++	    (*bp == 0 || (*bp == '/' &amp;&amp; *(bp + 1) == 0))) {
++		rp = result;
++		*rp++ = '.';
++		if (*pp == '/' || *(pp - 1) == '/')
++			*rp++ = '/';
++		if (rp &gt; endp)
++			goto erange;
++		*rp = 0;
++		goto finish;
++	}
++	if ((*pp == 0 &amp;&amp; *bp == '/') || (*pp == '/' &amp;&amp; *bp == 0))
++		branch = pp;
++	/*
++	 * up to root.
++	 */
++	rp = result;
++	for (bp = base + (branch - path); *bp; bp++)
++		if (*bp == '/' &amp;&amp; *(bp + 1) != 0) {
++			if (rp + 3 &gt; endp)
++				goto erange;
++			*rp++ = '.';
++			*rp++ = '.';
++			*rp++ = '/';
++		}
++	if (rp &gt; endp)
++		goto erange;
++	*rp = 0;
++	/*
++	 * down to leaf.
++	 */
++	if (*branch) {
++		if (rp + strlen(branch + 1) &gt; endp)
++			goto erange;
++		strcpy(rp, branch + 1);
++	} else
++		*--rp = 0;
++finish:
++	return result;
++erange:
++	errno = ERANGE;
++	return (NULL);
++}
++
++
++// Copyright (c) 2006 Scott Bronson
++// The following code can be distributed under the LGPL as above
++// or, at your option, the much simpler MIT license.
++
++/**
++ * Normalizes the absolute path in-place.
++ * A path can only get shorter when it's normalized, never longer.
++ *
++ * This is not the way I'd like to write this routine.  I'd like
++ * to walk two pointers through the string copying bits from the
++ * src to the dst so I don't spend so much time moving the same
++ * bytes over and over.  Alas, I'm out of time so I'm going to
++ * resort to this loathesome coding style for less chance of bugs.
++ *
++ * @returns 1 if this was a relative path and therefore the function
++ * did nothing.  Otherwise returns 0.
++ *
++ * TODO: split this out into a unit and make some unit tests for it.
++ */
++
++int normalize_absolute_path(char *buf)
++{
++	char *cp;
++	int end;
++
++	if(buf[0] != '/') {
++		// refuse to normalize a relative path
++		return 1;
++	}
++
++	cp = buf + 1;
++	end = strlen(buf) - 1;
++
++	while(end &gt; 0) {
++		// we're just past the slash of the prev directory
++		if(cp[0] == '/') {
++			// turn '//' into '/'
++			memmove(cp, cp+1, end);
++			end -= 1;
++		} else if(cp[0] == '.' &amp;&amp; (cp[1] == '/' || end == 1)) {
++			// turn '/./' into '/'
++			memmove(cp, cp+2, end-1);
++			end -= 2;
++		} else if(cp[0] == '.' &amp;&amp; cp[1] == '.' &amp;&amp; (cp[2] == '/' || end == 2)) {
++			// save our position
++			char *src = cp+3;
++			// back up one dir, not moving past the base dir
++			cp -= 1;
++			while(cp &gt; buf+1 &amp;&amp; cp[-1] != '/') cp -= 1;
++			memmove(cp, src, end-2);
++			end -= 3;
++		} else {
++			// skip a directory name
++			while(*cp != '/' &amp;&amp; end &gt; 0) {
++				cp += 1;
++				end -= 1;
++			}
++			if(*cp == '/' &amp;&amp; end &gt; 0) {
++				cp += 1;
++				end -= 1;
++			}
++		}
++	}
++
++	if(cp[-1] == '/') {
++		cp -= 1;
++	}
++
++	*cp = '\0';
++
++	return 0;
++}
++
++
+
+Added: trunk/pathconv.h
+===================================================================
+--- trunk/pathconv.h	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/pathconv.h	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,11 @@
++// The rel2abs that comes with pathconv is hopeless. It removes .. without
++// moving up a directory and the code is pretty bad so it has been purged.
++// Just use strcat and then normalize the absolute path.
++//
++// char *rel2abs(const char *path, const char *base, char *result,
++// 		const size_t size);
++
++char *abs2rel(const char *path, const char *base, char *result,
++		const size_t size);
++
++int normalize_absolute_path(char *buf);
+
+Deleted: trunk/rel2abs.c
+===================================================================
+--- trunk/rel2abs.c	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/rel2abs.c	2006-03-05 04:30:56 UTC (rev 103)
+@@ -1,126 +0,0 @@
+-/* Copyright (c) 1997 Shigio Yamaguchi. All rights reserved.
+-   Copyright (c) 1999 Tama Communications Corporation. All rights reserved.
+-
+-   The Pathconvert Library is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU Lesser General Public
+-   License as published by the Free Software Foundation; either
+-   version 2.1 of the License, or (at your option) any later version.
+-
+-   The Pathconvert Library is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+-   Lesser General Public License for more details.
+-
+-   You should have received a copy of the GNU Lesser General Public
+-   License along with the GNU C Library; if not, write to the Free
+-   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+-   02111-1307 USA.  */
+-
+-#include &lt;errno.h&gt;
+-#include &lt;stdlib.h&gt;
+-#include &lt;string.h&gt;
+-/*
+- * rel2abs: convert an relative path name into absolute.
+- *
+- *	i)	path	relative path
+- *	i)	base	base directory (must be absolute path)
+- *	o)	result	result buffer
+- *	i)	size	size of result buffer
+- *	r)		!= NULL: absolute path
+- *			== NULL: error
+- */
+-char *
+-rel2abs(path, base, result, size)
+-	const char *path;
+-	const char *base;
+-	char *result;
+-	const size_t size;
+-{
+-	const char *pp, *bp;
+-	/*
+-	 * endp points the last position which is safe in the result buffer.
+-	 */
+-	const char *endp = result + size - 1;
+-	char *rp;
+-	int length;
+-
+-	if (*path == '/') {
+-		if (strlen(path) &gt;= size)
+-			goto erange;
+-		strcpy(result, path);
+-		goto finish;
+-	} else if (*base != '/' || !size) {
+-		errno = EINVAL;
+-		return (NULL);
+-	} else if (size == 1)
+-		goto erange;
+-
+-	length = strlen(base);
+-
+-	if (!strcmp(path, &quot;.&quot;) || !strcmp(path, &quot;./&quot;)) {
+-		if (length &gt;= size)
+-			goto erange;
+-		strcpy(result, base);
+-		/*
+-		 * rp points the last char.
+-		 */
+-		rp = result + length - 1;
+-		/*
+-		 * remove the last '/'.
+-		 */
+-		if (*rp == '/') {
+-			if (length &gt; 1)
+-				*rp = 0;
+-		} else
+-			rp++;
+-		/* rp point NULL char */
+-		if (*++path == '/') {
+-			/*
+-			 * Append '/' to the tail of path name.
+-			 */
+-			*rp++ = '/';
+-			if (rp &gt; endp)
+-				goto erange;
+-			*rp = 0;
+-		}
+-		goto finish;
+-	}
+-	bp = base + length;
+-	if (*(bp - 1) == '/')
+-		--bp;
+-	/*
+-	 * up to root.
+-	 */
+-	for (pp = path; *pp &amp;&amp; *pp == '.'; ) {
+-		if (!strncmp(pp, &quot;../&quot;, 3)) {
+-			pp += 3;
+-			while (bp &gt; base &amp;&amp; *--bp != '/')
+-				;
+-		} else if (!strncmp(pp, &quot;./&quot;, 2)) {
+-			pp += 2;
+-		} else if (!strncmp(pp, &quot;..\0&quot;, 3)) {
+-			pp += 2;
+-			while (bp &gt; base &amp;&amp; *--bp != '/')
+-				;
+-		} else
+-			break;
+-	}
+-	/*
+-	 * down to leaf.
+-	 */
+-	length = bp - base;
+-	if (length &gt;= size)
+-		goto erange;
+-	strncpy(result, base, length);
+-	rp = result + length;
+-	if (*pp || *(pp - 1) == '/' || length == 0)
+-		*rp++ = '/';
+-	if (rp + strlen(pp) &gt; endp)
+-		goto erange;
+-	strcpy(rp, pp);
+-finish:
+-	return result;
+-erange:
+-	errno = ERANGE;
+-	return (NULL);
+-}
+
+Deleted: trunk/rel2abs.h
+===================================================================
+--- trunk/rel2abs.h	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/rel2abs.h	2006-03-05 04:30:56 UTC (rev 103)
+@@ -1,2 +0,0 @@
+-char * rel2abs(const char *path, const char *base, char *result, const size_t size);
+-
+
+Modified: trunk/sample.conf
+===================================================================
+--- trunk/sample.conf	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/sample.conf	2006-03-05 04:30:56 UTC (rev 103)
+@@ -1,12 +1,14 @@
+-# This is the system-wide configuration file for tmtest.  tmtest
+-# configuration files are read in the following order.  Settings
+-# in later files override settings in earlier ones.
++# This is the system-wide configuration file for tmtest.
++
++# tmtest configuration files are read in the following order:
+ #
+ #    /etc/tmtest.conf
+ #    /etc/tmtest/tmtest.conf
+ #    ~/.tmtestrc
+-#    /tmtest.conf				(starts at root dir and works its way
+-#    / ... ./tmtest.conf		up to the dir containing the testfile.
++#    /tmtest.conf				(starts at root dir and works its way up to
++#    / ... ./tmtest.conf		 the dir containing the testfile being run)
++#
++# Settings in later files override earlier ones.
+ 
+ 
+ # include the standard utility functions
+
+Deleted: trunk/test/01-testfile/10-DumpScript.test
+===================================================================
+--- trunk/test/01-testfile/10-DumpScript.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/10-DumpScript.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -1,70 +0,0 @@
+-# Ensures that the dumpscript is what we expect.
+-# This is just so we don't surprise ourselves...  Any time you modify
+-# template.sh, you should expect test to fail.
+-
+-SANIFY ()
+-{
+-	# This function cleans the absolute pathnames specifying the
+-	# 'tmtest.sub.conf' config file from the script.
+-
+-	sed \
+-	-e &quot;s/echo 'CONFIG: .*tmtest.sub.conf' .*/echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD/&quot; \
+-	-e &quot;s/MYDIR='.*test'/MYDIR='...test'/&quot; \
+-	-e &quot;s/MYFILE='.*tmtest.sub.conf'/MYFILE='...tmtest.sub.conf'/&quot; \
+-	-e &quot;s/\\. '.*tmtest.sub.conf'/. '...tmtest.sub.conf'/&quot;
+-}
+-
+-tmtest $args --dump-script - &lt;&lt;-EOL | SANIFY
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 1
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 2
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 3
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 4
+-EOL
+-
+-MODIFY:
+-  s/DATE='.*'/Date='BLAH BLAH'/
+-  s/^(.)/	$1/
+-
+-STDOUT:
+-	echo START &gt;&amp;7
+-
+-	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&amp;7; exit 0; }
+-	ABORT: () { ABORT $*; }
+-
+-	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&amp;7; exit 0; }
+-	DISABLED: () { DISABLED $*; }
+-	DISABLE   () { DISABLED $*; }
+-	DISABLE:  () { DISABLED $*; }
+-
+-	TESTDIR='/tmp'
+-	TESTFILE='(STDIN)'
+-
+-	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
+-	MYDIR='...test'
+-	MYFILE='...tmtest.sub.conf'
+-	. '...tmtest.sub.conf'
+-
+-
+-	echo PREPARE &gt;&amp;7
+-
+-	STDOUT () { exit 0; }
+-	STDOUT: () { exit 0; }
+-	STDERR () { exit 0; }
+-	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+-
+-	echo 'RUNNING: (STDIN)' &gt;&amp;7
+-	MYDIR='/tmp'
+-	MYFILE='(STDIN)'
+-	exec &gt;&amp;3 2&gt;&amp;5 3&gt;&amp;- 5&gt;&amp;-
+-	LINENO=0
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 1
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 2
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 3
+-	THE-SCRIPT THE-SCRIPT THE-SCRIPT 4
+-
+-
+-	echo DONE &gt;&amp;7
+
+Added: trunk/test/01-testfile/23-TestVarsDeep.test
+===================================================================
+--- trunk/test/01-testfile/23-TestVarsDeep.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/23-TestVarsDeep.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,27 @@
++# Make sure the variables are set up correctly when we are running a
++# test with a relative pathname.
++
++MKDIR do
++
++MKDIR di &quot;$do/di&quot;
++
++MKFILE tt &quot;$do/di/tt.test&quot; &lt;&lt;-'EOL'
++	echo MYDIR:    &quot;$MYDIR&quot;
++	echo MYFILE:   &quot;$MYFILE&quot;
++	echo TESTDIR:  &quot;$TESTDIR&quot;
++	echo TESTFILE: &quot;$TESTFILE&quot;
++EOL
++
++cd &quot;$do&quot;
++tmtest $config -o -q &quot;di/tt.test&quot; &lt;&lt;-EOL | REPLACE $do /tmp/DIR | INDENT
++
++STDOUT:
++    echo MYDIR:    &quot;$MYDIR&quot;
++    echo MYFILE:   &quot;$MYFILE&quot;
++    echo TESTDIR:  &quot;$TESTDIR&quot;
++    echo TESTFILE: &quot;$TESTFILE&quot;
++    STDOUT:
++    MYDIR: /tmp/DIR/di
++    MYFILE: /tmp/DIR/di/tt.test
++    TESTDIR: /tmp/DIR/di
++    TESTFILE: /tmp/DIR/di/tt.test
+
+Added: trunk/test/01-testfile/24-TestVarsRoot.test
+===================================================================
+--- trunk/test/01-testfile/24-TestVarsRoot.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/24-TestVarsRoot.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,23 @@
++# Make sure the variables are set up correctly when we are running a
++# test with a relative pathname.
++
++MKFILE tt &lt;&lt;-'EOL'
++	echo MYDIR:    &quot;$MYDIR&quot;
++	echo MYFILE:   &quot;$MYFILE&quot;
++	echo TESTDIR:  &quot;$TESTDIR&quot;
++	echo TESTFILE: &quot;$TESTFILE&quot;
++EOL
++
++cd `dirname &quot;$tt&quot;`
++tmtest $args --all-files -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
++
++STDOUT:
++    echo MYDIR:    &quot;$MYDIR&quot;
++    echo MYFILE:   &quot;$MYFILE&quot;
++    echo TESTDIR:  &quot;$TESTDIR&quot;
++    echo TESTFILE: &quot;$TESTFILE&quot;
++    STDOUT:
++    MYDIR: /tmp
++    MYFILE: /tmp/FILE
++    TESTDIR: /tmp
++    TESTFILE: /tmp/FILE
+
+Added: trunk/test/01-testfile/dumpscript/10-Stdout.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/10-Stdout.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/10-Stdout.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,53 @@
++# Ensures that the dumpscript is what we expect.
++# This is just so we don't surprise ourselves...  Any time you modify
++# template.sh, you should expect test to fail.
++
++# The --config directive disables reading config files from the directory
++# containing the named config file and all its parent directories.
++
++tmtest $args --dump-script - &lt;&lt;-EOL | FIX_SCRIPT
++	this test is never run but we do need to specify a file so tmtest
++	knows what config files to include.
++EOL
++
++STDOUT:
++	echo START &gt;&amp;FD
++	
++	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
++	ABORT: () { ABORT $*; }
++	
++	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&FD; exit 0; }
++	DISABLED: () { DISABLED $*; }
++	DISABLE   () { DISABLED $*; }
++	DISABLE:  () { DISABLED $*; }
++	
++	TESTDIR='/tmp'
++	TESTFILE='(STDIN)'
++	
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
++	
++	
++	echo PREPARE &gt;&amp;FD
++	
++	STDOUT () { exit 0; }
++	STDOUT: () { exit 0; }
++	STDERR () { exit 0; }
++	STDERR: () { exit 0; }
++	RESULT () { exit 0; }
++	RESULT: () { exit 0; }
++	MODIFY () { exit 0; }
++	MODIFY: () { exit 0; }
++	
++	echo 'RUNNING: (STDIN)' &gt;&amp;FD
++	MYDIR='/tmp'
++	MYFILE='(STDIN)'
++	exec &gt;&amp;FD FD&gt;&amp;FD FD&gt;&amp;- FD&gt;&amp;-
++	LINENO=0
++	this test is never run but we do need to specify a file so tmtest
++	knows what config files to include.
++	
++	
++	echo DONE &gt;&amp;FD
+
+Added: trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,65 @@
++# Ensures we prepare tests properly even when the --config
++# file is entirely outside the testdir.
++
++# tmtest 0.94 and earlier had a bug where if you supplied a
++# trailing slash after a directory name on the command line,
++# it would include config files from that directory twice.
++# This test ensures that won't happen anymore.
++
++
++MKDIR dd
++
++MKFILE tt1 &quot;$dd/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;yes!&quot;
++EOL
++
++MKFILE tt2 &quot;$dd/tt.test&quot; &lt;&lt;'EOL'
++	echo &quot;$config&quot;
++EOL
++
++tmtest $args --dump-script &quot;$dd/&quot; | REPLACE &quot;$dd&quot; /tmp/DIR | FIX_SCRIPT
++
++STDOUT:
++	
++	Processing /tmp/DIR
++	echo START &gt;&amp;FD
++	
++	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
++	ABORT: () { ABORT $*; }
++	
++	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&FD; exit 0; }
++	DISABLED: () { DISABLED $*; }
++	DISABLE   () { DISABLED $*; }
++	DISABLE:  () { DISABLED $*; }
++	
++	TESTDIR='/tmp/DIR'
++	TESTFILE='/tmp/DIR/tt.test'
++	
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
++	echo 'CONFIG: /tmp/DIR/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR'
++	MYFILE='/tmp/DIR/tmtest.conf'
++	. '/tmp/DIR/tmtest.conf'
++	
++	
++	echo PREPARE &gt;&amp;FD
++	
++	STDOUT () { exit 0; }
++	STDOUT: () { exit 0; }
++	STDERR () { exit 0; }
++	STDERR: () { exit 0; }
++	RESULT () { exit 0; }
++	RESULT: () { exit 0; }
++	MODIFY () { exit 0; }
++	MODIFY: () { exit 0; }
++	
++	echo 'RUNNING: /tmp/DIR/tt.test' &gt;&amp;FD
++	MYDIR='/tmp/DIR'
++	MYFILE='/tmp/DIR/tt.test'
++	exec &gt;&amp;FD FD&gt;&amp;FD FD&gt;&amp;- FD&gt;&amp;-
++	. '/tmp/DIR/tt.test'
++	
++	echo DONE &gt;&amp;FD
+
+Added: trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,83 @@
++# Ensures we prepare tests properly even when the --config
++# file is entirely outside the testdir.
++
++# tmtest 0.94 and earlier had a bug where if you supplied a
++# trailing slash after a directory name on the command line,
++# it would include config files from that directory twice.
++# This test ensures that won't happen anymore.
++
++
++MKDIR do
++
++MKDIR di &quot;$do/di&quot;
++
++MKFILE cc1 &quot;$do/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;yes!&quot;
++EOL
++
++echo &quot;$di/tmtest.conf&quot; &gt;&gt; /tmp/tt
++
++MKFILE cc2 &quot;$di/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;yes!&quot;
++EOL
++
++MKFILE tt2 &quot;$di/tt.test&quot; &lt;&lt;'EOL'
++	echo &quot;$config&quot;
++EOL
++
++
++tmtest $args --dump-script &quot;$di/..&quot; | REPLACE &quot;$do&quot; /tmp/DIR | FIX_SCRIPT
++
++
++STDOUT:
++	
++	Processing /tmp/DIR
++	
++	Processing /tmp/DIR/di
++	echo START &gt;&amp;FD
++	
++	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
++	ABORT: () { ABORT $*; }
++	
++	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&FD; exit 0; }
++	DISABLED: () { DISABLED $*; }
++	DISABLE   () { DISABLED $*; }
++	DISABLE:  () { DISABLED $*; }
++	
++	TESTDIR='/tmp/DIR/di'
++	TESTFILE='/tmp/DIR/di/tt.test'
++	
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
++	echo 'CONFIG: /tmp/DIR/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR'
++	MYFILE='/tmp/DIR/tmtest.conf'
++	. '/tmp/DIR/tmtest.conf'
++	echo 'CONFIG: /tmp/DIR/di/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR/di'
++	MYFILE='/tmp/DIR/di/tmtest.conf'
++	. '/tmp/DIR/di/tmtest.conf'
++	
++	
++	echo PREPARE &gt;&amp;FD
++	
++	STDOUT () { exit 0; }
++	STDOUT: () { exit 0; }
++	STDERR () { exit 0; }
++	STDERR: () { exit 0; }
++	RESULT () { exit 0; }
++	RESULT: () { exit 0; }
++	MODIFY () { exit 0; }
++	MODIFY: () { exit 0; }
++	
++	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
++	MYDIR='/tmp/DIR/di'
++	MYFILE='/tmp/DIR/di/tt.test'
++	exec &gt;&amp;FD FD&gt;&amp;FD FD&gt;&amp;- FD&gt;&amp;-
++	. '/tmp/DIR/di/tt.test'
++	
++	echo DONE &gt;&amp;FD
++RESULT: 0
++STDERR:
+
+Added: trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,82 @@
++# Ensures we prepare tests properly even when the --config
++# file is entirely outside the testdir.
++
++# tmtest 0.94 and earlier had a bug where if you supplied a
++# trailing slash after a directory name on the command line,
++# it would include config files from that directory twice.
++# This test ensures that won't happen anymore.
++
++
++MKDIR do
++
++MKDIR di &quot;$do/di&quot;
++
++MKFILE cc1 &quot;$do/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;yaksula&quot;
++EOL
++
++MKFILE cc2 &quot;$di/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;excellent&quot;
++EOL
++
++MKFILE tt2 &quot;$di/tt.test&quot; &lt;&lt;'EOL'
++	echo &quot;$config&quot;
++EOL
++
++
++cd &quot;$di&quot;
++tmtest $args --dump-script &quot;..&quot; | REPLACE &quot;$do&quot; /tmp/DIR | FIX_SCRIPT
++
++
++STDOUT:
++	
++	Processing ./..
++	
++	Processing ./.
++	echo START &gt;&amp;FD
++	
++	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
++	ABORT: () { ABORT $*; }
++	
++	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&FD; exit 0; }
++	DISABLED: () { DISABLED $*; }
++	DISABLE   () { DISABLED $*; }
++	DISABLE:  () { DISABLED $*; }
++	
++	TESTDIR='/tmp/DIR/di'
++	TESTFILE='/tmp/DIR/di/tt.test'
++	
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
++	echo 'CONFIG: /tmp/DIR/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR'
++	MYFILE='/tmp/DIR/tmtest.conf'
++	. '/tmp/DIR/tmtest.conf'
++	echo 'CONFIG: /tmp/DIR/di/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR/di'
++	MYFILE='/tmp/DIR/di/tmtest.conf'
++	. '/tmp/DIR/di/tmtest.conf'
++	
++	
++	echo PREPARE &gt;&amp;FD
++	
++	STDOUT () { exit 0; }
++	STDOUT: () { exit 0; }
++	STDERR () { exit 0; }
++	STDERR: () { exit 0; }
++	RESULT () { exit 0; }
++	RESULT: () { exit 0; }
++	MODIFY () { exit 0; }
++	MODIFY: () { exit 0; }
++	
++	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
++	MYDIR='/tmp/DIR/di'
++	MYFILE='/tmp/DIR/di/tt.test'
++	exec &gt;&amp;FD FD&gt;&amp;FD FD&gt;&amp;- FD&gt;&amp;-
++	. '/tmp/DIR/di/tt.test'
++	
++	echo DONE &gt;&amp;FD
++RESULT: 0
++STDERR:
+
+Added: trunk/test/01-testfile/dumpscript/14-DeepDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/14-DeepDir.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/14-DeepDir.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,84 @@
++# Ensures we prepare tests properly even when the --config
++# file is entirely outside the testdir.
++
++# Note that this test assumes that MKDIR will create its directory
++# in /tmp.  If this is not the case, and the test is failing, just
++# add a replace directive to fix it and send me a patch.
++
++# tmtest 0.94 and earlier had a bug where if you supplied a
++# trailing slash after a directory name on the command line,
++# it would include config files from that directory twice.
++# This test ensures that won't happen anymore.
++
++
++MKDIR do
++
++MKDIR di &quot;$do/di&quot;
++
++MKFILE cc1 &quot;$do/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;yaksula&quot;
++EOL
++
++MKFILE cc2 &quot;$di/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;excellent&quot;
++EOL
++
++MKFILE tt2 &quot;$di/tt.test&quot; &lt;&lt;'EOL'
++	echo &quot;$config&quot;
++EOL
++
++
++cd `dirname &quot;$do&quot;`
++tmtest $args --dump-script &quot;$(basename $do)/di&quot; | REPLACE &quot;$(basename $do)&quot; DIR | FIX_SCRIPT
++
++
++STDOUT:
++	
++	Processing ./DIR/di
++	echo START &gt;&amp;FD
++	
++	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
++	ABORT: () { ABORT $*; }
++	
++	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&FD; exit 0; }
++	DISABLED: () { DISABLED $*; }
++	DISABLE   () { DISABLED $*; }
++	DISABLE:  () { DISABLED $*; }
++	
++	TESTDIR='/tmp/DIR/di'
++	TESTFILE='/tmp/DIR/di/tt.test'
++	
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
++	echo 'CONFIG: /tmp/DIR/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR'
++	MYFILE='/tmp/DIR/tmtest.conf'
++	. '/tmp/DIR/tmtest.conf'
++	echo 'CONFIG: /tmp/DIR/di/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR/di'
++	MYFILE='/tmp/DIR/di/tmtest.conf'
++	. '/tmp/DIR/di/tmtest.conf'
++	
++	
++	echo PREPARE &gt;&amp;FD
++	
++	STDOUT () { exit 0; }
++	STDOUT: () { exit 0; }
++	STDERR () { exit 0; }
++	STDERR: () { exit 0; }
++	RESULT () { exit 0; }
++	RESULT: () { exit 0; }
++	MODIFY () { exit 0; }
++	MODIFY: () { exit 0; }
++	
++	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
++	MYDIR='/tmp/DIR/di'
++	MYFILE='/tmp/DIR/di/tt.test'
++	exec &gt;&amp;FD FD&gt;&amp;FD FD&gt;&amp;- FD&gt;&amp;-
++	. '/tmp/DIR/di/tt.test'
++	
++	echo DONE &gt;&amp;FD
++RESULT: 0
++STDERR:
+
+Added: trunk/test/01-testfile/dumpscript/15-PathOps.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/15-PathOps.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/15-PathOps.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,60 @@
++# Specify a whole bunch of pathops.  Despite the pathops,
++# this should resolve to be the exact same test as 11-NamedDir.test.
++
++
++MKDIR dd
++
++MKFILE tt1 &quot;$dd/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;yes!&quot;
++EOL
++
++MKFILE tt2 &quot;$dd/tt.test&quot; &lt;&lt;'EOL'
++	echo &quot;$config&quot;
++EOL
++
++tmtest $args --dump-script &quot;$dd//abc/./..//def/ghi//./../../&quot; | REPLACE &quot;$dd&quot; /tmp/DIR | FIX_SCRIPT
++
++STDOUT:
++	
++	Processing /tmp/DIR
++	echo START &gt;&amp;FD
++	
++	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
++	ABORT: () { ABORT $*; }
++	
++	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&FD; exit 0; }
++	DISABLED: () { DISABLED $*; }
++	DISABLE   () { DISABLED $*; }
++	DISABLE:  () { DISABLED $*; }
++	
++	TESTDIR='/tmp/DIR'
++	TESTFILE='/tmp/DIR/tt.test'
++	
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
++	echo 'CONFIG: /tmp/DIR/tmtest.conf' &gt;&amp;FD
++	MYDIR='/tmp/DIR'
++	MYFILE='/tmp/DIR/tmtest.conf'
++	. '/tmp/DIR/tmtest.conf'
++	
++	
++	echo PREPARE &gt;&amp;FD
++	
++	STDOUT () { exit 0; }
++	STDOUT: () { exit 0; }
++	STDERR () { exit 0; }
++	STDERR: () { exit 0; }
++	RESULT () { exit 0; }
++	RESULT: () { exit 0; }
++	MODIFY () { exit 0; }
++	MODIFY: () { exit 0; }
++	
++	echo 'RUNNING: /tmp/DIR/tt.test' &gt;&amp;FD
++	MYDIR='/tmp/DIR'
++	MYFILE='/tmp/DIR/tt.test'
++	exec &gt;&amp;FD FD&gt;&amp;FD FD&gt;&amp;- FD&gt;&amp;-
++	. '/tmp/DIR/tt.test'
++	
++	echo DONE &gt;&amp;FD
+
+Added: trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,83 @@
++# Ensures we prepare tests properly even when the --config
++# file is entirely outside the testdir.
++
++# Note that this test assumes that MKDIR will create its directory
++# in /tmp.  If this is not the case, and the test is failing, just
++# add a replace directive to fix it and send me a patch.
++
++# tmtest 0.94 and earlier had a bug where if you supplied a
++# trailing slash after a directory name on the command line,
++# it would include config files from that directory twice.
++# This test ensures that won't happen anymore.
++
++
++MKDIR do
++
++MKDIR di &quot;$do/di&quot;
++
++MKFILE cc1 &quot;$do/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;yaksula&quot;
++EOL
++
++MKFILE cc2 &quot;$di/tmtest.conf&quot; &lt;&lt;'EOL'
++	config=&quot;excellent&quot;
++EOL
++
++MKFILE tt2 &quot;$di/tt.test&quot; &lt;&lt;'EOL'
++	echo &quot;$config&quot;
++EOL
++
++
++tmtest $args --dump-script &quot;$do/di//../di&quot; | REPLACE &quot;$do&quot; DIR | FIX_SCRIPT
++
++
++STDOUT:
++	
++	Processing DIR/di
++	echo START &gt;&amp;FD
++	
++	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
++	ABORT: () { ABORT $*; }
++	
++	DISABLED  () { echo &quot;DISABLED: $*&quot; &gt;&FD; exit 0; }
++	DISABLED: () { DISABLED $*; }
++	DISABLE   () { DISABLED $*; }
++	DISABLE:  () { DISABLED $*; }
++	
++	TESTDIR='DIR/di'
++	TESTFILE='DIR/di/tt.test'
++	
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
++	echo 'CONFIG: DIR/tmtest.conf' &gt;&amp;FD
++	MYDIR='DIR'
++	MYFILE='DIR/tmtest.conf'
++	. 'DIR/tmtest.conf'
++	echo 'CONFIG: DIR/di/tmtest.conf' &gt;&amp;FD
++	MYDIR='DIR/di'
++	MYFILE='DIR/di/tmtest.conf'
++	. 'DIR/di/tmtest.conf'
++	
++	
++	echo PREPARE &gt;&amp;FD
++	
++	STDOUT () { exit 0; }
++	STDOUT: () { exit 0; }
++	STDERR () { exit 0; }
++	STDERR: () { exit 0; }
++	RESULT () { exit 0; }
++	RESULT: () { exit 0; }
++	MODIFY () { exit 0; }
++	MODIFY: () { exit 0; }
++	
++	echo 'RUNNING: DIR/di/tt.test' &gt;&amp;FD
++	MYDIR='DIR/di'
++	MYFILE='DIR/di/tt.test'
++	exec &gt;&amp;FD FD&gt;&amp;FD FD&gt;&amp;- FD&gt;&amp;-
++	. 'DIR/di/tt.test'
++	
++	echo DONE &gt;&amp;FD
++RESULT: 0
++STDERR:
+
+Added: trunk/test/01-testfile/dumpscript/README
+===================================================================
+--- trunk/test/01-testfile/dumpscript/README	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/README	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,4 @@
++These tests verify that the testfile can be named on the command
++line in any way possible, yet each config file gets included
++exactly once and MYDIR and MYFILE are normalized and correct
++each time.
+
+Added: trunk/test/01-testfile/dumpscript/tmtest.conf
+===================================================================
+--- trunk/test/01-testfile/dumpscript/tmtest.conf	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/01-testfile/dumpscript/tmtest.conf	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,14 @@
++# This tries to remove all the changing elements in the dumpscript.
++# Turns out there's a lot...
++
++FIX_SCRIPT ()
++{
++	sed \
++	-e &quot;s/echo 'CONFIG: .*tmtest.sub.conf' .*/echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD/&quot; \
++	-e &quot;s/MYDIR='.*test'/MYDIR='...test'/&quot; \
++	-e &quot;s/MYFILE='.*tmtest.sub.conf'/MYFILE='...tmtest.sub.conf'/&quot; \
++	-e &quot;s/\\. '.*tmtest.sub.conf'/. '...tmtest.sub.conf'/&quot; \
++	-e &quot;s/&amp;[0-9]/\\&amp;FD/g&quot; -e &quot;s/[0-9]&gt;/FD&gt;/g&quot; \
++		| INDENT &quot;\t&quot;
++}
++
+
+Modified: trunk/test/02-running/05-Running.test
+===================================================================
+--- trunk/test/02-running/05-Running.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/02-running/05-Running.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -55,16 +55,16 @@
+ Processing ./.
+ ok   mid.test 
+ 
+-Processing ././sub
++Processing ./sub
+ ok   sub.test 
+ 
+ Processing ./..
+ ok   sup.test 
+ 
+-Processing ./../mid
++Processing ./.
+ ok   mid.test 
+ 
+-Processing ./../mid/sub
++Processing ./sub
+ ok   sub.test 
+ 
+ 9 tests run, 9 successes, 0 failures.
+
+Added: trunk/test/02-running/50-OpenFDsTest.test
+===================================================================
+--- trunk/test/02-running/50-OpenFDsTest.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/02-running/50-OpenFDsTest.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,20 @@
++# Ensure we don't leak fds to the running test.
++# Ideally, there would be NO open FDs.  This will be the case for tmtest 0.98.
++
++tmtest -o $CFG -q - &lt;&lt;-'EOL' | INDENT
++	for i in `seq 3 255`; do
++		exec 2&gt;/dev/null
++		echo -n &gt;&amp;$i &amp;&amp; echo open: $i
++	done
++EOL
++
++STDOUT:
++    for i in `seq 3 255`; do
++    exec 2&gt;/dev/null
++    echo -n &gt;&amp;$i &amp;&amp; echo open: $i
++    done
++    STDOUT:
++    open: 4
++    open: 6
++    open: 7
++    open: 10
+
+Added: trunk/test/02-running/51-OpenFDsConfig.tst
+===================================================================
+--- trunk/test/02-running/51-OpenFDsConfig.tst	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/02-running/51-OpenFDsConfig.tst	2006-03-05 04:30:56 UTC (rev 103)
+@@ -0,0 +1,40 @@
++# Ensure we don't leak fds to the running test.
++# Ideally, there would be NO open FDs.  This will be the case for tmtest 0.98.
++
++
++# creates a temporary directory DD:
++# /tmp/DD/tmtest.conf   -- stores the open fds in $openfds
++# /tmp/DD/tt.test       -- prints $openfds as its test result
++
++
++MKDIR dd
++
++MKFILE tt1 &quot;$dd/tmtest.conf&quot; &lt;&lt;'EOL'
++	openfds=$(
++		for i in `seq 3 255`; do
++			exec 2&gt;/dev/null
++			echo -n &gt;&amp;$i &amp;&amp; echo open: $i
++		done
++	)
++EOL
++
++
++MKFILE tt2 &quot;$dd/tt.test&quot; &lt;&lt;'EOL'
++	echo &quot;$openfds&quot;
++EOL
++
++while [ -f /tmp/s ]; do sleep 1; done
++
++tmtest $args -o &quot;$dd&quot; | INDENT
++
++
++STDOUT:
++    for i in `seq 3 255`; do
++    exec 2&gt;/dev/null
++    echo -n &gt;&amp;$i &amp;&amp; echo open: $i
++    done
++    STDOUT:
++    open: 4
++    open: 6
++    open: 7
++    open: 10
+
+Modified: trunk/test/03-results/30-Binary.test
+===================================================================
+--- trunk/test/03-results/30-Binary.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/03-results/30-Binary.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -17,8 +17,6 @@
+ tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+-
+-Processing /tmp/FILE
+ ok   /tmp/FILE 
+ 
+ 1 test run, 1 success, 0 failures.
+
+Modified: trunk/test/03-results/31-BinaryFail.test
+===================================================================
+--- trunk/test/03-results/31-BinaryFail.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/03-results/31-BinaryFail.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -17,8 +17,6 @@
+ tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+-
+-Processing /tmp/FILE
+ FAIL /tmp/FILE        O..  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/03-results/32-BinaryLarge.test
+===================================================================
+--- trunk/test/03-results/32-BinaryLarge.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/03-results/32-BinaryLarge.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -28,8 +28,6 @@
+ tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+-
+-Processing /tmp/FILE
+ ok   /tmp/FILE 
+ 
+ 1 test run, 1 success, 0 failures.
+
+Modified: trunk/test/03-results/33-BinaryHuge.test
+===================================================================
+--- trunk/test/03-results/33-BinaryHuge.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/03-results/33-BinaryHuge.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -22,8 +22,6 @@
+ tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+-
+-Processing /tmp/FILE
+ ok   /tmp/FILE 
+ 
+ 1 test run, 1 success, 0 failures.
+
+Modified: trunk/test/04-diff/02-MultiDiff.test
+===================================================================
+--- trunk/test/04-diff/02-MultiDiff.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/04-diff/02-MultiDiff.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -18,7 +18,7 @@
+ 	test 2 wrong output
+ EOF
+ 
+-tmtest --all-files -p &quot;$t1&quot; &quot;$t2&quot;
++tmtest --all-files -d &quot;$t1&quot; &quot;$t2&quot;
+ 
+ 
+ MODIFY:
+
+Modified: trunk/test/04-diff/05-AbortDiff.test
+===================================================================
+--- trunk/test/04-diff/05-AbortDiff.test	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/04-diff/05-AbortDiff.test	2006-03-05 04:30:56 UTC (rev 103)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest --patch - &lt;&lt;-EOL
++tmtest --diff - &lt;&lt;-EOL
+ 	ABORT
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Modified: trunk/test/tmtest.sub.conf
+===================================================================
+--- trunk/test/tmtest.sub.conf	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test/tmtest.sub.conf	2006-03-05 04:30:56 UTC (rev 103)
+@@ -12,7 +12,6 @@
+ # first sign of trouble and have the result code reported in RESULT.
+ set -e
+ 
+-
+ # Include the standard tmtest functions
+ . &quot;$MYDIR/../tmlib.sh&quot;
+ 
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test.c	2006-03-05 04:30:56 UTC (rev 103)
+@@ -792,9 +792,10 @@
+ 
+ 
+ /** Checks the actual results against the expected results.
++ * dispname is the name we should display for the test.
+  */
+ 
+-void test_results(struct test *test)
++void test_results(struct test *test, const char *dispname)
+ {
+     scanstate scanner;
+     char scanbuf[MAX_LINE_LENGTH];
+@@ -846,10 +847,10 @@
+ 
+     if(!stdo &amp;&amp; !stde &amp;&amp; !exno) {
+         test_successes++;
+-        printf(&quot;ok   %s \n&quot;, get_testfile_name(test));
++        printf(&quot;ok   %s \n&quot;, convert_testfile_name(dispname));
+     } else {
+         test_failures++;
+-        printf(&quot;FAIL %-25s &quot;, get_testfile_name(test));
++        printf(&quot;FAIL %-25s &quot;, convert_testfile_name(dispname));
+         if(test-&gt;exitsignal) {
+             printf(&quot;terminated by signal %d%s&quot;, test-&gt;exitsignal,
+                     (test-&gt;exitcored ? &quot; with core&quot; : &quot;&quot;));
+@@ -994,7 +995,7 @@
+ 	// know that MODIFY sections are going away in the
+ 	// next release anyway)
+ 	write_modified_file(outfd, infd, job);
+-	return 0;
++	return 1;
+ }
+ 
+ 
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/test.h	2006-03-05 04:30:56 UTC (rev 103)
+@@ -74,7 +74,7 @@
+ void scan_status_file(struct test *test);
+ void test_command_copy(struct test *test, FILE *fp);
+ 
+-void test_results(struct test *test);
++void test_results(struct test *test, const char *dispname);
+ void dump_results(struct test *test);
+ void print_test_summary();
+ 
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/tmlib.sh	2006-03-05 04:30:56 UTC (rev 103)
+@@ -8,7 +8,6 @@
+ # will be lost!
+ 
+ 
+-# TODO: should these routines be prefixed by &quot;TM&quot;?
+ # TODO: is there any way to get rid of MKFILE_EMPTY?  Can't MKFILE notice
+ #       if read would block and, if so, just create an empty file.?
+ 
+@@ -168,6 +167,11 @@
+ # argument 1: varname, the name of the variable that will contain the new directory name.
+ # argument 2: dirname, (optional) the name/fullpath to give the directory.
+ #
++#	NOTE: unless you really know what you are doing, specifying argument2
++#   is a major security risk.  Always use the single argument version.
++#   The one exception is if you're creating a directory inside another
++#   directory that was created with the single arg.
++#
+ # Examples:
+ #
+ # create a new directory with a random name in $TMPDIR or /tmp:
+@@ -175,6 +179,9 @@
+ #     MKDIR dn
+ #     cd &quot;$dn&quot;
+ #
++# TODO: should emulate mkdir -p too.  Right now tmtest forces you to
++# call MKDIR for each dir you want to create.  Too wordy.
++#
+ 
+ MKDIR ()
+ {
+@@ -182,7 +189,7 @@
+ 	if [ -z &quot;$name&quot; ]; then
+ 		name=`mktemp -d -t tmtest.XXXXXX || ABORT MKDIR: could not mktemp`
+ 	else
+-		[ -d $name ] || mkdir --mode 0600 $name || ABORT &quot;MKDIR: could not 'mkdir \&quot;$name\&quot;'&quot;
++		[ -d $name ] || mkdir --mode 0700 $name || ABORT &quot;MKDIR: could not 'mkdir \&quot;$name\&quot;'&quot;
+ 	fi
+ 
+ 	eval &quot;$1='$name'&quot;
+
+Modified: trunk/tmtest.conf
+===================================================================
+--- trunk/tmtest.conf	2006-03-03 00:12:52 UTC (rev 102)
++++ trunk/tmtest.conf	2006-03-05 04:30:56 UTC (rev 103)
+@@ -61,7 +61,7 @@
+ # a particular function has been defined and include tmlib only
+ # if it hasn't.
+ 
+-. tmlib.sh
++. &quot;$MYDIR/tmlib.sh&quot;
+ 
+ 
+ # We set OUTER_CONFIG_FILE so that we can check later that this file
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000019.html">[Tmtest-commits] [102] releases: Release 0.94
+</A></li>
+	<LI>Next message: <A HREF="000021.html">[Tmtest-commits] [104] trunk: Remove MODIFY from the template, update tests to match.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

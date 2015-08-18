@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [104] trunk: Remove MODIFY from the template, update tests to match.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B104%5D%20trunk%3A%20Remove%20MODIFY%20from%20the%20template%2C%20update%20tests%20to%20match.&In-Reply-To=%3C200603050507.k2557Eeg018254%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000020.html">
+   <LINK REL="Next"  HREF="000022.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [104] trunk: Remove MODIFY from the template, update tests to match.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B104%5D%20trunk%3A%20Remove%20MODIFY%20from%20the%20template%2C%20update%20tests%20to%20match.&In-Reply-To=%3C200603050507.k2557Eeg018254%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [104] trunk: Remove MODIFY from the template, update tests to match.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Sun Mar  5 06:07:14 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000020.html">[Tmtest-commits] [103] trunk: Tmtest would get confused by .
+</A></li>
+        <LI>Next message: <A HREF="000022.html">[Tmtest-commits] [105] trunk: First part of the modify purge is complete: rewrite or
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#21">[ date ]</a>
+              <a href="thread.html#21">[ thread ]</a>
+              <a href="subject.html#21">[ subject ]</a>
+              <a href="author.html#21">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 104
+Author:   bronson
+Date:     2006-03-05 06:07:12 +0100 (Sun, 05 Mar 2006)
+
+Log Message:
+-----------
+Remove MODIFY from the template, update tests to match.
+
+Modified Paths:
+--------------
+    trunk/template.sh
+    trunk/test/01-testfile/dumpscript/10-Stdout.test
+    trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+    trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+    trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+    trunk/test/01-testfile/dumpscript/14-DeepDir.test
+    trunk/test/01-testfile/dumpscript/15-PathOps.test
+    trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+Modified: trunk/template.sh
+===================================================================
+--- trunk/template.sh	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/template.sh	2006-03-05 05:07:12 UTC (rev 104)
+@@ -21,8 +21,6 @@
+ STDERR: () { exit 0; }
+ RESULT () { exit 0; }
+ RESULT: () { exit 0; }
+-MODIFY () { exit 0; }
+-MODIFY: () { exit 0; }
+ 
+ echo 'RUNNING: %(TESTFILE)' &gt;&amp;%(STATUSFD)
+ MYDIR='%(TESTDIR)'
+
+Modified: trunk/test/01-testfile/dumpscript/10-Stdout.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/10-Stdout.test	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/test/01-testfile/dumpscript/10-Stdout.test	2006-03-05 05:07:12 UTC (rev 104)
+@@ -38,8 +38,6 @@
+ 	STDERR: () { exit 0; }
+ 	RESULT () { exit 0; }
+ 	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+ 	
+ 	echo 'RUNNING: (STDIN)' &gt;&amp;FD
+ 	MYDIR='/tmp'
+
+Modified: trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2006-03-05 05:07:12 UTC (rev 104)
+@@ -53,8 +53,6 @@
+ 	STDERR: () { exit 0; }
+ 	RESULT () { exit 0; }
+ 	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR'
+
+Modified: trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2006-03-05 05:07:12 UTC (rev 104)
+@@ -69,8 +69,6 @@
+ 	STDERR: () { exit 0; }
+ 	RESULT () { exit 0; }
+ 	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR/di'
+
+Modified: trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2006-03-05 05:07:12 UTC (rev 104)
+@@ -68,8 +68,6 @@
+ 	STDERR: () { exit 0; }
+ 	RESULT () { exit 0; }
+ 	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR/di'
+
+Modified: trunk/test/01-testfile/dumpscript/14-DeepDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/14-DeepDir.test	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/test/01-testfile/dumpscript/14-DeepDir.test	2006-03-05 05:07:12 UTC (rev 104)
+@@ -70,8 +70,6 @@
+ 	STDERR: () { exit 0; }
+ 	RESULT () { exit 0; }
+ 	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR/di'
+
+Modified: trunk/test/01-testfile/dumpscript/15-PathOps.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/15-PathOps.test	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/test/01-testfile/dumpscript/15-PathOps.test	2006-03-05 05:07:12 UTC (rev 104)
+@@ -48,8 +48,6 @@
+ 	STDERR: () { exit 0; }
+ 	RESULT () { exit 0; }
+ 	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR'
+
+Modified: trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2006-03-05 04:30:56 UTC (rev 103)
++++ trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2006-03-05 05:07:12 UTC (rev 104)
+@@ -69,8 +69,6 @@
+ 	STDERR: () { exit 0; }
+ 	RESULT () { exit 0; }
+ 	RESULT: () { exit 0; }
+-	MODIFY () { exit 0; }
+-	MODIFY: () { exit 0; }
+ 	
+ 	echo 'RUNNING: DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='DIR/di'
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000020.html">[Tmtest-commits] [103] trunk: Tmtest would get confused by .
+</A></li>
+	<LI>Next message: <A HREF="000022.html">[Tmtest-commits] [105] trunk: First part of the modify purge is complete: rewrite or
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#21">[ date ]</a>
+              <a href="thread.html#21">[ thread ]</a>
+              <a href="subject.html#21">[ subject ]</a>
+              <a href="author.html#21">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

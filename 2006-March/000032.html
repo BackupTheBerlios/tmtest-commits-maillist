@@ -1,0 +1,1384 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [115] trunk: Get rid of CuTest, and zutest.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B115%5D%20trunk%3A%20Get%20rid%20of%20CuTest%2C%20and%20zutest.&In-Reply-To=%3C200603082203.k28M3bcb003956%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000031.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [115] trunk: Get rid of CuTest, and zutest.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B115%5D%20trunk%3A%20Get%20rid%20of%20CuTest%2C%20and%20zutest.&In-Reply-To=%3C200603082203.k28M3bcb003956%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [115] trunk: Get rid of CuTest, and zutest.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Wed Mar  8 23:03:37 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000031.html">[Tmtest-commits] [114] trunk: Fix $PATH handling, change how tmlib is included.
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 115
+Author:   bronson
+Date:     2006-03-08 23:03:36 +0100 (Wed, 08 Mar 2006)
+
+Log Message:
+-----------
+Get rid of CuTest, and zutest.  Much simpler, and better diagnostics too!
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/Makefile
+    trunk/TODO
+    trunk/compare.c
+    trunk/main.c
+
+Added Paths:
+-----------
+    trunk/units.c
+    trunk/units.h
+    trunk/zutest-tests.c
+    trunk/zutest.c
+    trunk/zutest.h
+
+Removed Paths:
+-------------
+    trunk/cutest.c
+    trunk/cutest.h
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/CHANGES	2006-03-08 22:03:36 UTC (rev 115)
+@@ -1,3 +1,4 @@
++- Got rid of Cutest since it was very non-cute.  Wrote zutest instead.
+ - Changed --all-files to be the much more understandable --ignore-extension.
+ - If an output section is marked -n but ends with multiple newlines, we print
+   a warning and fail it automatically.  We used to let this nonsense pass.
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/Makefile	2006-03-08 22:03:36 UTC (rev 115)
+@@ -40,8 +40,8 @@
+ CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+ CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
+ # unit test files
+-CSRC+=cutest.c
+-CHDR+=cutest.h
++CSRC+=units.c zutest.c
++CHDR+=units.h zutest.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+@@ -62,8 +62,12 @@
+ 
+ .PHONY: test
+ test: tmtest
+-	./tmtest --run-tests
++	./tmtest --run-unit-tests
++	tmtest test
+ 
++unit: tmtest
++	./tmtest --run-unit-tests
++
+ install: tmtest
+ 	install -d -m755 $(bindir)
+ 	install tmtest $(bindir)
+@@ -93,7 +97,7 @@
+ endif
+ 
+ clean:
+-	rm -f tmtest template.c tags
++	rm -f tmtest template.c tags zutest
+ 
+ distclean: clean
+ 	rm -f stscan.[co]
+@@ -117,3 +121,6 @@
+ 	
+ reupdate:
+ 	ls re2c/*.[ch] | (ODIR=`pwd`; cd ../oe; xargs cp --target-directory $$ODIR/re2c)
++
++zutest: zutest.c zutest-tests.c zutest.h
++	gcc -Wall -Werror -g zutest.c zutest-tests.c -o zutest
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/TODO	2006-03-08 22:03:36 UTC (rev 115)
+@@ -1,5 +1,5 @@
+ 0.96:
+-- Rewrite the goddamn unit testing.
++- Write unit tests for path normalization.
+ - Make tmtest only execute config files owned by either the user or root.
+   Print a big fat warning when the config file is skipped.  This prevents
+   a malicious user from putting a config file in /tmp and having it
+@@ -11,12 +11,16 @@
+   That's probably the most agreeable.
+   We will not read either config or test files from a world-writable directory.
+   Ever.
++  	If you are below a world-writable directory, then we only execute
++	config files owned by you.  If not, we execute them as normal.
+ - Add --diff and --shell to change the executables that get launched.
+   No, that clutters the arguments up.  Take them from $DIFF and $SHELL.
+   No, obviously that's a bad idea.  That prevents people using tcsh
+   from running tmtest.  It *has* to be --shell.  $DIFF is fine.
+   And we need to make sure that we ignore the SHELL envar.
+   	(write a test for this)
++	OK, I think it should be TM_DIFF and TM_SHELL.  Easy enough.
++	The trick will be writing the tests.
+ - Add the ability to specify test arguments on the command line.
+   I'm picturing something where VAR=val on the command line would be
+   inserted without change into the template.  That way you can use the
+@@ -37,22 +41,12 @@
+   should get rid of a whole bunch in main.c as well.
+   this should prevent us from dropping turds in /tmp all the time too.
+ - Ensure it compiles and runs on freebsd.
+-- Add some unit tests.  <A HREF="http://kooditakomo.cs.tut.fi/projects/gunit/">http://kooditakomo.cs.tut.fi/projects/gunit/</A>
+-  <A HREF="http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages">http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages</A>     Actually, this looks better: <A HREF="http://cutest.sourceforge.net/">http://cutest.sourceforge.net/</A>
+-  Potential units: curdir, path normalization
+-    Need to rewrite curdir before it's worth unit testing it.
+-	Path normalization definitely deserves it.
+ - Get rid of -g, add -O2.  Make it easy to set these for compilation.
+   Yes, have dev and prod modes.  dev would be -O0 and -g and include
+   unit tests.  Prod is -O2, stripped, and no unit tests (unless the
+   unit tests only add 12K or so, where might as well just leave em).
+ - If there were failures, should highlight that in the test summary.
+ 	&quot;%d FAILURES&quot; or somesuch.
+-- Well, piping the result of a command to a function destroys the the
+-  exit code.  I don't know of any good way around this!  Maybe this
+-  is a good argument to have rewriting performed by tmtest itself...
+-  I think it is.  So, we can add, &quot;STDOUT: --pipe 'sed -e /.../'&quot;
+-  or something.  I don't like that.  Ick. it all sucks.
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+@@ -71,6 +65,11 @@
+   - When done, verify that netknife's tests that freeze with -d now pass.
+ - Is there any way to record memory and swap usage for each test?
+   sure, it's in the rusage. prolly add a &quot;tmtest -v&quot; to print it for each test.
++- Well, piping the result of a command to a function destroys the the
++  exit code.  I don't know of any good way around this!  Maybe this
++  is a good argument to have rewriting performed by tmtest itself...
++  I think it is.  So, we can add, &quot;STDOUT: --pipe 'sed -e /.../'&quot;
++  or something.  I don't like that.  Ick. it all sucks.
+ - stdin is all buggered up.  why is it that &quot;cat&quot; with no args will print
+   the rest of the test script?  And why is it that if you fork, diff freezes?
+   They're related problems I suspect.
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/compare.c	2006-03-08 22:03:36 UTC (rev 115)
+@@ -188,12 +188,12 @@
+ }
+ 
+ 
+-#include &quot;cutest.h&quot;
++#include &quot;zutest.h&quot;
+ #include &quot;re2c/read-mem.h&quot;
+ #include &quot;re2c/read-rand.h&quot;
+ #include &lt;stdlib.h&gt;
+ 
+-static void test_empty(cutest *ct)
++static void test_empty()
+ {
+ 	scanstate ssrec, *ss=&ssrec;
+ 
+@@ -208,7 +208,7 @@
+ }
+ 
+ 
+-static void test_standard(cutest *ct)
++static void test_standard()
+ {
+ 	scanstate ssrec, *ss=&ssrec;
+ 
+@@ -220,7 +220,7 @@
+ }
+ 
+ 
+-static void test_large(cutest *ct)
++static void test_large()
+ {
+ 	char buf[BUFSIZ];
+ 	scanstate ssrec, *ss=&ssrec;
+@@ -257,7 +257,7 @@
+ }
+ 
+ 
+-static void test_newlines(cutest *ct)
++static void test_newlines()
+ {
+ 	AssertEq(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n&quot;  ), cmp_full_match);
+ 	AssertEq(check_newlines(&quot;Unix&quot;,     &quot;Unix\n&quot;  ), cmp_ptr_has_extra_nl);
+@@ -274,7 +274,7 @@
+ 	AssertEq(check_newlines(&quot;&quot;,     &quot;\n\n&quot; ), cmp_no_match);
+ }
+ 
+-static void test_inc(cutest *ct)
++static void test_inc()
+ {
+ 	// Tries to ensure that packetization won't mess us up.
+ 
+@@ -296,7 +296,7 @@
+ }
+ 
+ 
+-static void test_inc_newlines(cutest *ct)
++static void test_inc_newlines()
+ {
+ 	// Tries to ensure packetization won't mess up the newline checking.
+ 
+@@ -335,18 +335,13 @@
+ }
+ */
+ 
++zutest_proc compare_tests[] = {
++	test_empty,
++	test_standard,
++	test_large,
++	test_newlines,
++	test_inc,
++	test_inc_newlines,
++	NULL
++};
+ 
+-cusuite* compare_suite()
+-{
+-	cusuite* suite = CuSuiteNew();
+-
+-	suite_add(suite, test_empty);
+-	suite_add(suite, test_standard);
+-	suite_add(suite, test_large);
+-	suite_add(suite, test_newlines);
+-	suite_add(suite, test_inc);
+-	suite_add(suite, test_inc_newlines);
+-
+-	return suite;
+-}
+-
+
+Deleted: trunk/cutest.c
+===================================================================
+--- trunk/cutest.c	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/cutest.c	2006-03-08 22:03:36 UTC (rev 115)
+@@ -1,353 +0,0 @@
+-/* 	<A HREF="http://cutest.sf.net">http://cutest.sf.net</A>
+-
+-NOTE
+-
+-The license is based on the zlib/libpng license. For more details see
+-<A HREF="http://www.opensource.org/licenses/zlib-license.html.">http://www.opensource.org/licenses/zlib-license.html.</A> The intent of the
+-license is to: 
+-
+-- keep the license as simple as possible
+-- encourage the use of CuTest in both free and commercial applications
+-  and libraries
+-- keep the source code together 
+-- give credit to the CuTest contributors for their work
+-
+-If you ship CuTest in source form with your source distribution, the
+-following license document must be included with it in unaltered form.
+-If you find CuTest useful we would like to hear about it. 
+-
+-LICENSE
+-
+-Copyright (c) 2003 Asim Jalis
+-
+-This software is provided 'as-is', without any express or implied
+-warranty. In no event will the authors be held liable for any damages
+-arising from the use of this software.
+-
+-Permission is granted to anyone to use this software for any purpose,
+-including commercial applications, and to alter it and redistribute it
+-freely, subject to the following restrictions:
+-
+-1. The origin of this software must not be misrepresented; you must not
+-claim that you wrote the original software. If you use this software in
+-a product, an acknowledgment in the product documentation would be
+-appreciated but is not required.
+-
+-2. Altered source versions must be plainly marked as such, and must not
+-be misrepresented as being the original software.
+-
+-3. This notice may not be removed or altered from any source
+-distribution.
+-
+-*/
+-
+-
+-#include &lt;assert.h&gt;
+-#include &lt;setjmp.h&gt;
+-#include &lt;stdlib.h&gt;
+-#include &lt;stdio.h&gt;
+-#include &lt;string.h&gt;
+-#include &lt;math.h&gt;
+-
+-#include &quot;cutest.h&quot;
+-
+-/*-------------------------------------------------------------------------*
+- * CuStr
+- *-------------------------------------------------------------------------*/
+-
+-char* CuStrAlloc(int size)
+-{
+-	char* newStr = (char*) malloc( sizeof(char) * (size) );
+-	return newStr;
+-}
+-
+-char* CuStrCopy(const char* old)
+-{
+-	int len = strlen(old);
+-	char* newStr = CuStrAlloc(len + 1);
+-	strcpy(newStr, old);
+-	return newStr;
+-}
+-
+-/*-------------------------------------------------------------------------*
+- * CuString
+- *-------------------------------------------------------------------------*/
+-
+-void CuStringInit(CuString* str)
+-{
+-	str-&gt;length = 0;
+-	str-&gt;size = STRING_MAX;
+-	str-&gt;buffer = (char*) malloc(sizeof(char) * str-&gt;size);
+-	str-&gt;buffer[0] = '\0';
+-}
+-
+-CuString* CuStringNew(void)
+-{
+-	CuString* str = (CuString*) malloc(sizeof(CuString));
+-	str-&gt;length = 0;
+-	str-&gt;size = STRING_MAX;
+-	str-&gt;buffer = (char*) malloc(sizeof(char) * str-&gt;size);
+-	str-&gt;buffer[0] = '\0';
+-	return str;
+-}
+-
+-void CuStringResize(CuString* str, int newSize)
+-{
+-	str-&gt;buffer = (char*) realloc(str-&gt;buffer, sizeof(char) * newSize);
+-	str-&gt;size = newSize;
+-}
+-
+-void CuStringAppend(CuString* str, const char* text)
+-{
+-	int length;
+-
+-	if (text == NULL) {
+-		text = &quot;NULL&quot;;
+-	}
+-
+-	length = strlen(text);
+-	if (str-&gt;length + length + 1 &gt;= str-&gt;size)
+-		CuStringResize(str, str-&gt;length + length + 1 + STRING_INC);
+-	str-&gt;length += length;
+-	strcat(str-&gt;buffer, text);
+-}
+-
+-void CuStringAppendChar(CuString* str, char ch)
+-{
+-	char text[2];
+-	text[0] = ch;
+-	text[1] = '\0';
+-	CuStringAppend(str, text);
+-}
+-
+-void CuStringAppendFormat(CuString* str, const char* format, ...)
+-{
+-	va_list argp;
+-	char buf[HUGE_STRING_LEN];
+-	va_start(argp, format);
+-	vsprintf(buf, format, argp);
+-	va_end(argp);
+-	CuStringAppend(str, buf);
+-}
+-
+-void CuStringInsert(CuString* str, const char* text, int pos)
+-{
+-	int length = strlen(text);
+-	if (pos &gt; str-&gt;length)
+-		pos = str-&gt;length;
+-	if (str-&gt;length + length + 1 &gt;= str-&gt;size)
+-		CuStringResize(str, str-&gt;length + length + 1 + STRING_INC);
+-	memmove(str-&gt;buffer + pos + length, str-&gt;buffer + pos, (str-&gt;length - pos) + 1);
+-	str-&gt;length += length;
+-	memcpy(str-&gt;buffer + pos, text, length);
+-}
+-
+-/*-------------------------------------------------------------------------*
+- * CuTest
+- *-------------------------------------------------------------------------*/
+-
+-void CuTestInit(CuTest* t, const char* name, TestFunction function)
+-{
+-	t-&gt;name = CuStrCopy(name);
+-	t-&gt;failed = 0;
+-	t-&gt;ran = 0;
+-	t-&gt;message = NULL;
+-	t-&gt;function = function;
+-	t-&gt;jumpBuf = NULL;
+-}
+-
+-CuTest* CuTestNew(const char* name, TestFunction function)
+-{
+-	CuTest* tc = CU_ALLOC(CuTest);
+-	CuTestInit(tc, name, function);
+-	return tc;
+-}
+-
+-void CuTestRun(CuTest* tc)
+-{
+-	jmp_buf buf;
+-	tc-&gt;jumpBuf = &buf;
+-	if (setjmp(buf) == 0)
+-	{
+-		tc-&gt;ran = 1;
+-		(tc-&gt;function)(tc);
+-	}
+-	tc-&gt;jumpBuf = 0;
+-}
+-
+-static void CuFailInternal(CuTest* tc, const char* file, int line, CuString* string)
+-{
+-	char buf[HUGE_STRING_LEN];
+-
+-	sprintf(buf, &quot;%s:%d: &quot;, file, line);
+-	CuStringInsert(string, buf, 0);
+-
+-	tc-&gt;failed = 1;
+-	tc-&gt;message = string-&gt;buffer;
+-	if (tc-&gt;jumpBuf != 0) longjmp(*(tc-&gt;jumpBuf), 0);
+-}
+-
+-void CuFail_Line(CuTest* tc, const char* file, int line, const char* message2, const char* message)
+-{
+-	CuString string;
+-
+-	CuStringInit(&amp;string);
+-	if (message2 != NULL) 
+-	{
+-		CuStringAppend(&amp;string, message2);
+-		CuStringAppend(&amp;string, &quot;: &quot;);
+-	}
+-	CuStringAppend(&amp;string, message);
+-	CuFailInternal(tc, file, line, &amp;string);
+-}
+-
+-void CuAssert_Line(CuTest* tc, const char* file, int line, const char* message, int condition)
+-{
+-	if (condition) return;
+-	CuFail_Line(tc, file, line, NULL, message);
+-}
+-
+-void CuAssertStrEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
+-	const char* expected, const char* actual)
+-{
+-	CuString string;
+-	if ((expected == NULL &amp;&amp; actual == NULL) ||
+-	    (expected != NULL &amp;&amp; actual != NULL &amp;&amp;
+-	     strcmp(expected, actual) == 0))
+-	{
+-		return;
+-	}
+-
+-	CuStringInit(&amp;string);
+-	if (message != NULL) 
+-	{
+-		CuStringAppend(&amp;string, message);
+-		CuStringAppend(&amp;string, &quot;: &quot;);
+-	}
+-	CuStringAppend(&amp;string, &quot;expected &lt;&quot;);
+-	CuStringAppend(&amp;string, expected);
+-	CuStringAppend(&amp;string, &quot;&gt; but was &lt;&quot;);
+-	CuStringAppend(&amp;string, actual);
+-	CuStringAppend(&amp;string, &quot;&gt;&quot;);
+-	CuFailInternal(tc, file, line, &amp;string);
+-}
+-
+-void CuAssertIntEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
+-	int expected, int actual)
+-{
+-	char buf[STRING_MAX];
+-	if (expected == actual) return;
+-	sprintf(buf, &quot;expected &lt;%d&gt; but was &lt;%d&gt;&quot;, expected, actual);
+-	CuFail_Line(tc, file, line, message, buf);
+-}
+-
+-void CuAssertDblEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
+-	double expected, double actual, double delta)
+-{
+-	char buf[STRING_MAX];
+-	if (fabs(expected - actual) &lt;= delta) return;
+-	sprintf(buf, &quot;expected &lt;%lf&gt; but was &lt;%lf&gt;&quot;, expected, actual);
+-	CuFail_Line(tc, file, line, message, buf);
+-}
+-
+-void CuAssertPtrEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
+-	void* expected, void* actual)
+-{
+-	char buf[STRING_MAX];
+-	if (expected == actual) return;
+-	sprintf(buf, &quot;expected pointer &lt;0x%p&gt; but was &lt;0x%p&gt;&quot;, expected, actual);
+-	CuFail_Line(tc, file, line, message, buf);
+-}
+-
+-
+-/*-------------------------------------------------------------------------*
+- * CuSuite
+- *-------------------------------------------------------------------------*/
+-
+-void CuSuiteInit(CuSuite* testSuite)
+-{
+-	testSuite-&gt;count = 0;
+-	testSuite-&gt;failCount = 0;
+-}
+-
+-CuSuite* CuSuiteNew(void)
+-{
+-	CuSuite* testSuite = CU_ALLOC(CuSuite);
+-	CuSuiteInit(testSuite);
+-	return testSuite;
+-}
+-
+-void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase)
+-{
+-	assert(testSuite-&gt;count &lt; MAX_TEST_CASES);
+-	testSuite-&gt;list[testSuite-&gt;count] = testCase;
+-	testSuite-&gt;count++;
+-}
+-
+-void CuSuiteAddSuite(CuSuite* testSuite, CuSuite* testSuite2)
+-{
+-	int i;
+-	for (i = 0 ; i &lt; testSuite2-&gt;count ; ++i)
+-	{
+-		CuTest* testCase = testSuite2-&gt;list[i];
+-		CuSuiteAdd(testSuite, testCase);
+-	}
+-}
+-
+-void CuSuiteRun(CuSuite* testSuite)
+-{
+-	int i;
+-	for (i = 0 ; i &lt; testSuite-&gt;count ; ++i)
+-	{
+-		CuTest* testCase = testSuite-&gt;list[i];
+-		CuTestRun(testCase);
+-		if (testCase-&gt;failed) { testSuite-&gt;failCount += 1; }
+-	}
+-}
+-
+-void CuSuiteSummary(CuSuite* testSuite, CuString* summary)
+-{
+-	int i;
+-	for (i = 0 ; i &lt; testSuite-&gt;count ; ++i)
+-	{
+-		CuTest* testCase = testSuite-&gt;list[i];
+-		CuStringAppend(summary, testCase-&gt;failed ? &quot;F&quot; : &quot;.&quot;);
+-	}
+-	CuStringAppend(summary, &quot;\n\n&quot;);
+-}
+-
+-void CuSuiteDetails(CuSuite* testSuite, CuString* details)
+-{
+-	int i;
+-	int failCount = 0;
+-
+-	if (testSuite-&gt;failCount == 0)
+-	{
+-		int passCount = testSuite-&gt;count - testSuite-&gt;failCount;
+-		const char* testWord = passCount == 1 ? &quot;test&quot; : &quot;tests&quot;;
+-		CuStringAppendFormat(details, &quot;OK (%d %s)\n&quot;, passCount, testWord);
+-	}
+-	else
+-	{
+-		if (testSuite-&gt;failCount == 1)
+-			CuStringAppend(details, &quot;There was 1 failure:\n&quot;);
+-		else
+-			CuStringAppendFormat(details, &quot;There were %d failures:\n&quot;, testSuite-&gt;failCount);
+-
+-		for (i = 0 ; i &lt; testSuite-&gt;count ; ++i)
+-		{
+-			CuTest* testCase = testSuite-&gt;list[i];
+-			if (testCase-&gt;failed)
+-			{
+-				failCount++;
+-				CuStringAppendFormat(details, &quot;%d) %s: %s\n&quot;,
+-					failCount, testCase-&gt;name, testCase-&gt;message);
+-			}
+-		}
+-		CuStringAppend(details, &quot;\n!!!FAILURES!!!\n&quot;);
+-
+-		CuStringAppendFormat(details, &quot;Runs: %d &quot;,   testSuite-&gt;count);
+-		CuStringAppendFormat(details, &quot;Passes: %d &quot;, testSuite-&gt;count - testSuite-&gt;failCount);
+-		CuStringAppendFormat(details, &quot;Fails: %d\n&quot;,  testSuite-&gt;failCount);
+-	}
+-}
+
+Deleted: trunk/cutest.h
+===================================================================
+--- trunk/cutest.h	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/cutest.h	2006-03-08 22:03:36 UTC (rev 115)
+@@ -1,124 +0,0 @@
+-#ifndef CU_TEST_H
+-#define CU_TEST_H
+-
+-#include &lt;setjmp.h&gt;
+-#include &lt;stdarg.h&gt;
+-
+-/* CuString */
+-
+-char* CuStrAlloc(int size);
+-char* CuStrCopy(const char* old);
+-
+-#define CU_ALLOC(TYPE)		((TYPE*) malloc(sizeof(TYPE)))
+-
+-#define HUGE_STRING_LEN	8192
+-#define STRING_MAX		256
+-#define STRING_INC		256
+-
+-typedef struct
+-{
+-	int length;
+-	int size;
+-	char* buffer;
+-} CuString;
+-
+-void CuStringInit(CuString* str);
+-CuString* CuStringNew(void);
+-void CuStringRead(CuString* str, const char* path);
+-void CuStringAppend(CuString* str, const char* text);
+-void CuStringAppendChar(CuString* str, char ch);
+-void CuStringAppendFormat(CuString* str, const char* format, ...);
+-void CuStringInsert(CuString* str, const char* text, int pos);
+-void CuStringResize(CuString* str, int newSize);
+-
+-/* CuTest */
+-
+-typedef struct CuTest CuTest;
+-
+-typedef void (*TestFunction)(CuTest *);
+-
+-struct CuTest
+-{
+-	const char* name;
+-	TestFunction function;
+-	int failed;
+-	int ran;
+-	const char* message;
+-	jmp_buf *jumpBuf;
+-};
+-
+-void CuTestInit(CuTest* t, const char* name, TestFunction function);
+-CuTest* CuTestNew(const char* name, TestFunction function);
+-void CuTestRun(CuTest* tc);
+-
+-/* Internal versions of assert functions -- use the public versions */
+-void CuFail_Line(CuTest* tc, const char* file, int line, const char* message2, const char* message);
+-void CuAssert_Line(CuTest* tc, const char* file, int line, const char* message, int condition);
+-void CuAssertStrEquals_LineMsg(CuTest* tc, 
+-	const char* file, int line, const char* message, 
+-	const char* expected, const char* actual);
+-void CuAssertIntEquals_LineMsg(CuTest* tc, 
+-	const char* file, int line, const char* message, 
+-	int expected, int actual);
+-void CuAssertDblEquals_LineMsg(CuTest* tc, 
+-	const char* file, int line, const char* message, 
+-	double expected, double actual, double delta);
+-void CuAssertPtrEquals_LineMsg(CuTest* tc, 
+-	const char* file, int line, const char* message, 
+-	void* expected, void* actual);
+-
+-/* public assert functions */
+-
+-#define CuFail(tc, ms)                        CuFail_Line(  (tc), __FILE__, __LINE__, NULL, (ms))
+-#define CuAssert(tc, ms, cond)                CuAssert_Line((tc), __FILE__, __LINE__, (ms), (cond))
+-#define CuAssertTrue(tc, cond)                CuAssert_Line((tc), __FILE__, __LINE__, &quot;assert failed&quot;, (cond))
+-
+-#define CuAssertStrEquals(tc,ex,ac)           CuAssertStrEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac))
+-#define CuAssertStrEquals_Msg(tc,ms,ex,ac)    CuAssertStrEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac))
+-#define CuAssertIntEquals(tc,ex,ac)           CuAssertIntEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac))
+-#define CuAssertIntEquals_Msg(tc,ms,ex,ac)    CuAssertIntEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac))
+-#define CuAssertDblEquals(tc,ex,ac,dl)        CuAssertDblEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac),(dl))
+-#define CuAssertDblEquals_Msg(tc,ms,ex,ac,dl) CuAssertDblEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac),(dl))
+-#define CuAssertPtrEquals(tc,ex,ac)           CuAssertPtrEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac))
+-#define CuAssertPtrEquals_Msg(tc,ms,ex,ac)    CuAssertPtrEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac))
+-
+-#define CuAssertPtrNotNull(tc,p)        CuAssert_Line((tc),__FILE__,__LINE__,&quot;null pointer unexpected&quot;,(p != NULL))
+-#define CuAssertPtrNotNullMsg(tc,msg,p) CuAssert_Line((tc),__FILE__,__LINE__,(msg),(p != NULL))
+-
+-/* CuSuite */
+-
+-#define MAX_TEST_CASES	1024
+-
+-#define SUITE_ADD_TEST(SUITE,TEST)	CuSuiteAdd(SUITE, CuTestNew(#TEST, TEST))
+-
+-typedef struct
+-{
+-	int count;
+-	CuTest* list[MAX_TEST_CASES];
+-	int failCount;
+-
+-} CuSuite;
+-
+-
+-void CuSuiteInit(CuSuite* testSuite);
+-CuSuite* CuSuiteNew(void);
+-void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase);
+-void CuSuiteAddSuite(CuSuite* testSuite, CuSuite* testSuite2);
+-void CuSuiteRun(CuSuite* testSuite);
+-void CuSuiteSummary(CuSuite* testSuite, CuString* summary);
+-void CuSuiteDetails(CuSuite* testSuite, CuString* details);
+-
+-
+-#define cusuite CuSuite
+-#define cutest CuTest
+-#define suite_add(s,t) SUITE_ADD_TEST(s,t)
+-#define Assert(cond) CuAssert(ct, #cond, cond)
+-
+-#define AssertEq(c1,c2) Assert(c1 == c2)
+-#define AssertNe(c1,c2) Assert(c1 != c2)
+-#define AssertGt(c1,c2) Assert(c1 &gt; c2)
+-#define AssertGe(c1,c2) Assert(c1 &gt;= c2)
+-#define AssertLt(c1,c2) Assert(c1 &lt; c2)
+-#define AssertLe(c1,c2) Assert(c1 &lt;= c2)
+-
+-#endif /* CU_TEST_H */
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/main.c	2006-03-08 22:03:36 UTC (rev 115)
+@@ -32,6 +32,7 @@
+ #include &quot;vars.h&quot;
+ #include &quot;tfscan.h&quot;
+ #include &quot;pathconv.h&quot;
++#include &quot;units.h&quot;
+ 
+ 
+ #define DIFFPROG &quot;/usr/bin/diff&quot;
+@@ -48,7 +49,6 @@
+ int allfiles = 0;
+ int dumpscript = 0;
+ int quiet = 0;
+-int run_unit_tests = 0;
+ const char *orig_cwd;		// tmtest runs with the cwd pointed to /tmp
+ char *config_file;	// absolute path to the user-specified config file
+ 					// null if user didn't specify a config file.
+@@ -1020,7 +1020,7 @@
+ 		{&quot;help&quot;, 0, 0, 'h'},
+ 		{&quot;output&quot;, 0, 0, 'o'},
+ 		{&quot;quiet&quot;, 0, 0, 'q'},
+-		{&quot;run-tests&quot;, 0, 0, 'U'},
++		{&quot;run-unit-tests&quot;, 0, 0, 'U'},
+ 		{&quot;version&quot;, 0, 0, 'V'},
+ 		{0, 0, 0, 0},
+ 	};
+@@ -1062,10 +1062,6 @@
+ 				quiet++;
+ 				break;
+ 
+-			case 'U':
+-				run_unit_tests++;
+-				break;
+-
+ 			case 'V':
+ 				printf(&quot;tmtest version %s\n&quot;, stringify(VERSION));
+ 				exit(0);
+@@ -1183,35 +1179,13 @@
+ }
+ 
+ 
+-#include &quot;cutest.h&quot;
+-
+-static int cumain(int argc, char **argv)
+-{
+-	extern cusuite* compare_suite();
+-
+-	CuString *output = CuStringNew();
+-
+-	CuSuite *suite = CuSuiteNew();
+-	CuSuiteAddSuite(suite, compare_suite());
+-
+-	CuSuiteRun(suite);
+-	CuSuiteSummary(suite, output);
+-	CuSuiteDetails(suite, output);
+-	printf(&quot;%s\n&quot;, output-&gt;buffer);
+-
+-	return 0;
+-}
+-
+-
+ int main(int argc, char **argv)
+ {
++	unit_test_check(argc, argv, all_unit_tests);
++
+ 	orig_cwd = dup_cwd();
+ 	process_args(argc, argv);
+ 
+-	if(run_unit_tests) {
+-		return cumain(argc, argv);
+-	}
+-
+     start_tests();
+     if(optind &lt; argc) {
+ 		process_argv(argv+optind);
+
+Added: trunk/units.c
+===================================================================
+--- trunk/units.c	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/units.c	2006-03-08 22:03:36 UTC (rev 115)
+@@ -0,0 +1,10 @@
++#include &quot;units.h&quot;
++#include &quot;compare.h&quot;
++#include &lt;stddef.h&gt;
++
++
++zutest_suite all_unit_tests[] = {
++	compare_tests,
++	NULL
++};
++
+
+Added: trunk/units.h
+===================================================================
+--- trunk/units.h	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/units.h	2006-03-08 22:03:36 UTC (rev 115)
+@@ -0,0 +1,6 @@
++#include &quot;zutest.h&quot;
++
++extern zutest_proc compare_tests[];
++
++extern zutest_suite all_unit_tests[];
++
+
+Added: trunk/zutest-tests.c
+===================================================================
+--- trunk/zutest-tests.c	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/zutest-tests.c	2006-03-08 22:03:36 UTC (rev 115)
+@@ -0,0 +1,242 @@
++/* zutest.c
++ * Scott Bronson
++ * 6 Mar 2006
++ *
++ * Runs a bunch of unit tests.  Ensures each macro expands without error
++ * and passes a simple test.  Does not test each macro for all failure
++ * modes because that would be a hell of a lot of code.
++ *
++ * A certain number of tests are expected to fail.  If the name of a
++ * failing test does not end in &quot;_fail&quot; then it is NOT expected to fail.
++ */
++
++#include &quot;zutest.h&quot;
++#include &lt;string.h&gt;
++
++
++void test_fail()
++{
++	Fail(&quot;Gone!&quot;);
++	Fail(&quot;Won't be printed&quot;);
++}
++
++
++void test_assert_int()
++{
++	int a=4, b=3, c=4;
++
++	// These should all pass
++	AssertEq(a,c);
++	AssertNe(a,b);
++	AssertGt(a,b);
++	AssertGe(a,b);
++	AssertGe(a,c);
++	AssertLt(b,a);
++	AssertLe(b,a);
++	AssertLe(c,a);
++	AssertIntEq(a,c);
++	AssertIntNe(a,b);
++	AssertIntGt(a,b);
++	AssertIntGe(a,b);
++	AssertIntGe(a,c);
++	AssertIntLt(b,a);
++	AssertIntLe(b,a);
++	AssertIntLe(c,a);
++	AssertEqHex(a,c);
++	AssertNeHex(a,b);
++	AssertGtHex(a,b);
++	AssertGeHex(a,b);
++	AssertGeHex(a,c);
++	AssertLtHex(b,a);
++	AssertLeHex(b,a);
++	AssertLeHex(c,a);
++}
++
++void test_assert_int_eq_fail()
++{
++	int a=4, b=3;
++	AssertEq(a,b);
++}
++void test_assert_int_ne_fail()
++{
++	int a=4, b=3;
++	AssertNe(a,b);
++}
++void test_assert_int_gt_fail()
++{
++	int a=4, b=3;
++	AssertGt(a,b);
++}
++void test_assert_int_ge_fail()
++{
++	int a=4, b=3;
++	AssertGe(a,b);
++}
++void test_assert_int_lt_fail()
++{
++	int a=4, b=3;
++	AssertLt(a,b);
++}
++void test_assert_int_le_fail()
++{
++	int a=4, b=3;
++	AssertLe(a,b);
++}
++
++void test_assert_ptr()
++{
++	int a, b;
++	int *ap = &a;
++	int *bp = &b;
++	int *cp = &a;
++	int *n = NULL;
++
++	// These should all pass
++	AssertPtr(ap);
++	AssertNull(n);
++	AssertPtrEq(ap,cp);
++	AssertPtrNe(ap,bp);
++	AssertPtrGt(ap,bp);
++	AssertPtrGe(ap,bp);
++	AssertPtrGe(ap,cp);
++	AssertPtrLt(bp,ap);
++	AssertPtrLe(bp,ap);
++	AssertPtrLe(cp,ap);
++}
++
++void test_assert_ptr_fail()
++{
++	AssertPtr(NULL);
++}
++
++void test_assert_ptr_null_fail()
++{
++	void (*p)() = &amp;test_assert_ptr_null_fail;
++	AssertPtrNull(p);
++}
++
++void test_assert_int_hex_eq_fail()
++{
++	int a=431, b=577;
++	AssertEqHex(a,b);
++}
++
++void test_assert_float()
++{
++	float a=0.0004, b=0.0003, c=0.0004;
++
++	// These should all pass
++	AssertFloatEq(a,c);
++	AssertFloatNe(a,b);
++	AssertFloatGt(a,b);
++	AssertFloatGe(a,b);
++	AssertFloatGe(a,c);
++	AssertFloatLt(b,a);
++	AssertFloatLe(b,a);
++	AssertFloatLe(c,a);
++	AssertDblEq(a,c);
++	AssertDblNe(a,b);
++	AssertDblGt(a,b);
++	AssertDblGe(a,b);
++	AssertDblGe(a,c);
++	AssertDblLt(b,a);
++	AssertDblLe(b,a);
++	AssertDblLe(c,a);
++	AssertDoubleEq(a,c);
++	AssertDoubleNe(a,b);
++	AssertDoubleGt(a,b);
++	AssertDoubleGe(a,b);
++	AssertDoubleGe(a,c);
++	AssertDoubleLt(b,a);
++	AssertDoubleLe(b,a);
++	AssertDoubleLe(c,a);
++}
++
++
++void test_assert_float_eq_fail()
++{
++	double a=1.0/3.0, b=0.4;
++	AssertFloatEq(a,b);
++}
++
++void test_assert_strings()
++{
++	const char *a = &quot;Bogozity&quot;;
++	const char *b = &quot;Arclamp&quot;;
++	const char *c = &quot;Bogozity&quot;;
++
++	// These should all pass
++	AssertStrEq(a,c);
++	AssertStrNe(a,b);
++	AssertStrGt(a,b);
++	AssertStrGe(a,b);
++	AssertStrGe(a,c);
++	AssertStrLt(b,a);
++	AssertStrLe(b,a);
++	AssertStrLe(c,a);
++}
++
++void test_assert_string_eq_fail()
++{
++	const char *a = &quot;A&quot;;
++	const char *b = &quot;a&quot;;
++
++	AssertStrEq(a,b);
++}
++
++
++void test_assert_string_ne_fail()
++{
++	const char *a = &quot;A&quot;;
++	const char *b = &quot;A&quot;;
++
++	AssertStrNe(a,b);
++}
++
++void test_assert_string_gt_fail()
++{
++	const char *a = &quot;A&quot;;
++	const char *b = &quot;A&quot;;
++
++	AssertStrGt(a,b);
++}
++
++zutest_proc zutest_tests[] = {
++	test_assert_int,
++	test_assert_ptr,
++	test_assert_float,
++	test_assert_strings,
++	NULL
++};
++
++zutest_proc zutest_empty_suite[] = {
++	NULL
++};
++
++zutest_proc zutest_failures[] = {
++	test_fail,
++	test_assert_int_eq_fail,
++	test_assert_ptr_fail,
++	test_assert_ptr_null_fail,
++	test_assert_int_hex_eq_fail,
++	test_assert_float_eq_fail,
++	test_assert_string_eq_fail,
++	test_assert_string_ne_fail,
++	test_assert_string_gt_fail,
++	NULL
++};
++
++zutest_suite all_zutests[] = {
++	zutest_tests,
++	zutest_empty_suite,
++	zutest_failures,
++	NULL
++};
++
++
++int main(int argc, char **argv)
++{
++	run_unit_tests(all_zutests);
++	return 0;
++}
++
+
+Added: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/zutest.c	2006-03-08 22:03:36 UTC (rev 115)
+@@ -0,0 +1,110 @@
++/* zutest.c
++ * Scott Bronson
++ * 6 Mar 2006
++ */
++
++#include &lt;stdio.h&gt;
++#include &lt;stdlib.h&gt;
++#include &lt;stdarg.h&gt;
++#include &lt;string.h&gt;
++#include &lt;setjmp.h&gt;
++#include &quot;zutest.h&quot;
++
++
++/**
++ * A single procedure is called a test.  If any of the asserts fail
++ * within a test, the test itself is stopped but all other tests will
++ * be run.
++ *
++ * Most files will contain a number of tests.  These tests are organized
++ * into a suite.  A test suite contains one or more tests.
++ *
++ * Test suites are organized into a test battery.  You don't need to
++ * know this except when specifying all the suites that will be tested.
++ */
++
++
++static jmp_buf test_bail;
++static int tests_run;
++static int successes;
++static int failures;
++
++
++void zutest_fail(const char *file, int line, const char *func, 
++		const char *msg, ...)
++{
++	va_list ap;
++
++	fprintf(stderr, &quot;FAIL %s at %s line %d:\n\t&quot;, func, file, line);
++	va_start(ap, msg);
++	vfprintf(stderr, msg, ap);
++	va_end(ap);
++	fputc('\n', stderr);
++
++	longjmp(test_bail, 1);
++}
++
++
++void run_zutest_suite(const zutest_suite suite)
++{
++	const zutest_proc *test;
++
++	for(test=suite; *test; test++) {
++		tests_run += 1;
++		if(!setjmp(test_bail)) {
++			(*test)();
++			successes += 1;
++		} else {
++			failures += 1;
++		}
++	}
++}
++
++
++void run_zutest_battery(const zutest_battery battery)
++{
++	zutest_suite *suite;
++
++	for(suite=battery; *suite; suite++) {
++		run_zutest_suite(*suite);
++	}
++}
++
++
++void print_zutest_results()
++{
++	if(failures == 0) {
++		printf(&quot;%d tests run, %d successes.\n&quot;, successes, successes);
++		return;
++	}
++
++	printf(&quot;%d failures of %d tests run!\n&quot;, failures, tests_run);
++}
++
++
++void run_unit_tests(const zutest_battery battery)
++{
++	run_zutest_battery(battery);
++	print_zutest_results();
++	exit(failures &lt; 100 ? failures : 100);
++}
++
++
++/**
++ * Examines the command-line arguments.  If &quot;--run-unit-tests&quot; is
++ * the first argument, then it runs the unit tests (further arguments
++ * may affect how the tests are processed).  This routine exits with
++ * a nonzero result code if any test fails; otherwise it exits with 0.
++ * It never returns.
++ *
++ * If --run-unit-tests is not on the command line, this routine returns
++ * without doing anything.
++ */
++
++void unit_test_check(int argc, char **argv, const zutest_battery battery)
++{
++	if(argc &gt; 1 &amp;&amp; strcmp(argv[1],&quot;--run-unit-tests&quot;) == 0) {
++		run_unit_tests(battery);
++	}
++}
++
+
+Added: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2006-03-07 23:24:44 UTC (rev 114)
++++ trunk/zutest.h	2006-03-08 22:03:36 UTC (rev 115)
+@@ -0,0 +1,116 @@
++/* zutest.h
++ * Scott Bronson
++ * 6 Mar 2006
++ *
++ * This is a ground-up rewrite of Asim Jalis's &quot;CuTest&quot; library.
++ * It is released under the MIT License.
++ */
++
++
++// If your compiler doesn't provide __func__, compile with -D__func__='&quot;test&quot;'
++#define Fail(...) zutest_fail(__FILE__, __LINE__, __func__, __VA_ARGS__)
++// If the expression returns false, it is printed in the failure message.
++#define Assert(x) do { if(!(x)) { Fail(#x); } } while(0)
++// If the expression returns false, the given format string is printed.
++#define AssertFmt(x,...) do { if(!(x)) { Fail(__VA_ARGS__); } } while(0)
++// On failure the expression is printed followed by the format string.
++#define AssertExp(ex,...) AssertFmt(ex,#ex __VA_ARGS__)
++
++#define AssertExpType(x,y,op,type,fmt) \
++	AssertExp(x op y,&quot; but &quot;#x&quot;==&quot;fmt&quot; and &quot;#y&quot;==&quot;fmt&quot;!&quot;,(type)x,(type)y)
++
++// get ready...
++// These only work with integer and pointer values!
++#define AssertEq(x,y) AssertOp(x,y,==)
++#define AssertNe(x,y) AssertOp(x,y,!=)
++#define AssertGt(x,y) AssertOp(x,y,&gt;)
++#define AssertGe(x,y) AssertOp(x,y,&gt;=)
++#define AssertLt(x,y) AssertOp(x,y,&lt;)
++#define AssertLe(x,y) AssertOp(x,y,&lt;=)
++#define AssertIntEq(x,y) AssertOp(x,y,==)
++#define AssertIntNe(x,y) AssertOp(x,y,!=)
++#define AssertIntGt(x,y) AssertOp(x,y,&gt;)
++#define AssertIntGe(x,y) AssertOp(x,y,&gt;=)
++#define AssertIntLt(x,y) AssertOp(x,y,&lt;)
++#define AssertIntLe(x,y) AssertOp(x,y,&lt;=)
++#define AssertOp(x,y,op) AssertExpType(x,y,op,long,&quot;%ld&quot;)
++// Same as above but the values are printed in hex rather than decimal.
++#define AssertEqHex(x,y) AssertHexOp(x,y,==)
++#define AssertNeHex(x,y) AssertHexOp(x,y,!=)
++#define AssertGtHex(x,y) AssertHexOp(x,y,&gt;)
++#define AssertGeHex(x,y) AssertHexOp(x,y,&gt;=)
++#define AssertLtHex(x,y) AssertHexOp(x,y,&lt;)
++#define AssertLeHex(x,y) AssertHexOp(x,y,&lt;=)
++// Same as above but all 8 digits are printed
++// If you give me a 64 bit computer, I will give you 16 digits!
++#define AssertHexOp(x,y,op) AssertExpType(x,y,op,long,&quot;0x%lX&quot;)
++#define AssertPtr(p)  AssertFmt(p != NULL, \
++		#p&quot; != NULL but &quot;#p&quot;==0x%08lX!&quot;, (unsigned long)p)
++#define AssertNull(p) AssertFmt(p == NULL, \
++		#p&quot; == NULL but &quot;#p&quot;==0x%08lX!&quot;, (unsigned long)p)
++#define AssertPtrNull(p) AssertNull(p)
++#define AssertPtrEq(x,y) AssertPtrOp(x,y,==)
++#define AssertPtrNe(x,y) AssertPtrOp(x,y,!=)
++#define AssertPtrGt(x,y) AssertPtrOp(x,y,&gt;)
++#define AssertPtrGe(x,y) AssertPtrOp(x,y,&gt;=)
++#define AssertPtrLt(x,y) AssertPtrOp(x,y,&lt;)
++#define AssertPtrLe(x,y) AssertPtrOp(x,y,&lt;=)
++#define AssertPtrOp(x,y,op) AssertExpType(x,y,op,unsigned long,&quot;0x%lX&quot;)
++// These work with floats and doubles
++#define AssertFloatEq(x,y) AssertFloatOp(x,y,==)
++#define AssertFloatNe(x,y) AssertFloatOp(x,y,!=)
++#define AssertFloatGt(x,y) AssertFloatOp(x,y,&gt;)
++#define AssertFloatGe(x,y) AssertFloatOp(x,y,&gt;=)
++#define AssertFloatLt(x,y) AssertFloatOp(x,y,&lt;)
++#define AssertFloatLe(x,y) AssertFloatOp(x,y,&lt;=)
++// Dbl is implemented the same as Float internally.
++// We just provide a Dbl and Double names so that the programmer can
++// use whatever name she prefers and the macro can exactly equal the type.
++#define AssertDblEq(x,y) AssertFloatOp(x,y,==)
++#define AssertDblNe(x,y) AssertFloatOp(x,y,!=)
++#define AssertDblGt(x,y) AssertFloatOp(x,y,&gt;)
++#define AssertDblGe(x,y) AssertFloatOp(x,y,&gt;=)
++#define AssertDblLt(x,y) AssertFloatOp(x,y,&lt;)
++#define AssertDblLe(x,y) AssertFloatOp(x,y,&lt;=)
++#define AssertDoubleEq(x,y) AssertFloatOp(x,y,==)
++#define AssertDoubleNe(x,y) AssertFloatOp(x,y,!=)
++#define AssertDoubleGt(x,y) AssertFloatOp(x,y,&gt;)
++#define AssertDoubleGe(x,y) AssertFloatOp(x,y,&gt;=)
++#define AssertDoubleLt(x,y) AssertFloatOp(x,y,&lt;)
++#define AssertDoubleLe(x,y) AssertFloatOp(x,y,&lt;=)
++#define AssertFloatOp(x,y,op) AssertExpType(x,y,op,double,&quot;%lf&quot;)
++// These work with strings
++#define AssertStrEq(x,y) AssertStrOp(x,y,EQ,==)
++#define AssertStrNe(x,y) AssertStrOp(x,y,NE,!=)
++#define AssertStrGt(x,y) AssertStrOp(x,y,GT,&gt;)
++#define AssertStrGe(x,y) AssertStrOp(x,y,GE,&gt;=)
++#define AssertStrLt(x,y) AssertStrOp(x,y,LT,&lt;)
++#define AssertStrLe(x,y) AssertStrOp(x,y,LE,&lt;=)
++#define AssertStrOp(x,y,opn,op) AssertFmt(strcmp(x,y) op 0, \
++	#x&quot; &quot;#opn&quot; &quot;#y&quot; but &quot;#x&quot; is \&quot;%s\&quot; and &quot;#y&quot; is \&quot;%s\&quot;!&quot;,x,y)
++
++// if none of those macros above fit your fancy, call fail directly.
++void zutest_fail(const char *file, int line, const char *func,
++		const char *msg, ...);
++
++
++
++typedef void (*zutest_proc)();
++typedef zutest_proc *zutest_suite;
++typedef zutest_suite *zutest_battery;
++
++void run_zutest_suite(const zutest_suite suite);
++void run_zutest_battery(const zutest_battery battery);
++void print_zutest_results();
++
++// Call this on the very first line of your application.  If the user
++// ran your program with the first arg of &quot;--run-unit-tests&quot;, this will
++// run the tests and exit.  Otherwise your program will run as normal.
++// If you would rather create a dedicated executable, just call
++// run_zutest_battery() directly.
++void unit_test_check(int argc, char **argv, const zutest_battery battery);
++
++// This runs all the unit tests supplied and then exits.  Use this
++// if you want to handle the arguments yourself.
++void run_unit_tests(const zutest_battery battery);
++
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000031.html">[Tmtest-commits] [114] trunk: Fix $PATH handling, change how tmlib is included.
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

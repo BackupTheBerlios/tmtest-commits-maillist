@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [109] trunk: Used to report user+sys time.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B109%5D%20trunk%3A%20Used%20to%20report%20user%2Bsys%20time.&In-Reply-To=%3C200603072136.k27LajB3006284%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000025.html">
+   <LINK REL="Next"  HREF="000027.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [109] trunk: Used to report user+sys time.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B109%5D%20trunk%3A%20Used%20to%20report%20user%2Bsys%20time.&In-Reply-To=%3C200603072136.k27LajB3006284%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [109] trunk: Used to report user+sys time.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Mar  7 22:36:45 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000025.html">[Tmtest-commits] [108] trunk: Simplify the compare API by getting rid of a misfeature.
+</A></li>
+        <LI>Next message: <A HREF="000027.html">[Tmtest-commits] [110] trunk: Fix format strings so test summary looks better, Get rid of
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#26">[ date ]</a>
+              <a href="thread.html#26">[ thread ]</a>
+              <a href="subject.html#26">[ subject ]</a>
+              <a href="author.html#26">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 109
+Author:   bronson
+Date:     2006-03-07 22:36:44 +0100 (Tue, 07 Mar 2006)
+
+Log Message:
+-----------
+Used to report user+sys time.  When tests are I/O bound, this number
+gets ridiculous.  Now we show wallclock time with user and sys as
+percentages.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/main.c
+    trunk/rusage.c
+    trunk/rusage.h
+    trunk/test.c
+    trunk/test.h
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-07 01:26:53 UTC (rev 108)
++++ trunk/TODO	2006-03-07 21:36:44 UTC (rev 109)
+@@ -43,7 +43,11 @@
+   <A HREF="http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages">http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages</A>     Actually, this looks better: <A HREF="http://cutest.sourceforge.net/">http://cutest.sourceforge.net/</A>
+   Potential units: curdir, path normalization
+ - Get rid of -g, add -O2.  Make it easy to set these for compilation.
+-- Get rid of all scan_is_finished() calls?  Deprecate scan_is_finished.
++  Yes, have dev and prod modes.  dev would be -O0 and -g and include
++  unit tests.  Prod is -O2, stripped, and no unit tests (unless the
++  unit tests only add 12K or so, where might as well just leave em).
++- If there were failures, should highlight that in the test summary.
++	&quot;%d FAILURES&quot; or somesuch.
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+@@ -59,6 +63,7 @@
+   buffer.  If your stderr is more than 100K or so in size, just redirect
+   it to a file, then cat the file at the end.  We truncate stderr if it
+   gets too big.
++  - When done, verify that netknife's tests that freeze with -d now pass.
+ - Is there any way to record memory and swap usage for each test?
+   sure, it's in the rusage. prolly add a &quot;tmtest -v&quot; to print it for each test.
+ - stdin is all buggered up.  why is it that &quot;cat&quot; with no args will print
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-07 01:26:53 UTC (rev 108)
++++ trunk/main.c	2006-03-07 21:36:44 UTC (rev 109)
+@@ -16,6 +16,8 @@
+ #include &lt;sys/types.h&gt;
+ #include &lt;sys/stat.h&gt;
+ #include &lt;sys/wait.h&gt;
++#include &lt;sys/time.h&gt;
++#include &lt;time.h&gt;
+ #include &lt;fcntl.h&gt;
+ #include &lt;unistd.h&gt;
+ #include &lt;dirent.h&gt;
+@@ -73,7 +75,10 @@
+ int g_statusfd;
+ 
+ 
++struct timeval test_start_time;
++struct timeval test_stop_time;
+ 
++
+ // exit values:
+ enum {
+     no_error = 0,
+@@ -885,6 +890,8 @@
+ 
+ static void stop_tests()
+ {
++	gettimeofday(&amp;test_stop_time, NULL);
++
+ 	checkerr(close(g_outfd), &quot;closing&quot;, g_outname);
+ 	checkerr(close(g_errfd), &quot;closing&quot;, g_errname);
+ 	checkerr(close(g_statusfd), &quot;closing&quot;, g_statusname);
+@@ -944,6 +951,8 @@
+ 		fprintf(stderr, &quot;Could not chdir 2 to %s: %s\n&quot;, cp, strerror(errno));
+ 		exit(initialization_error);
+ 	}
++
++	gettimeofday(&amp;test_start_time, NULL);
+ }
+ 
+ 
+@@ -1213,7 +1222,7 @@
+     stop_tests();
+ 
+     if(outmode == outmode_test) {
+-        print_test_summary();
++        print_test_summary(&amp;test_start_time, &amp;test_stop_time);
+     }
+ 
+ 	free((char*)orig_cwd);
+
+Modified: trunk/rusage.c
+===================================================================
+--- trunk/rusage.c	2006-03-07 01:26:53 UTC (rev 108)
++++ trunk/rusage.c	2006-03-07 21:36:44 UTC (rev 109)
+@@ -18,7 +18,7 @@
+ #include &quot;rusage.h&quot;
+ 
+ 
+-void print_rusage()
++void print_rusage(struct timeval *start_tv, struct timeval *stop_tv)
+ {
+ 	// struct rusage self;
+ 	struct rusage child;
+@@ -36,11 +36,15 @@
+ 		return;
+ 	}
+ 
++	double start = start_tv-&gt;tv_sec + start_tv-&gt;tv_usec / 1000000.0;
++	double stop = stop_tv-&gt;tv_sec + stop_tv-&gt;tv_usec / 1000000.0;
++
+ //	double uself = self.ru_utime.tv_sec + self.ru_utime.tv_usec / 1000000.0;
+ 	double uchild = child.ru_utime.tv_sec + child.ru_utime.tv_usec / 1000000.0;
+ //	double sself = self.ru_stime.tv_sec + self.ru_stime.tv_usec / 1000000.0;
+ 	double schild = child.ru_stime.tv_sec + child.ru_stime.tv_usec / 1000000.0;
+-	double total = uchild + schild;
++//	double total = uchild + schild;
++	double total = stop - start;
+ 
+ 	
+ 	/*
+@@ -50,8 +54,9 @@
+ 			(int)(100.0*schild/total+0.5));
+ 			*/
+ 
+-	printf(&quot;Tests took %.2fs (%02d%% sys)&quot;,
+-			uchild+schild,
++	printf(&quot;%.2fs (%02d%% user, %02d%% sys)&quot;,
++			total,
++			(int)(100.0*uchild/total+0.5),
+ 			(int)(100.0*schild/total+0.5));
+ }
+ 
+
+Modified: trunk/rusage.h
+===================================================================
+--- trunk/rusage.h	2006-03-07 01:26:53 UTC (rev 108)
++++ trunk/rusage.h	2006-03-07 21:36:44 UTC (rev 109)
+@@ -1 +1 @@
+-void print_rusage(void);
++void print_rusage(struct timeval *start, struct timeval *stop);
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2006-03-07 01:26:53 UTC (rev 108)
++++ trunk/test.c	2006-03-07 21:36:44 UTC (rev 109)
+@@ -1044,19 +1044,20 @@
+ }
+ 
+ 
+-void print_test_summary()
++void print_test_summary(struct timeval *start, struct timeval *stop)
+ {
+     printf(&quot;\n&quot;);
+     printf(&quot;%d test%s run, &quot;, test_runs, (test_runs != 1 ? &quot;s&quot; : &quot;&quot;));
+-    printf(&quot;%d success%s, &quot;, test_successes, (test_successes != 1 ? &quot;es&quot; : &quot;&quot;));
+-    printf(&quot;%d failure%s.&quot;, test_failures, (test_failures != 1 ? &quot;s&quot; : &quot;&quot;));
++    printf(&quot;%d success%s, &quot;, test_successes,
++			(test_successes != 1 ? &quot;es&quot; : &quot;&quot;));
++    printf(&quot;%d failure%s&quot;, test_failures, (test_failures != 1 ? &quot;s&quot; : &quot;&quot;));
+ 
+ 	if(!quiet) {
+-		printf(&quot;    &quot;);
+-		print_rusage();
++		printf(&quot;, in &quot;);
++		print_rusage(start, stop);
+ 	}
+ 	
+-	printf(&quot;\n&quot;);
++	printf(&quot;.\n&quot;);
+ }
+ 
+ 
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2006-03-07 01:26:53 UTC (rev 108)
++++ trunk/test.h	2006-03-07 21:36:44 UTC (rev 109)
+@@ -87,7 +87,7 @@
+ 
+ void test_results(struct test *test, const char *dispname);
+ void dump_results(struct test *test);
+-void print_test_summary();
++void print_test_summary(struct timeval *start, struct timeval *stop);
+ 
+ void test_init(struct test *test);
+ void test_free(struct test *test);
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000025.html">[Tmtest-commits] [108] trunk: Simplify the compare API by getting rid of a misfeature.
+</A></li>
+	<LI>Next message: <A HREF="000027.html">[Tmtest-commits] [110] trunk: Fix format strings so test summary looks better, Get rid of
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#26">[ date ]</a>
+              <a href="thread.html#26">[ thread ]</a>
+              <a href="subject.html#26">[ subject ]</a>
+              <a href="author.html#26">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

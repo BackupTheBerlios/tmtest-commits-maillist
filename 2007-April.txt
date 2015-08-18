@@ -1,0 +1,23 @@
+From tmtest-commits at lists.berlios.de  Thu Apr  5 08:46:16 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Thu, 5 Apr 2007 08:46:16 +0200
+Subject: [Tmtest-commits] [147] trunk: Yep,
+	Subversive totally screwed up importing the workspace.
+Message-ID: <200704050646.l356kGqk023900@sheep.berlios.de>
+
+Revision: 147
+Author:   bronson
+Date:     2007-04-05 08:46:13 +0200 (Thu, 05 Apr 2007)
+
+Log Message:
+-----------
+Yep, Subversive totally screwed up importing the workspace.
+
+Removed Paths:
+-------------
+    trunk/proxy/
+    trunk/tmtest/
+
+
+
+

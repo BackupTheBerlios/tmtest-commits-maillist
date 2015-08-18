@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [91] trunk: Added REPLACE function to tmlib
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B91%5D%20trunk%3A%20Added%20REPLACE%20function%20to%20tmlib&In-Reply-To=%3C200602281817.k1SIHiYl023544%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000007.html">
+   <LINK REL="Next"  HREF="000009.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [91] trunk: Added REPLACE function to tmlib</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B91%5D%20trunk%3A%20Added%20REPLACE%20function%20to%20tmlib&In-Reply-To=%3C200602281817.k1SIHiYl023544%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [91] trunk: Added REPLACE function to tmlib">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Feb 28 19:17:44 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000007.html">[Tmtest-commits] [90] trunk: Wrote some tests to ensre that diff/patch work with
+</A></li>
+        <LI>Next message: <A HREF="000009.html">[Tmtest-commits] [92] trunk: Made tmtest report in the test results if child was exited
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8">[ date ]</a>
+              <a href="thread.html#8">[ thread ]</a>
+              <a href="subject.html#8">[ subject ]</a>
+              <a href="author.html#8">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 91
+Author:   bronson
+Date:     2006-02-28 19:17:12 +0100 (Tue, 28 Feb 2006)
+
+Log Message:
+-----------
+Added REPLACE function to tmlib
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/test/README
+    trunk/tmlib.sh
+
+Added Paths:
+-----------
+    trunk/test/02-running/40-Replace.test
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-02-28 14:42:59 UTC (rev 90)
++++ trunk/CHANGES	2006-02-28 18:17:12 UTC (rev 91)
+@@ -2,7 +2,7 @@
+   (especially hit the newlines hard)
+ - Release next version.
+ ----
+-- Added the INDENT function to tmlib.
++- Added the INDENT and REPLACE functions to tmlib.
+ - Bash3 has made it so that the RE can no longer appear on the same line as
+   the MODIFY command.  I updated all tests and accelerated MODIFY deprecation.
+ - Added -n (--no-trailing-newline) capability to STDOUT and STDERR sections.
+
+Added: trunk/test/02-running/40-Replace.test
+===================================================================
+--- trunk/test/02-running/40-Replace.test	2006-02-28 14:42:59 UTC (rev 90)
++++ trunk/test/02-running/40-Replace.test	2006-02-28 18:17:12 UTC (rev 91)
+@@ -0,0 +1,48 @@
++# Tests tmlib's REPLACE function.  Mostly tests to be sure that
++# regular expression metachars are correctly interpreted as
++# regular characters.
++
++echo $'Abc  : '   $'abc'       | REPLACE abc def
++echo $'A\'b  : '  $'a\'b'      | REPLACE $'a\'b' def
++echo $'A\&quot;b  : '  $'a\&quot;b'      | REPLACE $'a\&quot;b' def
++echo $'A\'\'b : ' $'a\'\'b'    | REPLACE $'a\'\'b' def
++echo $'A\&quot;\&quot;b : ' $'a\&quot;\&quot;b'    | REPLACE $'a\&quot;\&quot;b' def
++echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
++echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
++echo $'A\'\\b : ' $'a\'\\b'    | REPLACE $'a\'\\b' def
++echo $'A\&quot;\\b : ' $'a\&quot;\\b'    | REPLACE $'a\&quot;\\b' def
++echo $'A\\\\b : ' $'a\\\\b'    | REPLACE $'a\\\\b' def
++echo  'A/b  : '   'a/b'        | REPLACE a/b def
++echo  'A.b  : '   'a.b'        | REPLACE 'a.b' def
++echo  'A*b  : '   'a*b'        | REPLACE 'a*b' def
++echo  'A+b  : '   'a+b'        | REPLACE 'a+b' def
++echo  'A$b  : '   'a$b'        | REPLACE 'a$b' def
++echo  'A$$b : '   'a$$b'       | REPLACE 'a$$b' def
++echo  '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">A at b</A>  : '   '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>'        | REPLACE '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>' def
++echo  'D.f  : '   'def'        | REPLACE 'd.f' BAD
++echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
++echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
++echo $'A\\Q\\Eb:' $'a\\Q\\Eb' | REPLACE $'a\\Q\\Eb' def
++
++STDOUT:
++Abc :  def
++A'b :  def
++A&quot;b :  def
++A''b :  def
++A&quot;&quot;b :  def
++A\'b:  def
++A\&quot;b:  def
++A'\b:  def
++A&quot;\b:  def
++A\\b:  def
++A/b:   def
++A.b:   def
++A*b:   def
++A+b:   def
++A$b:   def
++A$$b:  def
+<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">+A at b</A>:   def
++D.f:   def
++A\'b:  def
++A\&quot;b:  def
++A\Q\Eb:  def
+
+Modified: trunk/test/README
+===================================================================
+--- trunk/test/README	2006-02-28 14:42:59 UTC (rev 90)
++++ trunk/test/README	2006-02-28 18:17:12 UTC (rev 91)
+@@ -15,8 +15,8 @@
+ 
+ 02-running: tests running the actual tests
+     Ensures that the test environment is set up properly.
+-    For instance, checks that disabled tests are not run, the tmlib
+-    calls are performed properly, etc.
++    For instance, checks that disabled tests are not run,
++    tmlib functions behave correctly, etc.
+ 
+ 03-results: tests the results
+     Ensures that we compare the test results properly.
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2006-02-28 14:42:59 UTC (rev 90)
++++ trunk/tmlib.sh	2006-02-28 18:17:12 UTC (rev 91)
+@@ -18,6 +18,7 @@
+ # MKFILE:   Creates a temporary file with the given contents.
+ # MKDIR:    create a temporary directory
+ # INDENT:   indent some output.
++# REPLACE:  replaces literal text with other literal text (no regexes).
+ 
+ 
+ 
+@@ -217,3 +218,44 @@
+     #	done
+ }
+ 
++
++# 
++# REPLACE
++#
++# Replaces all occurrences of the first argument with the second
++# argument.  Both should be regex-safe.  Use sed if you want to
++# replace with regexes.  NOTE: replace does not work if a newline
++# is embedded in either argument.
++#
++# Three layers of escaping!  (bash, perlvar, perlre)  This is insane.
++# I wish sed or awk would work with raw strings instead of regexes.
++# Why isn't a replace utility a part of Gnu coreutils?
++#
++
++REPLACE()
++{
++    # unfortunately bash can't handle this substitution because it
++    # must work on ' and \ simultaneously.  So, send it to perl for
++    # processing.  Until ' and \ have been escaped, Perl can't 
++    
++
++#    echo &quot;got: '$1' '${1//[\'\\]/\'}'&quot;
++#    perl -e &quot;print \&quot;in: \&quot; . quotemeta('${1//\'/\'}') . \&quot;\\n\&quot;;&quot;
++
++#     (echo &quot;$1&quot;; echo &quot;$2&quot;; cat) | cat
++#     (echo &quot;$1&quot;; echo &quot;$2&quot;; cat) | perl -e &quot;my \$in = &lt;&gt;; chomp \$in; my \$out = &lt;&gt;; chomp \$out; print '  in: &lt;&lt;' . \$in . \&quot;&gt;&gt;\n out: &lt;&lt;\&quot; . \$out . \&quot;&gt;&gt;\n\&quot;; while(&lt;&gt;) { print \&quot;DATA: \$_\&quot; }&quot;
++#     (echo &quot;$1&quot;; echo &quot;$2&quot;; cat) | perl -e &quot;my \$in = &lt;&gt;; chomp \$in; \$in=quotemeta(\$in); my \$out = &lt;&gt;; chomp \$out; print '  in: &lt;&lt;' . \$in . \&quot;&gt;&gt;\n out: &lt;&lt;\&quot; . \$out . \&quot;&gt;&gt;\n\&quot;; while(&lt;&gt;) { print \&quot;DATA: \$_\&quot; }&quot;
++
++     (echo &quot;$1&quot;; echo &quot;$2&quot;; cat) | perl -e &quot;my \$in = &lt;&gt;; chomp \$in; \$in=quotemeta(\$in); my \$out = &lt;&gt;; chomp \$out; while(&lt;&gt;) { s/\$in/\$out/g; print or die \&quot;Could not print: \$!\\\\n\&quot;; }&quot;
++
++
++# this scheme also works but it's much better to feed the vars on stdin
++# along with the data.  Less process overhead, simpler script.  This
++# does mean that REPLACE won't work with embedded newlines though.
++#
++#    local in=$(perl -p -e &quot;s/([\\'\\\\])/\\\\\$1/g&quot; &lt;&lt;&lt; $1);
++#    local out=$(perl -p -e &quot;s/([\\'\\\\])/\\\\\$1/g&quot; &lt;&lt;&lt; $2);
++#
++#     perl -e &quot;&lt;&gt;; my \$in = quotemeta(chomp); &lt;&gt;; my \$out = chomp; while(&lt;&gt;) { s/\$in/\$out/g; print or die \&quot;Could not print: \$!\\\\n\&quot;; }&quot;
++#    perl -e &quot;my \$in = quotemeta('${1//\'/\'}'); my \$out = '${2//\'/\'}'; while(&lt;&gt;) { s/\$in/\$out/g; print or die \&quot;Could not print: \$!\\\\n\&quot;; }&quot;
++}
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000007.html">[Tmtest-commits] [90] trunk: Wrote some tests to ensre that diff/patch work with
+</A></li>
+	<LI>Next message: <A HREF="000009.html">[Tmtest-commits] [92] trunk: Made tmtest report in the test results if child was exited
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8">[ date ]</a>
+              <a href="thread.html#8">[ thread ]</a>
+              <a href="subject.html#8">[ subject ]</a>
+              <a href="author.html#8">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

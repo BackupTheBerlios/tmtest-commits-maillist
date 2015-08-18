@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [139] trunk: Split unit tests into flavors.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B139%5D%20trunk%3A%20Split%20unit%20tests%20into%20flavors.&In-Reply-To=%3C200703060018.l260Ivwe006162%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000055.html">
+   <LINK REL="Next"  HREF="000057.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [139] trunk: Split unit tests into flavors.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B139%5D%20trunk%3A%20Split%20unit%20tests%20into%20flavors.&In-Reply-To=%3C200703060018.l260Ivwe006162%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [139] trunk: Split unit tests into flavors.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Tue Mar  6 01:18:57 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000055.html">[Tmtest-commits] [138] trunk/.cdtproject: Get rid of obsolete	zutest make target in
+</A></li>
+        <LI>Next message: <A HREF="000057.html">[Tmtest-commits] [140] trunk: mutest's test_Asserts was renamed to	test_asserts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#56">[ date ]</a>
+              <a href="thread.html#56">[ thread ]</a>
+              <a href="subject.html#56">[ subject ]</a>
+              <a href="author.html#56">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 139
+Author:   bronson
+Date:     2007-03-06 01:18:48 +0100 (Tue, 06 Mar 2007)
+
+Log Message:
+-----------
+Split unit tests into flavors.
+
+Modified Paths:
+--------------
+    trunk/.cdtproject
+    trunk/Makefile
+    trunk/compare.c
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/units.c
+    trunk/units.h
+Modified: trunk/.cdtproject
+===================================================================
+--- trunk/.cdtproject	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/.cdtproject	2007-03-06 00:18:48 UTC (rev 139)
+@@ -75,6 +75,20 @@
+ &lt;stopOnError&gt;true&lt;/stopOnError&gt;
+ &lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
+ &lt;/target&gt;
++&lt;target name=&quot;mutest&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments&gt;&lt;/buildArguments&gt;
++&lt;buildTarget&gt;mutest&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;run-mutest&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments&gt;&lt;/buildArguments&gt;
++&lt;buildTarget&gt;run-mutest&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
+ &lt;/buildTargets&gt;
+ &lt;/item&gt;
+ &lt;/data&gt;
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/Makefile	2007-03-06 00:18:48 UTC (rev 139)
+@@ -39,8 +39,8 @@
+ CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+ CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
+ # unit test files
+-CSRC+=units.c mutest/mutest.c
+-CHDR+=units.h mutest/mutest.h
++CSRC+=units.c mutest/mutest.c mutest/test_Assert.c
++CHDR+=units.h mutest/mutest.h mutest/mutest_Assert.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+@@ -60,18 +60,24 @@
+ %.o: %.c
+ 	$(CC) -g -c $&lt; -o $@
+ 
+-.PHONY: test
++.PHONY: test mutest run-mutest
+ test: tmtest
+ 	./tmtest --run-unit-tests
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/mutest.h $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
++units: compare.c pathstack.c units.c units.h mutest/mutest.c mutest/main.c mutest/test_Assert.c mutest/mutest_Assert.h mutest/mutest.h $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c mutest/mutest.c mutest/test_Assert.c mutest/main.c $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+ 
++mutest:
++	(cd mutest; $(MAKE))
++
++run-mutest:
++	(cd mutest; ./mutest)
++
+ # todo -- when global variables are worked out, just compile everything
+ #units: $(CSRC) $(CHDR) $(SCANH) $(SCANC) Makefile
+ #	$(CC) $(COPTS) $(CSRC) $(SCANC) -o units -DUNITS_MAIN
+@@ -106,6 +112,7 @@
+ 
+ clean:
+ 	rm -f tmtest template.c tags
++	(cd mutest; $(MAKE) clean)
+ 
+ distclean: clean
+ 	rm -f stscan.[co]
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/compare.c	2007-03-06 00:18:48 UTC (rev 139)
+@@ -198,13 +198,13 @@
+ 
+ 	readmem_init_str(ss, &quot;&quot;);
+ 	compare_attach(ss);
+-	AssertEq(compare_check(ss), cmp_full_match);
++	AssertEQ(compare_check(ss), cmp_full_match);
+ 
+ 	readmem_init_str(ss, &quot;&quot;);
+ 	compare_attach(ss);
+ 	val = compare_continue(ss, &quot;&quot;, 0);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_full_match);
++	AssertEQ(compare_check(ss), cmp_full_match);
+ }
+ 
+ 
+@@ -219,7 +219,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, &quot;3&quot;, 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_full_match);
++	AssertEQ(compare_check(ss), cmp_full_match);
+ }
+ 
+ 
+@@ -241,7 +241,7 @@
+ 
+ 	// compare_check will never return cmp_full_match because
+ 	// the random reader will never run out of data.
+-	AssertEq(compare_check(ss), cmp_ss_has_more_data);
++	AssertEQ(compare_check(ss), cmp_ss_has_more_data);
+ }
+ 
+ 
+@@ -266,19 +266,19 @@
+ 
+ static void test_newlines()
+ {
+-	AssertEq(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n&quot;  ), cmp_full_match);
+-	AssertEq(check_newlines(&quot;Unix&quot;,     &quot;Unix\n&quot;  ), cmp_ptr_has_extra_nl);
+-	AssertEq(check_newlines(&quot;Unix\n&quot;,   &quot;Unix&quot;    ), cmp_ss_has_extra_nl);
+-	AssertEq(check_newlines(&quot;Unix&quot;,     &quot;Unix&quot;    ), cmp_full_match);
++	AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n&quot;  ), cmp_full_match);
++	AssertEQ(check_newlines(&quot;Unix&quot;,     &quot;Unix\n&quot;  ), cmp_ptr_has_extra_nl);
++	AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix&quot;    ), cmp_ss_has_extra_nl);
++	AssertEQ(check_newlines(&quot;Unix&quot;,     &quot;Unix&quot;    ), cmp_full_match);
+ 
+-	AssertEq(check_newlines(&quot;Unix\n\n&quot;, &quot;Unix\n&quot;  ), cmp_ss_has_extra_nl);
+-	AssertEq(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n\n&quot;), cmp_ptr_has_more_nls);
++	AssertEQ(check_newlines(&quot;Unix\n\n&quot;, &quot;Unix\n&quot;  ), cmp_ss_has_extra_nl);
++	AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n\n&quot;), cmp_ptr_has_more_nls);
+ 
+ 	// empty buffers (except for newlines)
+-	AssertEq(check_newlines(&quot;\n&quot;,   &quot;&quot;     ), cmp_ss_has_extra_nl);
+-	AssertEq(check_newlines(&quot;&quot;,     &quot;\n&quot;   ), cmp_ptr_has_extra_nl);
+-	AssertEq(check_newlines(&quot;\n\n&quot;, &quot;&quot;     ), cmp_ss_has_more_data);
+-	AssertEq(check_newlines(&quot;&quot;,     &quot;\n\n&quot; ), cmp_no_match);
++	AssertEQ(check_newlines(&quot;\n&quot;,   &quot;&quot;     ), cmp_ss_has_extra_nl);
++	AssertEQ(check_newlines(&quot;&quot;,     &quot;\n&quot;   ), cmp_ptr_has_extra_nl);
++	AssertEQ(check_newlines(&quot;\n\n&quot;, &quot;&quot;     ), cmp_ss_has_more_data);
++	AssertEQ(check_newlines(&quot;&quot;,     &quot;\n\n&quot; ), cmp_no_match);
+ }
+ 
+ static void test_inc()
+@@ -296,7 +296,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, &quot;\n&quot;, 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_ptr_has_extra_nl);
++	AssertEQ(compare_check(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;123&quot;);
+ 	compare_attach(ss);
+@@ -306,7 +306,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, &quot;\n&quot;, 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check(ss), cmp_no_match);
++	AssertEQ(compare_check(ss), cmp_no_match);
+ }
+ 
+ 
+@@ -327,7 +327,7 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, &quot;\n&quot;, 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;123\n&quot;);
+ 	compare_attach(ss);
+@@ -337,17 +337,17 @@
+ 	AssertNonNegative(val);
+ 	val = compare_continue(ss, &quot;3&quot;, 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;&quot;);
+ 	compare_attach(ss);
+ 	val = compare_continue(ss, &quot;\n&quot;, 1);
+ 	AssertNonNegative(val);
+-	AssertEq(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;\n&quot;);
+ 	compare_attach(ss);
+-	AssertEq(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
+ }
+ 
+ 
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-03-06 00:18:48 UTC (rev 139)
+@@ -10,7 +10,9 @@
+ # This doesn't work either
+ # $tmtest --show-unit-fails &gt; &gt;(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g) 2&gt;&amp;1
+ 
+-$tmtest --show-unit-fails 2&gt;&amp;1 | sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | sed s/mutest\\/mutest.c:[0-9]\*:/mutest.c:NNN:/
++$tmtest --show-unit-fails 2&gt;&amp;1 | \
++	sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | \
++	sed s/^.*\\.c:[0-9]\*:/mutest.c:NNN:/
+ 
+ STDOUT:
+ mutest.c:NNN: In test_assert_int, assert a == b failed. a==4 and b==3!
+
+Modified: trunk/units.c
+===================================================================
+--- trunk/units.c	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/units.c	2007-03-06 00:18:48 UTC (rev 139)
+@@ -4,7 +4,7 @@
+ 
+ void all_tests()
+ {
+-	mutest_tests();
++	mutest_test_assert_flavor();
+ 	compare_tests();
+ 	pathstack_tests();
+ }
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-03-01 00:28:03 UTC (rev 138)
++++ trunk/units.h	2007-03-06 00:18:48 UTC (rev 139)
+@@ -1,4 +1,4 @@
+-#include &quot;mutest/mutest.h&quot;
++#include &quot;mutest/mutest_Assert.h&quot;
+ 
+ void compare_tests();
+ void pathstack_tests();
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000055.html">[Tmtest-commits] [138] trunk/.cdtproject: Get rid of obsolete	zutest make target in
+</A></li>
+	<LI>Next message: <A HREF="000057.html">[Tmtest-commits] [140] trunk: mutest's test_Asserts was renamed to	test_asserts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#56">[ date ]</a>
+              <a href="thread.html#56">[ thread ]</a>
+              <a href="subject.html#56">[ subject ]</a>
+              <a href="author.html#56">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

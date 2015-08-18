@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [117] trunk: Create the TOUCH tmlib function,	mark MKFILE_EMPTY for
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B117%5D%20trunk%3A%20Create%20the%20TOUCH%20tmlib%20function%2C%0A%09mark%20MKFILE_EMPTY%20for&In-Reply-To=%3C200701230948.l0N9m4Ag011538%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000033.html">
+   <LINK REL="Next"  HREF="000035.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [117] trunk: Create the TOUCH tmlib function,	mark MKFILE_EMPTY for</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B117%5D%20trunk%3A%20Create%20the%20TOUCH%20tmlib%20function%2C%0A%09mark%20MKFILE_EMPTY%20for&In-Reply-To=%3C200701230948.l0N9m4Ag011538%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [117] trunk: Create the TOUCH tmlib function,	mark MKFILE_EMPTY for">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Tue Jan 23 10:49:29 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000033.html">[Tmtest-commits] [116] trunk: Make source code 64-bit friendly.
+</A></li>
+        <LI>Next message: <A HREF="000035.html">[Tmtest-commits] [118] trunk/test/03-results: Fix silly mistakes in	some testfiles.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#34">[ date ]</a>
+              <a href="thread.html#34">[ thread ]</a>
+              <a href="subject.html#34">[ subject ]</a>
+              <a href="author.html#34">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 117
+Author:   bronson
+Date:     2007-01-23 10:48:03 +0100 (Tue, 23 Jan 2007)
+
+Log Message:
+-----------
+Create the TOUCH tmlib function, mark MKFILE_EMPTY for deprecation.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/test/README
+    trunk/tmlib.sh
+    trunk/tmtest.conf
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-01-23 05:55:05 UTC (rev 116)
++++ trunk/TODO	2007-01-23 09:48:03 UTC (rev 117)
+@@ -1,4 +1,7 @@
+ 0.96:
++- MKFILE should just create the file that the user names.
++- MKTMPFILE should create a filename and store that in the user's variable.
++
+ - Write unit tests for path normalization.
+ - Make tmtest only execute config files owned by either the user or root.
+   Print a big fat warning when the config file is skipped.  This prevents
+@@ -63,6 +66,7 @@
+   it to a file, then cat the file at the end.  We truncate stderr if it
+   gets too big.
+   - When done, verify that netknife's tests that freeze with -d now pass.
++- get rid of MKFILE_EMPTY, deprecated in favor of TOUCH.
+ - Is there any way to record memory and swap usage for each test?
+   sure, it's in the rusage. prolly add a &quot;tmtest -v&quot; to print it for each test.
+ - Well, piping the result of a command to a function destroys the the
+
+Modified: trunk/test/README
+===================================================================
+--- trunk/test/README	2007-01-23 05:55:05 UTC (rev 116)
++++ trunk/test/README	2007-01-23 09:48:03 UTC (rev 117)
+@@ -1,6 +1,6 @@
+ NOTE: If you are looking for examples of testfiles, this is NOT the
+-directory for you!  Due to the recursive nature of tmtest testing
+-itself, many of these testfiles are very difficult to understand.
++place to go!  Due to the recursive nature of testing tmtest using tmtest,
++many of these testfiles can be quite difficult to understand.
+ 
+ See the examples directory instead.
+ 
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2007-01-23 05:55:05 UTC (rev 116)
++++ trunk/tmlib.sh	2007-01-23 09:48:03 UTC (rev 117)
+@@ -144,6 +144,7 @@
+ 
+ #
+ # MKFILE_EMPTY
++# TODO: this call is deprecated and will go away.
+ #
+ # I can't figure out how to get bash to bail instead of blocking.
+ # Therefore, if you just want to create an empty file, you either
+@@ -156,6 +157,16 @@
+ }
+ 
+ 
++TOUCH ()
++{
++	while [ &quot;$1&quot; != &quot;&quot; ]; do
++		touch $1
++		ATEXIT &quot;rm '$1'&quot;
++		shift
++	done
++}
++
++
+ #
+ # MKDIR
+ #
+
+Modified: trunk/tmtest.conf
+===================================================================
+--- trunk/tmtest.conf	2007-01-23 05:55:05 UTC (rev 116)
++++ trunk/tmtest.conf	2007-01-23 09:48:03 UTC (rev 117)
+@@ -33,7 +33,7 @@
+ set -e
+ 
+ 
+-# Every test executes tmtest vi the $tmtest variable so that we can
++# Every test executes tmtest via the $tmtest variable so that we can
+ # force which binary gets run.  We also provide $tmtest_file to tell
+ # the file that contains the executable since $tmtest itself may end
+ # up looking like &quot;valgrind tmtest --config...&quot;
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000033.html">[Tmtest-commits] [116] trunk: Make source code 64-bit friendly.
+</A></li>
+	<LI>Next message: <A HREF="000035.html">[Tmtest-commits] [118] trunk/test/03-results: Fix silly mistakes in	some testfiles.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#34">[ date ]</a>
+              <a href="thread.html#34">[ thread ]</a>
+              <a href="subject.html#34">[ subject ]</a>
+              <a href="author.html#34">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

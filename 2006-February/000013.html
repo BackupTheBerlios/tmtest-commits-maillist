@@ -1,0 +1,201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [96] trunk: Make --dump-script clean up after itself.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B96%5D%20trunk%3A%20Make%20--dump-script%20clean%20up%20after%20itself.&In-Reply-To=%3C200602282203.k1SM3BWV006144%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000012.html">
+   <LINK REL="Next"  HREF="000014.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [96] trunk: Make --dump-script clean up after itself.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B96%5D%20trunk%3A%20Make%20--dump-script%20clean%20up%20after%20itself.&In-Reply-To=%3C200602282203.k1SM3BWV006144%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [96] trunk: Make --dump-script clean up after itself.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Feb 28 23:03:11 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000012.html">[Tmtest-commits] [95] trunk: Add tests to ensure binary transparency.
+</A></li>
+        <LI>Next message: <A HREF="000014.html">[Tmtest-commits] [97] trunk/test/02-running/40-Replace.test: Fix 40-Replace.test.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#13">[ date ]</a>
+              <a href="thread.html#13">[ thread ]</a>
+              <a href="subject.html#13">[ subject ]</a>
+              <a href="author.html#13">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 96
+Author:   bronson
+Date:     2006-02-28 23:03:10 +0100 (Tue, 28 Feb 2006)
+
+Log Message:
+-----------
+Make --dump-script clean up after itself.
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/main.c
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-02-28 21:53:17 UTC (rev 95)
++++ trunk/CHANGES	2006-02-28 22:03:10 UTC (rev 96)
+@@ -1,5 +1,6 @@
+ - Release next version.
+ ----
++- --dump-script now cleans up after itself.
+ - Now reports in the test results if child was terminated by a signal.
+ - Added the INDENT and REPLACE functions to tmlib.
+ - Bash3 has made it so that the RE can no longer appear on the same line as
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-02-28 21:53:17 UTC (rev 95)
++++ trunk/main.c	2006-02-28 22:03:10 UTC (rev 96)
+@@ -361,7 +361,7 @@
+     char buf[BUFSIZ];   // scan buffer for the testfile
+     int pipes[2];
+     int child;
+-	int keepontruckin;
++	int keepontruckin = 0;
+     int diffpid;
+     int fd = -1;
+     int i;
+@@ -471,54 +471,58 @@
+ 
+     if(dumpscript) {
+         print_template(&amp;test, exec_template, stdout);
+-        exit(0);  // screw the kid
+-    }
++        // don't want to print a summary of the tests run so make
++        // sure tmtest realizes it's dumping a test.
++        outmode = outmode_dump;
++    } else {
++        // set up the pipes for the parent
++        close(pipes[0]);
++        tochild = fdopen(pipes[1], &quot;w&quot;);
++        if(!tochild) {
++            perror(&quot;calling fdopen on pipe&quot;);
++            exit(runtime_error);
++        }
+ 
+-    // set up the pipes for the parent
+-    close(pipes[0]);
+-    tochild = fdopen(pipes[1], &quot;w&quot;);
+-    if(!tochild) {
+-        perror(&quot;calling fdopen on pipe&quot;);
+-        exit(runtime_error);
+-    }
++        // write the test script to the kid
++        print_template(&amp;test, exec_template, tochild);
++        fclose(tochild);
+ 
+-    // write the test script to the kid
+-    print_template(&amp;test, exec_template, tochild);
+-    fclose(tochild);
++        // wait for the test to finish
++        i = wait_for_child(child, &quot;test&quot;);
++        test.exitsignal = (WIFSIGNALED(i) ? WTERMSIG(i) : 0);
++        test.exitcored = (WIFSIGNALED(i) ? WCOREDUMP(i) : 0);
++        test.exitno = (WIFEXITED(i) ? WEXITSTATUS(i) : 256);
+ 
+-    // wait for the test to finish
+-    i = wait_for_child(child, &quot;test&quot;);
+-    test.exitsignal = (WIFSIGNALED(i) ? WTERMSIG(i) : 0);
+-    test.exitcored = (WIFSIGNALED(i) ? WCOREDUMP(i) : 0);
+-    test.exitno = (WIFEXITED(i) ? WEXITSTATUS(i) : 256);
++        // read the status file to determine what happened
++        // and store the information in the test struct.
++        scan_status_file(&amp;test);
+ 
+-	// read the status file to determine what happened
+-	// and store the information in the test struct.
+-	scan_status_file(&amp;test);
++        // process and output the test results
++        switch(outmode) {
++            case outmode_test:
++                test_results(&amp;test);
++                break;
++            case outmode_dump:
++                dump_results(&amp;test);
++                break;
++            case outmode_diff:
++                dump_results(&amp;test);
++                finish_diff(&amp;test, diffpid);
++                break;
++            default:
++                assert(!&quot;Unhandled outmode 2 in run_test()&quot;);
++        }
+ 
+-    // process and output the test results
+-    switch(outmode) {
+-        case outmode_test:
+-            test_results(&amp;test);
+-            break;
+-        case outmode_dump:
+-            dump_results(&amp;test);
+-            break;
+-        case outmode_diff:
+-            dump_results(&amp;test);
+-            finish_diff(&amp;test, diffpid);
+-            break;
+-        default:
+-            assert(!&quot;Unhandled outmode 2 in run_test()&quot;);
++        // if we had to open the testfile to read it, we now close it.
++        // because the scanner is statically allocated, there's no
++        // need to destroy it.
++        if(fd &gt;= 0) {
++            close(fd);
++        }
++
++        keepontruckin = !test.aborted;
+     }
+ 
+-    // if we had to open the testfile to read it, we now close it.
+-    // because the scanner is statically allocated, there's no
+-    // need to destroy it.
+-    if(fd &gt;= 0) {
+-        close(fd);
+-    }
+-	keepontruckin = !test.aborted;
+     test_free(&amp;test);
+ 
+ 	return keepontruckin;
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000012.html">[Tmtest-commits] [95] trunk: Add tests to ensure binary transparency.
+</A></li>
+	<LI>Next message: <A HREF="000014.html">[Tmtest-commits] [97] trunk/test/02-running/40-Replace.test: Fix 40-Replace.test.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#13">[ date ]</a>
+              <a href="thread.html#13">[ thread ]</a>
+              <a href="subject.html#13">[ subject ]</a>
+              <a href="author.html#13">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

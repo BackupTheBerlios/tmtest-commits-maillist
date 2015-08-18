@@ -1,0 +1,327 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [90] trunk: Wrote some tests to ensre that diff/patch work with
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B90%5D%20trunk%3A%20Wrote%20some%20tests%20to%20ensre%20that%20diff/patch%20work%20with&In-Reply-To=%3C200602281443.k1SEh4nH028273%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000006.html">
+   <LINK REL="Next"  HREF="000008.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [90] trunk: Wrote some tests to ensre that diff/patch work with</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B90%5D%20trunk%3A%20Wrote%20some%20tests%20to%20ensre%20that%20diff/patch%20work%20with&In-Reply-To=%3C200602281443.k1SEh4nH028273%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [90] trunk: Wrote some tests to ensre that diff/patch work with">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Feb 28 15:43:04 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000006.html">[Tmtest-commits] [89] trunk: Add INDENT to stdlib, start make-dist script
+</A></li>
+        <LI>Next message: <A HREF="000008.html">[Tmtest-commits] [91] trunk: Added REPLACE function to tmlib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7">[ date ]</a>
+              <a href="thread.html#7">[ thread ]</a>
+              <a href="subject.html#7">[ subject ]</a>
+              <a href="author.html#7">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 90
+Author:   bronson
+Date:     2006-02-28 15:42:59 +0100 (Tue, 28 Feb 2006)
+
+Log Message:
+-----------
+Wrote some tests to ensre that diff/patch work with --suppress-trailing-newline
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/TODO
+    trunk/tmtest.pod
+
+Added Paths:
+-----------
+    trunk/test/04-diff/20-DiffNoNL.test
+    trunk/test/04-diff/21-PatchNoNL.test
+    trunk/test/04-diff/22-PatchNoNL2.test
+    trunk/test/04-diff/23-PatchNoNL3.test
+    trunk/test/04-diff/tmtest.conf
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/CHANGES	2006-02-28 14:42:59 UTC (rev 90)
+@@ -1,4 +1,3 @@
+-- write some tests to ensure diff works with files that don't end in CR.
+ - write some tests to ensure binary transparency of stdout and stderr.
+   (especially hit the newlines hard)
+ - Release next version.
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/TODO	2006-02-28 14:42:59 UTC (rev 90)
+@@ -33,6 +33,9 @@
+   - Yes, if a config file returns DISABLED, then that folder and all its
+     subfolders are skipped.  Just make the test itself call the DISABLED
+ 	command if you want testing to continue in that subfolder.
++- Print a warning if we notice that an output section doesn't end in
++  a newline, but the testfile hasn't marked that section with a &quot;-n&quot;.
++  See 22-PatchNoNL2.test for more.  Make sure a test for this is in 03 too.
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+
+Added: trunk/test/04-diff/20-DiffNoNL.test
+===================================================================
+--- trunk/test/04-diff/20-DiffNoNL.test	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/test/04-diff/20-DiffNoNL.test	2006-02-28 14:42:59 UTC (rev 90)
+@@ -0,0 +1,31 @@
++# DiffNoNL
++# author: Scott Bronson
++# date:   28 Feb 2006
++
++
++# If this test fails but PatchNoNL doesn't then you're probably using a
++# non-Gnu diff and patch programs.  As long as 21 works, you're in good
++# shape.  Please send me the output of 'tmtest -o 20-DiffNoNL.test' so
++# I can update this test.
++#
++# If both DiffNoNL and PatchNoNL fail, your diff and patch programs are
++# buggy and you should probably update them.
++
++
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
++    echo -n &quot;right output&quot;
++    STDOUT:
++    right output
++EOL
++
++
++STDOUT:
++--- /tmp/FILE DATE TIME TZ
+++++ - DATE TIME TZ
++@@ -1,3 +1,5 @@
++     echo -n &quot;right output&quot;
++     STDOUT:
++     right output
+++STDOUT:
+++right output
++\ No newline at end of file
+
+Added: trunk/test/04-diff/21-PatchNoNL.test
+===================================================================
+--- trunk/test/04-diff/21-PatchNoNL.test	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/test/04-diff/21-PatchNoNL.test	2006-02-28 14:42:59 UTC (rev 90)
+@@ -0,0 +1,33 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Ensures that patch can handle diffs that remove the trailing newline.
++# 
++# If ONLY this test fails, then chances are the patch utility installed
++# on this system is buggy.  You'll probably want to update it to the
++# latest Gnu Patch, <A HREF="http://www.gnu.org/software/patch/">http://www.gnu.org/software/patch/</A>
++
++
++MKFILE tt &lt;&lt;-EOL
++	echo -n &quot;right output&quot;
++	STDOUT:
++	right output
++EOL
++
++
++# This is a little exotic...  Patch needs the CWD to be the directory
++# containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
++
++tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++echo &quot;And the patched file:&quot;
++INDENT &lt; &quot;$tt&quot;
++echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
++echo &quot;(since there's no trailing newline, DONE should appear on the prevous line)&quot;
++
++STDOUT:
++patching FILE
++And the patched file:
++  echo -n &quot;right output&quot;
++  STDOUT:
++  right output&lt;&lt;DONE&gt;&gt;
++(since there's no trailing newline, DONE should appear on the prevous line)
+
+Added: trunk/test/04-diff/22-PatchNoNL2.test
+===================================================================
+--- trunk/test/04-diff/22-PatchNoNL2.test	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/test/04-diff/22-PatchNoNL2.test	2006-02-28 14:42:59 UTC (rev 90)
+@@ -0,0 +1,39 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Ensures that patch can handle diffs that remove the trailing newline.
++# Except that we wedge it by putting the STDERR clause right after the
++# STDOUT.
++
++# Since STDOUT includes no trailing newline, STDERR ends up on the end
++# of the last STDOUT line.  This is not real good, but at least it
++# guarantees that the test will fail until the user fixes it.
++
++
++MKFILE tt &lt;&lt;-EOL
++	echo -n &quot;right output&quot;
++    echo &quot;stderr text&quot; 1&gt;&amp;2
++	STDOUT:
++	right output
++    STDERR:
++    stderr text
++EOL
++
++
++# This is a little exotic...  Patch needs the CWD to be the directory
++# containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
++
++tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++echo &quot;And the patched file:&quot;
++INDENT &lt; &quot;$tt&quot;
++echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
++
++STDOUT:
++patching FILE
++And the patched file:
++  echo -n &quot;right output&quot;
++      echo &quot;stderr text&quot; 1&gt;&amp;2
++  STDOUT:
++  right outputSTDERR:
++  stderr text
++&lt;&lt;DONE&gt;&gt;
+
+Added: trunk/test/04-diff/23-PatchNoNL3.test
+===================================================================
+--- trunk/test/04-diff/23-PatchNoNL3.test	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/test/04-diff/23-PatchNoNL3.test	2006-02-28 14:42:59 UTC (rev 90)
+@@ -0,0 +1,36 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Ensures that patch can handle diffs that remove the trailing newline.
++# In this case, patch adds a newline to a section that erroneously
++# didn't have one.
++
++# By the time we get to the end of the STDOUT section, it's too late to
++# remove the &quot;-n&quot;.  Therefore, we just add another newline.  If the
++# section has two newlines but suppresses one, it matches the output's
++# single newline exactly.
++
++
++MKFILE tt &lt;&lt;-EOL
++	echo &quot;right output&quot;
++	STDOUT: -n
++	right output
++EOL
++
++
++# This is a little exotic...  Patch needs the CWD to be the directory
++# containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
++
++tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++echo &quot;And the patched file:&quot;
++INDENT &lt; &quot;$tt&quot;
++echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
++
++STDOUT:
++patching FILE
++And the patched file:
++  echo &quot;right output&quot;
++  STDOUT: -n
++  right output
++  
++&lt;&lt;DONE&gt;&gt;
+
+Added: trunk/test/04-diff/tmtest.conf
+===================================================================
+--- trunk/test/04-diff/tmtest.conf	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/test/04-diff/tmtest.conf	2006-02-28 14:42:59 UTC (rev 90)
+@@ -0,0 +1,23 @@
++# This file contains a function that is really useful to the tests
++# in this directory.  Because this file is named 'tmtest.conf', this
++# function is included into testfiles automatically.
++
++
++# remove all dynamic elements from a standard diff file.
++# to use: 'diff file1 file2 | FIX_DIFF'
++
++FIX_DIFF ()
++{
++    sed -e 's/^---.*/--- \/tmp\/FILE DATE TIME TZ/' \
++        -e 's/^[+][+][+].*/+++ - DATE TIME TZ/'
++}
++
++
++# remove all dynamic elements from typical patch output
++# to use: 'patch -p0 &lt; file.patch | FIX_PATCH'
++
++FIX_PATCH ()
++{
++    sed -e 's/^patching .*/patching FILE/'
++}
++
+
+Modified: trunk/tmtest.pod
+===================================================================
+--- trunk/tmtest.pod	2006-02-28 13:44:47 UTC (rev 89)
++++ trunk/tmtest.pod	2006-02-28 14:42:59 UTC (rev 90)
+@@ -14,6 +14,20 @@
+ 
+ =over 8
+ 
++=item B&lt;--all-files&gt;
++
++Causes tmtest to ignore the name of the testfile while running tests.
++
++Normally tmtest only runs files with names that end in &quot;.test&quot;.
++While this is often a very good thing (you wouldn't want tmtest
++to try to run just any old random file as a test), sometimes it
++gets in the way.  For instance, MKFILE offers no control over the
++name of the file generated.  If you used MKFILE to create a
++testfile, run tmtest with --all-files and name the testfile explicitly
++on the command line.
++
++See 10-Patch.test for an example.  (TODO: cobble together a better example)
++
+ =item B&lt;-c&gt; B&lt;--config&gt;
+ 
+ Specifies the config file to be read before running the test file.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000006.html">[Tmtest-commits] [89] trunk: Add INDENT to stdlib, start make-dist script
+</A></li>
+	<LI>Next message: <A HREF="000008.html">[Tmtest-commits] [91] trunk: Added REPLACE function to tmlib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#7">[ date ]</a>
+              <a href="thread.html#7">[ thread ]</a>
+              <a href="subject.html#7">[ subject ]</a>
+              <a href="author.html#7">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,823 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [125] trunk: Remove all exit() calls from all	files except for main.c.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B125%5D%20trunk%3A%20Remove%20all%20exit%28%29%20calls%20from%20all%0A%09files%20except%20for%20main.c.&In-Reply-To=%3C200701242351.l0ONpEvF008396%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000041.html">
+   <LINK REL="Next"  HREF="000043.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [125] trunk: Remove all exit() calls from all	files except for main.c.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B125%5D%20trunk%3A%20Remove%20all%20exit%28%29%20calls%20from%20all%0A%09files%20except%20for%20main.c.&In-Reply-To=%3C200701242351.l0ONpEvF008396%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [125] trunk: Remove all exit() calls from all	files except for main.c.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Thu Jan 25 00:52:35 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000041.html">[Tmtest-commits] [124] trunk: Added the tmtest -f command-line	option
+</A></li>
+        <LI>Next message: <A HREF="000043.html">[Tmtest-commits] [126] trunk: Updated to the newest zutest
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#42">[ date ]</a>
+              <a href="thread.html#42">[ thread ]</a>
+              <a href="subject.html#42">[ subject ]</a>
+              <a href="author.html#42">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 125
+Author:   bronson
+Date:     2007-01-25 00:51:11 +0100 (Thu, 25 Jan 2007)
+
+Log Message:
+-----------
+Remove all exit() calls from all files except for main.c.  Use test_abort().
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/compare.c
+    trunk/main.c
+    trunk/test/00-cmdline/10-CfgDir.test
+    trunk/test/00-cmdline/12-CfgEmpty.test
+    trunk/test.c
+    trunk/test.h
+    trunk/tmtest.pod
+    trunk/vars.c
+    trunk/zutest.h
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/TODO	2007-01-24 23:51:11 UTC (rev 125)
+@@ -1,12 +1,12 @@
+ 0.96:
+-- Change exit value.
++- Clean up zutest.h.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+   in the testfile with each line prefixed by :.  Then STDOUT.  No need
+   for this delimiter craziness.
+   YES, stderr ALWAYS comes first in the testfile, followed by stdout.
+ - MKFILE should just create the file that the user names.
+ - MKTMPFILE should create a filename and store that in the user's variable.
+-- Write unit tests for path normalization.
++- Write unit tests for path normalization.  Maybe for CURPATH too.
+ - Make tmtest only execute config files owned by either the user or root.
+   Print a big fat warning when the config file is skipped.  This prevents
+   a malicious user from putting a config file in /tmp and having it
+@@ -43,10 +43,7 @@
+         // not above the given config file.  i.e. if user specifies
+         // &quot;tmtest -c /a/b/cc /a/t/u/t.test&quot;, we will look for config files
+         // in /a/t/tmtest.conf and /a/t/u/tmtest.conf.
+-- get rid of all the exit(10) calls in test.c.  We need a better way to
+-  abort the test.
+-  should get rid of a whole bunch in main.c as well.
+-  this should prevent us from dropping turds in /tmp all the time too.
++- Get rid of all the exit() calls from main.c.
+ - Ensure it compiles and runs on freebsd.
+ - Get rid of -g, add -O2.  Make it easy to set these for compilation.
+   Yes, have dev and prod modes.  dev would be -O0 and -g and include
+@@ -54,6 +51,14 @@
+   unit tests only add 12K or so, where might as well just leave em).
+ - If there were failures, should highlight that in the test summary.
+ 	&quot;%d FAILURES&quot; or somesuch.
++- Write a sample tmtest.conf that walks you through setting -e or not,
++  indenting STDERR or not, etc.
++- Make zutest recursive: there should be no need for zutest_battery.
++  a zutest_suite should be able to contain any number of other
++  zutest_suites.
++- Add the zutest unit tests to the tmtest test battery.
++- Make zutest able to run both quiet (only failures printed) and verbose
++  (everything printed and then some).
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+@@ -64,6 +69,8 @@
+   - This also allows us to get rid of STATUSFD so that NO other fds are open
+     when running the test.  OUTFD and ERRFD still need to be open when
+ 	running the config files though.
++- Allow running more than one test at once.  Add -j option like gmake.
++  Maybe should also read MAKEFLAGS from the environment?
+ - Use i/o lib for everything.  No need for temp files.
+   This means that we stream everything EXCEPT stderr, which we memory
+   buffer.  If your stderr is more than 100K or so in size, just redirect
+@@ -101,6 +108,8 @@
+   is [0-9a-zA-Z_] then it's an identifier and we'll make a tempfile.
+   Otherwise, we'll use the arg as a filename.  ER, IS THIS A GOOD IDEA?
+ 
++rc series...
++
+ 1.0!
+ 
+ 1.2:
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/compare.c	2007-01-24 23:51:11 UTC (rev 125)
+@@ -95,9 +95,7 @@
+             ss-&gt;line += n;
+             if(n &lt; 0) {
+                 // there was an error while trying to fill the buffer
+-                // TODO: this should be propagated to the client somehow?
+-                perror(&quot;compare_continue_bytes&quot;);
+-                exit(10);
++				return -1;
+             }
+             if(n == 0) {
+ 				// banged into the EOF
+@@ -196,6 +194,7 @@
+ static void test_empty()
+ {
+ 	scanstate ssrec, *ss=&ssrec;
++	int val;
+ 
+ 	readmem_init_str(ss, &quot;&quot;);
+ 	compare_attach(ss);
+@@ -203,7 +202,8 @@
+ 
+ 	readmem_init_str(ss, &quot;&quot;);
+ 	compare_attach(ss);
+-	compare_continue(ss, &quot;&quot;, 0);
++	val = compare_continue(ss, &quot;&quot;, 0);
++	AssertNonNegative(val);
+ 	AssertEq(compare_check(ss), cmp_full_match);
+ }
+ 
+@@ -211,11 +211,14 @@
+ static void test_standard()
+ {
+ 	scanstate ssrec, *ss=&ssrec;
++	int val;
+ 
+ 	readmem_init_str(ss, &quot;123&quot;);
+ 	compare_attach(ss);
+-	compare_continue(ss, &quot;12&quot;, 2);
+-	compare_continue(ss, &quot;3&quot;, 1);
++	val = compare_continue(ss, &quot;12&quot;, 2);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;3&quot;, 1);
++	AssertNonNegative(val);
+ 	AssertEq(compare_check(ss), cmp_full_match);
+ }
+ 
+@@ -225,14 +228,15 @@
+ 	char buf[BUFSIZ];
+ 	scanstate ssrec, *ss=&ssrec;
+ 	unsigned int seed = 47;
+-	int num, i;
++	int num, i, val;
+ 
+ 	scanstate_init(ss, buf, BUFSIZ);
+ 	readrand_attach(ss, seed);
+ 	compare_attach(ss);
+ 	for(i=0; i&lt;10; i++) {
+ 		num = rand_r(&amp;seed);
+-		compare_continue(ss, (char*)&amp;num, sizeof(num));
++		val = compare_continue(ss, (char*)&amp;num, sizeof(num));
++		AssertNonNegative(val);
+ 	}
+ 
+ 	// compare_check will never return cmp_full_match because
+@@ -243,9 +247,12 @@
+ 
+ static void test_strings(scanstate *ss, const char *s1, const char *s2)
+ {
++	int val;
++
+ 	readmem_init(ss, s1, strlen(s1));
+ 	compare_attach(ss);
+-	compare_continue(ss, s2, strlen(s2));
++	val = compare_continue(ss, s2, strlen(s2));
++	AssertNonNegative(val);
+ }
+ 
+ 
+@@ -279,19 +286,26 @@
+ 	// Tries to ensure that packetization won't mess us up.
+ 
+ 	scanstate ssrec, *ss=&ssrec;
++	int val;
+ 
+ 	readmem_init_str(ss, &quot;12&quot;);
+ 	compare_attach(ss);
+-	compare_continue(ss, &quot;1&quot;, 1);
+-	compare_continue(ss, &quot;2&quot;, 1);
+-	compare_continue(ss, &quot;\n&quot;, 1);
++	val = compare_continue(ss, &quot;1&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;2&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;\n&quot;, 1);
++	AssertNonNegative(val);
+ 	AssertEq(compare_check(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;123&quot;);
+ 	compare_attach(ss);
+-	compare_continue(ss, &quot;1&quot;, 1);
+-	compare_continue(ss, &quot;2&quot;, 1);
+-	compare_continue(ss, &quot;\n&quot;, 1);
++	val = compare_continue(ss, &quot;1&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;2&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;\n&quot;, 1);
++	AssertNonNegative(val);
+ 	AssertEq(compare_check(ss), cmp_no_match);
+ }
+ 
+@@ -301,25 +315,34 @@
+ 	// Tries to ensure packetization won't mess up the newline checking.
+ 
+ 	scanstate ssrec, *ss=&ssrec;
++	int val;
+ 
+ 	readmem_init_str(ss, &quot;123&quot;);
+ 	compare_attach(ss);
+-	compare_continue(ss, &quot;1&quot;, 1);
+-	compare_continue(ss, &quot;2&quot;, 1);
+-	compare_continue(ss, &quot;3&quot;, 1);
+-	compare_continue(ss, &quot;\n&quot;, 1);
++	val = compare_continue(ss, &quot;1&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;2&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;3&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;\n&quot;, 1);
++	AssertNonNegative(val);
+ 	AssertEq(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;123\n&quot;);
+ 	compare_attach(ss);
+-	compare_continue(ss, &quot;1&quot;, 1);
+-	compare_continue(ss, &quot;2&quot;, 1);
+-	compare_continue(ss, &quot;3&quot;, 1);
++	val = compare_continue(ss, &quot;1&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;2&quot;, 1);
++	AssertNonNegative(val);
++	val = compare_continue(ss, &quot;3&quot;, 1);
++	AssertNonNegative(val);
+ 	AssertEq(compare_check_newlines(ss), cmp_ss_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;&quot;);
+ 	compare_attach(ss);
+-	compare_continue(ss, &quot;\n&quot;, 1);
++	val = compare_continue(ss, &quot;\n&quot;, 1);
++	AssertNonNegative(val);
+ 	AssertEq(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+ 
+ 	readmem_init_str(ss, &quot;\n&quot;);
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/main.c	2007-01-24 23:51:11 UTC (rev 125)
+@@ -83,7 +83,7 @@
+ // exit values:
+ enum {
+     no_error = 0,
+-    argument_error,
++    argument_error=100,
+     runtime_error,
+     interrupted_error,
+     internal_error,
+@@ -268,7 +268,7 @@
+     int fd = open(fn, flags|O_RDWR|O_CREAT/*|O_EXCL*/, S_IRUSR|S_IWUSR);
+     if(fd &lt; 0) {
+         fprintf(stderr, &quot;couldn't open %s: %s\n&quot;, fn, strerror(errno));
+-        exit(runtime_error);	// TODO
++        exit(runtime_error);
+     }
+ 
+     return fd;
+@@ -283,13 +283,13 @@
+ 	buf = malloc(sizeof(TESTDIR) + sizeof(DIFFNAME));
+ 	if(!buf) {
+ 		perror(&quot;malloc&quot;);
+-		exit(10);	// TODO
++		exit(runtime_error);
+ 	}
+ 
+ 	test-&gt;diffname = buf;
+ 	fd = open_file(buf, DIFFNAME, 0);
+ 	assert(strlen(buf) == sizeof(TESTDIR)+sizeof(DIFFNAME)-1);
+-	write_file(fd, 0, NULL);
++	write_file(test, fd, 0, NULL);
+ 	close(fd);
+ 
+ 	return fd;
+@@ -449,6 +449,7 @@
+     int fd = -1;
+     int i;
+     FILE *tochild;
++	jmp_buf abort_jump;
+ 
+     // defined in the exec.c file generated by exec.tmpl.
+     extern const char exec_template[];
+@@ -467,6 +468,12 @@
+ 	}
+ 
+     test_init(&amp;test);
++	if(setjmp(abort_jump)) {
++		// test was aborted.
++		fprintf(stderr, &quot;Test aborted: %s\n&quot;, test.status_reason);
++        exit(runtime_error);
++	}
++
+     test.testfilename = name;
+     test.outfd = g_outfd;
+     test.errfd = g_errfd;
+@@ -547,7 +554,7 @@
+         if(fd &lt; 0) {
+             fprintf(stderr, &quot;Could not open %s: %s\n&quot;,
+                     curabsolute(), strerror(errno));
+-            exit(runtime_error); // TODO
++            exit(runtime_error);
+         }
+         readfd_attach(&amp;test.testfile, fd);
+     }
+@@ -575,7 +582,7 @@
+         i = wait_for_child(child, &quot;test&quot;);
+         test.exitsignal = (WIFSIGNALED(i) ? WTERMSIG(i) : 0);
+         test.exitcored = (WIFSIGNALED(i) ? WCOREDUMP(i) : 0);
+-        // test.exitno = (WIFEXITED(i) ? WEXITSTATUS(i) : 256);
++        test.exitno = (WIFEXITED(i) ? WEXITSTATUS(i) : 256);
+ 
+         // read the status file to determine what happened
+         // and store the information in the test struct.
+@@ -609,7 +616,7 @@
+             close(fd);
+         }
+ 
+-        keepontruckin = !test.aborted;
++        keepontruckin = !was_aborted(test.status);
+     }
+ 
+     test_free(&amp;test);
+@@ -1239,6 +1246,6 @@
+     }
+ 
+ 	free((char*)orig_cwd);
+-	return 0;
++	return test_get_exit_value();
+ }
+ 
+
+Modified: trunk/test/00-cmdline/10-CfgDir.test
+===================================================================
+--- trunk/test/00-cmdline/10-CfgDir.test	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/test/00-cmdline/10-CfgDir.test	2007-01-24 23:51:11 UTC (rev 125)
+@@ -12,4 +12,4 @@
+ STDERR:
+ Could not open /tmp: not a file!
+ STDOUT:
+-RESULT: 2
++RESULT: 101
+
+Modified: trunk/test/00-cmdline/12-CfgEmpty.test
+===================================================================
+--- trunk/test/00-cmdline/12-CfgEmpty.test	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/test/00-cmdline/12-CfgEmpty.test	2007-01-24 23:51:11 UTC (rev 125)
+@@ -15,4 +15,4 @@
+ STDERR:
+ You must specify a directory for --config.
+ STDOUT:
+-RESULT: 1
++RESULT: 100
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/test.c	2007-01-24 23:51:11 UTC (rev 125)
+@@ -17,6 +17,7 @@
+ #include &lt;errno.h&gt;
+ #include &lt;dirent.h&gt;
+ #include &lt;assert.h&gt;
++#include &lt;stdarg.h&gt;
+ 
+ #include &quot;re2c/read-fd.h&quot;
+ 
+@@ -57,12 +58,11 @@
+  * Actually, it just returns the file's length.
+  */
+ 
+-int fd_has_data(int fd)
++int fd_has_data(struct test *test, int fd)
+ {
+     off_t pos = lseek(fd, 0, SEEK_END);
+     if(pos &lt; 0) {
+-        perror(&quot;lseek in fd_has_data&quot;);
+-        exit(10);   // todo: consolidate with error codes in main
++		test_abort(test, &quot;fd_has_data lseek error: %s&quot;, strerror(errno));
+     }
+ 
+     return pos;
+@@ -146,8 +146,8 @@
+ 
+     // first rewind the status file
+     if(lseek(test-&gt;statusfd, 0, SEEK_SET) &lt; 0) {
+-        fprintf(stderr, &quot;read_file lseek for status file: %s\n&quot;, strerror(errno));
+-        exit(10);   // todo: consolidate with error codes in main
++        test_abort(test, &quot;read_file lseek on status file: %s\n&quot;,
++			strerror(errno));
+     }
+ 
+     // then create our scanner
+@@ -163,9 +163,8 @@
+ 
+ 		// look for errors...
+         if(tok &lt; 0) {
+-            fprintf(stderr, &quot;Error %d pulling status tokens: %s\n&quot;, 
+-                    tok, strerror(errno));
+-            exit(10);
++            test_abort(test, &quot;Error %d pulling status tokens: %s\n&quot;,
++				tok, strerror(errno));
+         } else if(tok == stGARBAGE) {
+ 			fprintf(stderr, &quot;Garbage on line %d in the status file: '%.*s'\n&quot;,
+ 					ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+@@ -292,9 +291,8 @@
+         oldline = test-&gt;testfile.line;
+         int tokno = scan_next_token(&amp;test-&gt;testfile);
+         if(tokno &lt; 0) {
+-            fprintf(stderr, &quot;Error %d pulling status tokens: %s\n&quot;, 
++            test_abort(test, &quot;Error %d pulling status tokens: %s\n&quot;, 
+                     tokno, strerror(errno));
+-            exit(10);
+         } else if(tokno == 0) {
+ 			// if the test file is totally empty.
+ 			break;
+@@ -336,13 +334,14 @@
+  * it up.
+  */
+ 
+-void compare_section_start(scanstate *cmpscan, int fd,
+-		const char *filename, const char *sectionname)
++void compare_section_start(struct test *test,
++	scanstate *cmpscan, int fd,
++	const char *sectionname)
+ {
+     // rewind the file
+     if(lseek(fd, 0, SEEK_SET) &lt; 0) {
+-        fprintf(stderr, &quot;read_file lseek for status file: %s\n&quot;, strerror(errno));
+-        exit(10);   // todo: consolidate with error codes in main
++        test_abort(test, &quot;compare_section_start lseek compare: %s\n&quot;,
++			strerror(errno));
+     }
+ 
+     scanstate_reset(cmpscan);
+@@ -487,8 +486,7 @@
+     }
+ 
+ 	scanstate_reset(cmpscan);
+-    compare_section_start(cmpscan, fd,
+-        get_testfile_name(test), secname);
++    compare_section_start(test, cmpscan, fd, secname);
+ 
+ 	// store the newline flag in the cmpscan structure
+ 	cmpscan_suppress_newline = suppress_trailing_newline;
+@@ -585,6 +583,7 @@
+ {
+     // cmpscan is the scanner used to perform the diff.
+     scanstate *cmpscan = refcon;
++	int val;
+ 
+     // the section that we're processing (without the NEW flag attached)
+     int newsec = EX_TOKEN(sec);
+@@ -639,7 +638,10 @@
+                 break;
+             case exSTDOUT:
+             case exSTDERR:
+-				compare_continue(cmpscan, datap, len);
++				val = compare_continue(cmpscan, datap, len);
++				if(val &lt; 0) {
++					test_abort(test, &quot;compare_continue error: %d\n&quot;, val);
++				}
+                 break;
+             case exCOMMAND:
+                 break;
+@@ -672,9 +674,8 @@
+     do {
+         int tokno = scan_next_token(scanner);
+         if(tokno &lt; 0) {
+-            fprintf(stderr, &quot;Error %d pulling status tokens: %s\n&quot;, 
++            test_abort(test, &quot;scan_sections error %d pulling status tokens: %s\n&quot;, 
+                     tokno, strerror(errno));
+-            exit(10);
+         } else if(tokno == 0) {
+ 			break;
+ 		}
+@@ -714,7 +715,6 @@
+ 
+ 	if(was_aborted(test-&gt;status)) {
+ 		test_failures++;
+-		test-&gt;aborted = 1;
+ 		return;
+ 	}
+ 
+@@ -737,10 +737,10 @@
+     assert(test-&gt;stderr_match != match_inprogress);
+ 
+     if(test-&gt;stdout_match == match_unknown) {
+-        test-&gt;stdout_match = (fd_has_data(test-&gt;outfd) ? match_no : match_yes);
++        test-&gt;stdout_match = (fd_has_data(test, test-&gt;outfd) ? match_no : match_yes);
+     }
+     if(test-&gt;stderr_match == match_unknown) {
+-        test-&gt;stderr_match = (fd_has_data(test-&gt;errfd) ? match_no : match_yes);
++        test-&gt;stderr_match = (fd_has_data(test, test-&gt;errfd) ? match_no : match_yes);
+     }
+ 
+     *stdo = (test-&gt;stdout_match != match_yes);
+@@ -764,7 +764,7 @@
+ 
+ 	test_analyze_results(test, &amp;stdo, &amp;stde);
+ 	
+-	if(test-&gt;aborted) {
++	if(was_aborted(test-&gt;status)) {
+ 		print_reason(test, &quot;ABRT&quot;, &quot;by&quot;);
+ 		return;
+ 	}
+@@ -830,7 +830,7 @@
+  * @returns the number of bytes written.
+  */
+ 
+-size_t write_file(int outfd, int infd, int *endnl)
++size_t write_file(struct test *test, int outfd, int infd, int *endnl)
+ {
+     char buf[BUFSIZ];
+     size_t rcnt, wcnt;
+@@ -838,8 +838,7 @@
+ 
+     // first rewind the input file
+     if(lseek(infd, 0, SEEK_SET) &lt; 0) {
+-        fprintf(stderr, &quot;write_file lseek on %d: %s\n&quot;, infd, strerror(errno));
+-        exit(10);   // todo: consolidate with error codes in main
++		test_abort(test, &quot;write_file lseek on %d: %s\n&quot;, infd, strerror(errno));
+     }
+ 
+     // then write the file.
+@@ -853,14 +852,14 @@
+                 wcnt = write(outfd, buf, rcnt);
+             } while(wcnt &lt; 0 &amp;&amp; errno == EINTR);
+             if(wcnt &lt; 0) {
+-                // write error.  do something!
+-                perror(&quot;writing in write_file&quot;);
++                test_abort(test, &quot;write_file got %s while writing!&quot;,
++					strerror(errno));
+                 break;
+             }
+ 			total += rcnt;
+         } else if (rcnt &lt; 0) {
+-            // read error.  do something!
+-            perror(&quot;reading in write_file&quot;);
++			test_abort(test, &quot;write_file got %s while reading!&quot;,
++				strerror(errno));
+             break;
+         }
+     } while(rcnt);
+@@ -881,7 +880,7 @@
+ 			start_output_section_argproc, &amp;marked_no_nl);
+ 
+ 	write(test-&gt;rewritefd, datap, len);
+-	cnt = write_file(test-&gt;rewritefd, fd, &amp;has_nl);
++	cnt = write_file(test, test-&gt;rewritefd, fd, &amp;has_nl);
+ 
+ 	if(marked_no_nl) {
+ 		// if a section is marked with --no-trailing-newline, we need
+@@ -966,7 +965,6 @@
+ 
+ 	if(was_aborted(test-&gt;status)) {
+ 		dump_reason(test, &quot;was aborted&quot;);
+-		test-&gt;aborted = 1;
+ 		return;
+ 	}
+ 
+@@ -995,13 +993,13 @@
+ 
+     // if any sections haven't been output, but they differ from
+     // the default, then they need to be output here at the end.
+-    if(test-&gt;stderr_match == match_unknown &amp;&amp; fd_has_data(test-&gt;errfd)) {
++    if(test-&gt;stderr_match == match_unknown &amp;&amp; fd_has_data(test, test-&gt;errfd)) {
+ 		write_strconst(test-&gt;rewritefd, &quot;STDERR:\n&quot;);
+-        write_file(test-&gt;rewritefd, test-&gt;errfd, NULL);
++        write_file(test, test-&gt;rewritefd, test-&gt;errfd, NULL);
+     }
+-    if(test-&gt;stdout_match == match_unknown &amp;&amp; fd_has_data(test-&gt;outfd)) {
++    if(test-&gt;stdout_match == match_unknown &amp;&amp; fd_has_data(test, test-&gt;outfd)) {
+ 		write_strconst(test-&gt;rewritefd, &quot;STDOUT:\n&quot;);
+-        write_file(test-&gt;rewritefd, test-&gt;outfd, NULL);
++        write_file(test, test-&gt;rewritefd, test-&gt;outfd, NULL);
+     }
+ }
+ 
+@@ -1031,6 +1029,21 @@
+ }
+ 
+ 
++void test_abort(struct test *test, const char *fmt, ...)
++{
++	char buf[BUFSIZ];
++	va_list ap;
++
++	va_start(ap, fmt);
++	vsnprintf(buf, sizeof(buf), fmt, ap);
++	va_end(ap);
++
++	test-&gt;status = test_was_aborted;
++	test-&gt;status_reason = strdup(buf);
++	longjmp(test-&gt;abort_jump, 1);
++}
++
++
+ void test_free(struct test *test)
+ {
+ 	int err;
+@@ -1057,3 +1070,8 @@
+ }
+ 
+ 
++int test_get_exit_value()
++{
++	return test_failures &lt; 99 ? test_failures : 99;
++}
++
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/test.h	2007-01-24 23:51:11 UTC (rev 125)
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include &quot;compare.h&quot;
++#include &lt;setjmp.h&gt;
+ 
+ 
+ /**
+@@ -31,7 +32,7 @@
+ 
+ 	test_was_started=16,	///&lt; test was started but we haven't received an exit status yet.
+ 	test_was_completed,		///&lt; test completed normally.  tests may abort prematurely but still consider it a successful run, so use test_was_started.  this status is largely useless.
+-	test_was_aborted,		///&lt; somebody called abort in the middle of the test.
++	test_was_aborted,		///&lt; somebody called abort in the middle of the test
+ 	test_was_disabled,		///&lt; the test was disabled by somebody.
+ } test_status;
+ 
+@@ -60,6 +61,7 @@
+     int outfd;				///&lt; the file that receives the test's stdout.
+     int errfd;				///&lt; the file that receives the test's stderr.
+     int statusfd;			///&lt; receives the runtime test status messages.
++	int exitno;				///&lt; the testfile exited with this value
+     int exitsignal;         ///&lt; the value returned for the test by waitpid(2)
+     int exitcored;          ///&lt; if exitsignal is true, true if child core dumped.
+ 
+@@ -72,10 +74,11 @@
+ 
+ 	int num_config_files;	///&lt; the number of config files we started processing.  If the status is higher than test_was_started, then this gives the total number of config files processed.
+ 	char *last_file_processed; ///&lt; if it could be discovered, this contains the name of the last file to be started.  must be freed.
+-	int aborted;			///&lt; true if the test was aborted (and therefore no further tests should be run).
+ 
+     enum matchval stdout_match;	///&lt; tells whether the expected and actual stdout matches.
+     enum matchval stderr_match;	///&lt; tells whether the expected and actual stderr matches.
++
++	jmp_buf abort_jump;
+ };
+ 
+ 
+@@ -86,12 +89,14 @@
+ void dump_results(struct test *test);
+ void print_test_summary(struct timeval *start, struct timeval *stop);
+ int check_for_failure(struct test *test, const char *testpath);
++int test_get_exit_value();
+ 
+ void test_init(struct test *test);
+ void test_free(struct test *test);
++void test_abort(struct test *test, const char *fmt, ...);
+ 
+ 
+ // random utility function for start_diff.  Return value is true if the
+ // file ends in a newline, false if not.
+-size_t write_file(int outfd, int infd, int *ending_nl);
++size_t write_file(struct test *test, int outfd, int infd, int *ending_nl);
+ 
+
+Modified: trunk/tmtest.pod
+===================================================================
+--- trunk/tmtest.pod	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/tmtest.pod	2007-01-24 23:51:11 UTC (rev 125)
+@@ -103,13 +103,13 @@
+ 
+ =head1 EXIT VALUE
+ 
+-tmtest returns a nonzero error code only if one or more tests
+-could not be run for some reason.  If all tests are successfully run,
+-even if they all fail, tmtest returns 0.
++tmtest exits with the number of tests that failed or were aborted.
++If the entire test deck succeeds or is disabled, tmtest returns 0.
++If more than 99 tests fail, tmtest just returns 99.
+ 
+-TODO: this is an anachronism.  It should return the number of failing
+-tests or 99, whichever is less.  If no tests fail then it returns
+-of course 0.
++Generally, if something else prevented tests from running (say,
++lack of memory or disk space), tmtest will return a number
++between 100 and 199.  TODO: this isn't true yet.
+ 
+ =head1 TESTFILE
+ 
+
+Modified: trunk/vars.c
+===================================================================
+--- trunk/vars.c	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/vars.c	2007-01-24 23:51:11 UTC (rev 125)
+@@ -106,7 +106,7 @@
+ /** Returns the full path to the user's home directory.
+  */
+ 
+-static char* get_home_dir()
++static char* get_home_dir(struct test *test)
+ {
+ 	char *cp;
+ 	struct passwd *entry;
+@@ -122,8 +122,8 @@
+ 		if(cp) return cp;
+ 	}
+ 
+-	fprintf(stderr, &quot;Could not locate your home directory!\n&quot;);
+-	exit(10);
++	test_abort(test, &quot;Could not locate your home directory!  Please set $HOME.\n&quot;);
++	return NULL; // will never be executed
+ }
+ 
+ 
+@@ -215,8 +215,7 @@
+ 		buf[sizeof(buf)-1] = '\0';
+ 		cp = strrchr(buf, '/');
+ 		if(cp == NULL) {
+-			fprintf(stderr, &quot;Illegal config_file: '%s'\n&quot;, buf); 
+-			exit(1);
++			test_abort(test, &quot;Illegal config_file: '%s'\n&quot;, buf); 
+ 		}
+ 		*cp = '\0';
+ 		check_config_str(test, fp, buf, cp+1);
+@@ -224,7 +223,7 @@
+ 	} else {
+ 		check_config_str(test, fp, &quot;/etc&quot;, CONFIG_FILE);
+ 		check_config_str(test, fp, &quot;/etc/tmtest&quot;, CONFIG_FILE);
+-		check_config_str(test, fp, get_home_dir(), HOME_CONFIG_FILE);
++		check_config_str(test, fp, get_home_dir(test), HOME_CONFIG_FILE);
+ 	}
+ 
+ 	// check config files in the current hierarchy
+
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-01-24 07:45:34 UTC (rev 124)
++++ trunk/zutest.h	2007-01-24 23:51:11 UTC (rev 125)
+@@ -27,6 +27,9 @@
+ #define AssertGe(x,y) AssertOp(x,y,&gt;=)
+ #define AssertLt(x,y) AssertOp(x,y,&lt;)
+ #define AssertLe(x,y) AssertOp(x,y,&lt;=)
++#define AssertPositive(x) AssertOp(x,0,&gt;)
++#define AssertNegative(x) AssertOp(x,0,&lt;)
++#define AssertNonNegative(x) AssertOp(x,0,&gt;=)
+ #define AssertIntEq(x,y) AssertOp(x,y,==)
+ #define AssertIntNe(x,y) AssertOp(x,y,!=)
+ #define AssertIntGt(x,y) AssertOp(x,y,&gt;)
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000041.html">[Tmtest-commits] [124] trunk: Added the tmtest -f command-line	option
+</A></li>
+	<LI>Next message: <A HREF="000043.html">[Tmtest-commits] [126] trunk: Updated to the newest zutest
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#42">[ date ]</a>
+              <a href="thread.html#42">[ thread ]</a>
+              <a href="subject.html#42">[ subject ]</a>
+              <a href="author.html#42">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

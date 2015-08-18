@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [93] trunk/re2c: Wow, what an embarrasing bug.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B93%5D%20trunk/re2c%3A%20Wow%2C%20what%20an%20embarrasing%20bug.&In-Reply-To=%3C200602282058.k1SKwmGb028883%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000009.html">
+   <LINK REL="Next"  HREF="000011.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [93] trunk/re2c: Wow, what an embarrasing bug.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B93%5D%20trunk/re2c%3A%20Wow%2C%20what%20an%20embarrasing%20bug.&In-Reply-To=%3C200602282058.k1SKwmGb028883%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [93] trunk/re2c: Wow, what an embarrasing bug.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Feb 28 21:58:48 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000009.html">[Tmtest-commits] [92] trunk: Made tmtest report in the test results if child was exited
+</A></li>
+        <LI>Next message: <A HREF="000011.html">[Tmtest-commits] [94] trunk: read_shiftbuf was totally messed up.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 93
+Author:   bronson
+Date:     2006-02-28 21:58:44 +0100 (Tue, 28 Feb 2006)
+
+Log Message:
+-----------
+Wow, what an embarrasing bug.  I guess it has lived for so long
+because none of my tests ever needed to have the buffer shifted.
+
+Modified Paths:
+--------------
+    trunk/re2c/read.c
+    trunk/re2c/scan.h
+Modified: trunk/re2c/read.c
+===================================================================
+--- trunk/re2c/read.c	2006-02-28 20:00:30 UTC (rev 92)
++++ trunk/re2c/read.c	2006-02-28 20:58:44 UTC (rev 93)
+@@ -47,6 +47,6 @@
+         assert(ss-&gt;cursor &lt;= ss-&gt;limit);
+     }
+ 
+-    return ss-&gt;bufsiz - (ss-&gt;bufptr - ss-&gt;limit);
++    return ss-&gt;bufsiz - (ss-&gt;limit - ss-&gt;bufptr);
+ }
+ 
+
+Modified: trunk/re2c/scan.h
+===================================================================
+--- trunk/re2c/scan.h	2006-02-28 20:00:30 UTC (rev 92)
++++ trunk/re2c/scan.h	2006-02-28 20:58:44 UTC (rev 93)
+@@ -176,7 +176,7 @@
+     // (these do a poor job of simulating capturing parens)
+     const char *token;  ///&lt; The start of the current token (manually updated by the scanner).
+     int line;           ///&lt; The scanner may or may not maintain the current line number in this field.
+-    int at_eof;         ///&lt; You almost certainly don't want to be using this (unless you're writing a readproc).  Use scan_finished() instead.  This field gets set when the readproc realizes it has hit eof.  by convention 1 means eof, 2 means yes, at_eof is true, but because of an unrecoverable read error (todo: this should be formalized).
++    int at_eof;         ///&lt; You almost certainly don't want to be using this unless you're writing a readproc.  Use scan_finished() instead.  This field gets set when the readproc realizes it has hit eof.  by convention 1 means eof, 2 means yes, at_eof is true, but because of an unrecoverable read error (todo: this should be formalized?  TODO: audit code to see if this is indeed the case).
+ 
+     const char *bufptr; ///&lt; The buffer currently in use
+     int bufsiz;         ///&lt; The maximum number of bytes that the buffer can hold
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000009.html">[Tmtest-commits] [92] trunk: Made tmtest report in the test results if child was exited
+</A></li>
+	<LI>Next message: <A HREF="000011.html">[Tmtest-commits] [94] trunk: read_shiftbuf was totally messed up.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

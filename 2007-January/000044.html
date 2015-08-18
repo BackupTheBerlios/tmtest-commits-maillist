@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [127] trunk: Run the zutest unit tests before we	run our own.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B127%5D%20trunk%3A%20Run%20the%20zutest%20unit%20tests%20before%20we%0A%09run%20our%20own.&In-Reply-To=%3C200701250106.l0P1690H023054%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000043.html">
+   <LINK REL="Next"  HREF="000045.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [127] trunk: Run the zutest unit tests before we	run our own.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B127%5D%20trunk%3A%20Run%20the%20zutest%20unit%20tests%20before%20we%0A%09run%20our%20own.&In-Reply-To=%3C200701250106.l0P1690H023054%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [127] trunk: Run the zutest unit tests before we	run our own.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Thu Jan 25 02:07:36 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000043.html">[Tmtest-commits] [126] trunk: Updated to the newest zutest
+</A></li>
+        <LI>Next message: <A HREF="000045.html">[Tmtest-commits] [128] trunk: Add the ability to view zutest	failures (zutest -f).
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#44">[ date ]</a>
+              <a href="thread.html#44">[ thread ]</a>
+              <a href="subject.html#44">[ subject ]</a>
+              <a href="author.html#44">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 127
+Author:   bronson
+Date:     2007-01-25 02:06:08 +0100 (Thu, 25 Jan 2007)
+
+Log Message:
+-----------
+Run the zutest unit tests before we run our own.
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/test/02-running/03-Unit-Tests.test
+    trunk/units.c
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-01-25 01:02:48 UTC (rev 126)
++++ trunk/Makefile	2007-01-25 01:06:08 UTC (rev 127)
+@@ -48,7 +48,7 @@
+ 
+ 
+ tmtest: $(CSRC) $(CHDR) $(INTERMED)
+-	$(CC) $(COPTS) $(CSRC) -o tmtest -DVERSION=&quot;$(VERSION)&quot;
++	$(CC) $(COPTS) $(CSRC) -o tmtest -DVERSION=&quot;$(VERSION)&quot; -DZUTEST
+ 
+ template.c: template.sh cstrfy
+ 	./cstrfy -n exec_template &lt; template.sh &gt; template.c
+
+Modified: trunk/test/02-running/03-Unit-Tests.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Tests.test	2007-01-25 01:02:48 UTC (rev 126)
++++ trunk/test/02-running/03-Unit-Tests.test	2007-01-25 01:06:08 UTC (rev 127)
+@@ -3,4 +3,4 @@
+ $tmtest --run-unit-tests
+ 
+ STDOUT:
+-All OK.  6 tests run, 6 successes (57 assertions).
++All OK.  11 tests run, 11 successes (195 assertions).
+
+Modified: trunk/units.c
+===================================================================
+--- trunk/units.c	2007-01-25 01:02:48 UTC (rev 126)
++++ trunk/units.c	2007-01-25 01:06:08 UTC (rev 127)
+@@ -4,6 +4,7 @@
+ 
+ 
+ zutest_suite all_unit_tests[] = {
++	zutest_tests,	// run a self-check on the unit test library
+ 	compare_tests,
+ 	NULL
+ };
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000043.html">[Tmtest-commits] [126] trunk: Updated to the newest zutest
+</A></li>
+	<LI>Next message: <A HREF="000045.html">[Tmtest-commits] [128] trunk: Add the ability to view zutest	failures (zutest -f).
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#44">[ date ]</a>
+              <a href="thread.html#44">[ thread ]</a>
+              <a href="subject.html#44">[ subject ]</a>
+              <a href="author.html#44">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

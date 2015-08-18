@@ -1,0 +1,1605 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [105] trunk: First part of the modify purge is complete: rewrite or
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B105%5D%20trunk%3A%20First%20part%20of%20the%20modify%20purge%20is%20complete%3A%20rewrite%20or&In-Reply-To=%3C200603051530.k25FUwEq001874%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000021.html">
+   <LINK REL="Next"  HREF="000023.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [105] trunk: First part of the modify purge is complete: rewrite or</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B105%5D%20trunk%3A%20First%20part%20of%20the%20modify%20purge%20is%20complete%3A%20rewrite%20or&In-Reply-To=%3C200603051530.k25FUwEq001874%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [105] trunk: First part of the modify purge is complete: rewrite or">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Sun Mar  5 16:30:58 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000021.html">[Tmtest-commits] [104] trunk: Remove MODIFY from the template, update tests to match.
+</A></li>
+        <LI>Next message: <A HREF="000023.html">[Tmtest-commits] [106] trunk: Eradicate MODIFY.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 105
+Author:   bronson
+Date:     2006-03-05 16:30:53 +0100 (Sun, 05 Mar 2006)
+
+Log Message:
+-----------
+First part of the modify purge is complete: rewrite or remove all tests
+that depend on it.
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/test/02-running/11-Assert.test
+    trunk/test/02-running/13-DisabledDir.test
+    trunk/test/02-running/14-AbortConf.test
+    trunk/test/02-running/15-DisabledDir.test
+    trunk/test/02-running/16-ConfigError.test
+    trunk/test/02-running/17-ConfigError.test
+    trunk/test/02-running/18-TestError.test
+    trunk/test/02-running/21-QuoteFile.test
+    trunk/test/03-results/11-NoNLOutput.test
+    trunk/test/03-results/11-NoNLOutput2.test
+    trunk/test/04-diff/01-Diff.test
+    trunk/test/04-diff/02-MultiDiff.test
+    trunk/test/04-diff/05-AbortDiff.test
+    trunk/test/04-diff/05-DisableDiff.test
+    trunk/test/04-diff/06-AbortDiff2.test
+    trunk/test/04-diff/06-DisableDiff2.test
+    trunk/test/04-diff/07-AbortDiff3.test
+    trunk/test/04-diff/07-DisableDiff3.test
+    trunk/test/04-diff/08-AbortDiff4.test
+    trunk/test/04-diff/08-DisableDiff4.test
+    trunk/test/04-diff/09-MultiLevelDiff.test
+    trunk/test/04-diff/10-Patch.test
+    trunk/test/04-diff/11-MultiPatch.test
+    trunk/test/04-diff/12-MultiLevelPatch.test
+    trunk/test/04-diff/13-MultiLevelPatch.test
+    trunk/test/04-diff/17-ConfigError.test
+    trunk/test/README
+
+Added Paths:
+-----------
+    trunk/test/02-running/05-Abort.test
+    trunk/test/02-running/05-Disable.test
+    trunk/test/02-running/06-Abort2.test
+    trunk/test/02-running/06-Disable2.test
+    trunk/test/02-running/07-Abort3.test
+    trunk/test/02-running/07-Disable3.test
+    trunk/test/02-running/08-Abort4.test
+    trunk/test/02-running/08-Disable4.test
+
+Removed Paths:
+-------------
+    trunk/examples/docs/Modify1.test
+    trunk/examples/docs/Modify2.test
+    trunk/examples/docs/Modify3.test
+    trunk/test/03-results/05-Abort.test
+    trunk/test/03-results/05-Disable.test
+    trunk/test/03-results/06-Abort2.test
+    trunk/test/03-results/06-Disable2.test
+    trunk/test/03-results/07-Abort3.test
+    trunk/test/03-results/07-Disable3.test
+    trunk/test/03-results/08-Abort4.test
+    trunk/test/03-results/08-Disable4.test
+    trunk/test/03-results/09-NoNLMod.test
+    trunk/test/03-results/20-Modify.test
+    trunk/test/03-results/21-Modify.test
+    trunk/test/03-results/22-Modify2.test
+    trunk/test/03-results/23-Modify2.test
+    trunk/test/03-results/24-Modify2.test
+    trunk/test/03-results/25-Modify3.test
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/CHANGES	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,3 +1,5 @@
++- Got rid of MODIFY clauses.  Use INDENT, REPLACE, or sed instead.
++
+ Released 0.94 on 2 Mar 2006
+ - NOTE: Bash3 has made it so that the regex can not appear on the same line as
+   the MODIFY keyword.  I updated all tests and accelerated MODIFY deprecation.
+
+Deleted: trunk/examples/docs/Modify1.test
+===================================================================
+--- trunk/examples/docs/Modify1.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/examples/docs/Modify1.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,5 +0,0 @@
+-echo RESULT
+-MODIFY:
+-   s/^(.)/   $1/
+-STDOUT:
+-   RESULT
+
+Deleted: trunk/examples/docs/Modify2.test
+===================================================================
+--- trunk/examples/docs/Modify2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/examples/docs/Modify2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,7 +0,0 @@
+-# This is from <A HREF="http://tmtest.berlios.de/wiki/index.php/MODIFY">http://tmtest.berlios.de/wiki/index.php/MODIFY</A>
+-
+-echo RESULT
+-MODIFY:
+-   s/^RESULT/xRESULT/
+-STDOUT:
+-xRESULT
+
+Deleted: trunk/examples/docs/Modify3.test
+===================================================================
+--- trunk/examples/docs/Modify3.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/examples/docs/Modify3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,7 +0,0 @@
+-# This is from <A HREF="http://tmtest.berlios.de/wiki/index.php/MODIFY">http://tmtest.berlios.de/wiki/index.php/MODIFY</A>
+-
+-date
+-MODIFY:
+-  s/... +... +[0-9]?[0-9] +[0-9]?[0-9]:[0-9][0-9]:[0-9][0-9] +... +20[0-9][0-9]/date date date/
+-STDOUT:
+-date date date
+
+Copied: trunk/test/02-running/05-Abort.test (from rev 88, trunk/test/03-results/05-Abort.test)
+===================================================================
+--- trunk/test/03-results/05-Abort.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/05-Abort.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,19 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is aborted.
++
++
++
++tmtest -q - &lt;&lt;-EOL
++	ABORT
++	echo &quot;right output&quot;
++	STDOUT:
++	right output
++EOL
++
++
++STDOUT:
++ABRT (STDIN)                   
++
++1 test run, 0 successes, 1 failure.
+
+Copied: trunk/test/02-running/05-Disable.test (from rev 88, trunk/test/03-results/05-Disable.test)
+===================================================================
+--- trunk/test/03-results/05-Disable.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/05-Disable.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,19 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is disabled.
++
++
++
++tmtest -q - &lt;&lt;-EOL
++	DISABLED
++	echo &quot;right output&quot;
++	STDOUT:
++	right output
++EOL
++
++
++STDOUT:
++dis  (STDIN)                   
++
++1 test run, 0 successes, 0 failures.
+
+Copied: trunk/test/02-running/06-Abort2.test (from rev 88, trunk/test/03-results/06-Abort2.test)
+===================================================================
+--- trunk/test/03-results/06-Abort2.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/06-Abort2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,19 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is aborted and gives a reason.
++
++
++tmtest -q - &lt;&lt;-EOL
++	ABORT: This is the reason
++	echo &quot;right output&quot;
++	STDOUT:
++	wrong output
++EOL
++
++
++STDERR:
++STDOUT:
++ABRT (STDIN)                   This is the reason
++
++1 test run, 0 successes, 1 failure.
+
+Copied: trunk/test/02-running/06-Disable2.test (from rev 88, trunk/test/03-results/06-Disable2.test)
+===================================================================
+--- trunk/test/03-results/06-Disable2.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/06-Disable2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,19 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is disabled and gives a reason.
++
++
++tmtest -q - &lt;&lt;-EOL
++	DISABLED: This is the reason
++	echo &quot;right output&quot;
++	STDOUT:
++	wrong output
++EOL
++
++
++STDERR:
++STDOUT:
++dis  (STDIN)                   This is the reason
++
++1 test run, 0 successes, 0 failures.
+
+Copied: trunk/test/02-running/07-Abort3.test (from rev 88, trunk/test/03-results/07-Abort3.test)
+===================================================================
+--- trunk/test/03-results/07-Abort3.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/07-Abort3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,19 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is aborted but output is selected.
++
++
++tmtest -q -o - &lt;&lt;-EOL
++	ABORT This is the reason
++	echo &quot;right output&quot;
++	STDOUT:
++	wrong output
++EOL
++
++
++STDOUT:
++ABORT This is the reason
++echo &quot;right output&quot;
++STDERR:
++ERROR Test was aborted: This is the reason
+
+Copied: trunk/test/02-running/07-Disable3.test (from rev 88, trunk/test/03-results/07-Disable3.test)
+===================================================================
+--- trunk/test/03-results/07-Disable3.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/07-Disable3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,19 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is disabled but output is selected.
++
++
++tmtest -q -o - &lt;&lt;-EOL
++	DISABLED This is the reason
++	echo &quot;right output&quot;
++	STDOUT:
++	wrong output
++EOL
++
++
++STDOUT:
++DISABLED This is the reason
++echo &quot;right output&quot;
++STDERR:
++ERROR Test is disabled: This is the reason
+
+Copied: trunk/test/02-running/08-Abort4.test (from rev 88, trunk/test/03-results/08-Abort4.test)
+===================================================================
+--- trunk/test/03-results/08-Abort4.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/08-Abort4.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,24 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is aborted and gives 
++# only whitespace as a reason.
++
++# this is really weird...  I would expect the colon to be printed
++# because we DO have a disabled reason -- it's just empty.  But
++# for some reason it's not.  I'd like to know why.  TODO
++# dis  (STDIN)                   :    
++
++
++tmtest -q - &lt;&lt;-EOL
++	ABORT: &quot;   &quot;
++	echo &quot;right output&quot;
++	STDOUT:
++	wrong output
++EOL
++
++
++STDOUT:
++ABRT (STDIN)                   
++
++1 test run, 0 successes, 1 failure.
+
+Copied: trunk/test/02-running/08-Disable4.test (from rev 88, trunk/test/03-results/08-Disable4.test)
+===================================================================
+--- trunk/test/03-results/08-Disable4.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/02-running/08-Disable4.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -0,0 +1,24 @@
++# author: Scott Bronson
++# date:   14 Nov 2004
++
++# Verifies what happens when a test is disabled and gives 
++# only whitespace as a reason.
++
++# this is really weird...  I would expect the colon to be printed
++# because we DO have a disabled reason -- it's just empty.  But
++# for some reason it's not.  I'd like to know why.  TODO
++# dis  (STDIN)                   :    
++
++
++tmtest -q - &lt;&lt;-EOL
++	DISABLED: &quot;   &quot;
++	echo &quot;right output&quot;
++	STDOUT:
++	wrong output
++EOL
++
++
++STDOUT:
++dis  (STDIN)                   
++
++1 test run, 0 successes, 0 failures.
+
+Modified: trunk/test/02-running/11-Assert.test
+===================================================================
+--- trunk/test/02-running/11-Assert.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/11-Assert.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,20 +1,22 @@
++# Ensure ABORT works.
++#
++# The wrong line number is displayed when the test is fed on stdin
++# as it is here.  It's a bash3ism, see BUGS.
++# Furthermore, the filename and line are never even displayed
++# on bash2.  Therefore, just wipe the filename and line nuber out
++# completely and this test should pass everywhere.
++
++
+ cd &quot;$TESTDIR&quot;
+-tmtest $CFG -q - &lt;&lt;-EOL
++tmtest $CFG -q - &lt;&lt;-EOL | sed -re &quot;s/ on.*line [0-9]+/ on line LL/&quot;
+ 	ASSERT -1 -eq 1
+ 	echo it ran
+ 	STDOUT:
+ 	it ran
+ EOL
+ 
+-# The wrong line number is displayed when the test is fed on stdin
+-# as it is here.  It's a bash3ism, see BUGS.
+-# Furthermore, the filename and line are never even displayed
+-# on bash2.  Therefore, just wipe the filename and line nuber out
+-# completely and this test should pass everywhere.
+-MODIFY:
+-  s/ on.*line \d+//
+ 
+ STDOUT:
+-ABRT (STDIN)                   assertion failed: &quot;-1 -eq 1&quot;
++ABRT (STDIN)                   assertion failed on line LL: &quot;-1 -eq 1&quot;
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/02-running/13-DisabledDir.test
+===================================================================
+--- trunk/test/02-running/13-DisabledDir.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/13-DisabledDir.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -19,16 +19,14 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q
++tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY:
+-  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+-dis  t1.test                   by TMTEST.CONF
+-dis  t2.test                   by TMTEST.CONF
++dis  t1.test                   by /tmp/DIR/tmtest.conf
++dis  t2.test                   by /tmp/DIR/tmtest.conf
+ 
+ 2 tests run, 0 successes, 0 failures.
+
+Modified: trunk/test/02-running/14-AbortConf.test
+===================================================================
+--- trunk/test/02-running/14-AbortConf.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/14-AbortConf.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -22,15 +22,13 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q
++tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY:
+-  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+-ABRT t1.test                   by TMTEST.CONF: bail from config
++ABRT t1.test                   by /tmp/DIR/tmtest.conf: bail from config
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/02-running/15-DisabledDir.test
+===================================================================
+--- trunk/test/02-running/15-DisabledDir.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/15-DisabledDir.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -20,16 +20,14 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q
++tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY:
+-  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+-dis  t1.test                   by TMTEST.CONF: this is the reason
+-dis  t2.test                   by TMTEST.CONF: this is the reason
++dis  t1.test                   by /tmp/DIR/tmtest.conf: this is the reason
++dis  t2.test                   by /tmp/DIR/tmtest.conf: this is the reason
+ 
+ 2 tests run, 0 successes, 0 failures.
+
+Modified: trunk/test/02-running/16-ConfigError.test
+===================================================================
+--- trunk/test/02-running/16-ConfigError.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/16-ConfigError.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,6 +1,10 @@
+ # Ensures that even if config files generate errors, tests will
+ # still try to run.  Config file errors go to stderr.
+ 
++# TODO: figure out how to rewrite stderr.  That may require some
++# assistance from tmtest...  After 0.98's streaming changes though.
++# 	tmtest $CFG -q 2&gt; &gt;( REPLACE &quot;$dir&quot; /tmp/DIR &gt;&amp;2 )
++
+ MKDIR dir
+ cd &quot;$dir&quot;
+ 
+@@ -21,13 +25,13 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q
++tmtest $CFG -q 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY:
+-  s/^\/.*\/tmtest.conf/TMTEST.CONF/
+ STDOUT:
++/tmp/DIR/tmtest.conf: line 2: dotheyspeakbocceonwhat: command not found
++/tmp/DIR/tmtest.conf: line 2: dotheyspeakbocceonwhat: command not found
+ 
+ Processing .
+ ok   t1.test 
+@@ -35,5 +39,3 @@
+ 
+ 2 tests run, 2 successes, 0 failures.
+ STDERR:
+-TMTEST.CONF: line 2: dotheyspeakbocceonwhat: command not found
+-TMTEST.CONF: line 2: dotheyspeakbocceonwhat: command not found
+
+Modified: trunk/test/02-running/17-ConfigError.test
+===================================================================
+--- trunk/test/02-running/17-ConfigError.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/17-ConfigError.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -2,6 +2,10 @@
+ # config files which mark us pedantic.  This should preven the
+ # tests from being run if there are config errors.
+ 
++# TODO: this pipes stderr to stdout so it can be rewritten.
++# That's bad news and needs to be fixed.
++
++
+ MKDIR dir
+ cd &quot;$dir&quot;
+ 
+@@ -23,20 +27,17 @@
+ 	he
+ EOs
+ 
+-tmtest $CFG -q
++tmtest $CFG -q 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY:
+-	s/^\/.*\/tmtest.conf/TMTEST.CONF/
+-	s/ in \/.*\/tmtest.conf/ in TMTEST.CONF/
+ STDOUT:
++/tmp/DIR/tmtest.conf: line 3: dotheyspeakbocceonwhat: command not found
++/tmp/DIR/tmtest.conf: line 3: dotheyspeakbocceonwhat: command not found
+ 
+ Processing .
+-ERR  t1.test                   error in TMTEST.CONF
+-ERR  t2.test                   error in TMTEST.CONF
++ERR  t1.test                   error in /tmp/DIR/tmtest.conf
++ERR  t2.test                   error in /tmp/DIR/tmtest.conf
+ 
+ 2 tests run, 0 successes, 2 failures.
+ STDERR:
+-TMTEST.CONF: line 3: dotheyspeakbocceonwhat: command not found
+-TMTEST.CONF: line 3: dotheyspeakbocceonwhat: command not found
+
+Modified: trunk/test/02-running/18-TestError.test
+===================================================================
+--- trunk/test/02-running/18-TestError.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/18-TestError.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,7 +1,7 @@
+ # Sees what happens when we're in pedantic mode and there's an error
+ # in the test file.
+ 
+-tmtest $args -o - &lt;&lt;-EOL
++tmtest $args -o - &lt;&lt;-EOL | sed -re &quot;s/: line [0-9]+:/: line BLAH:/&quot; | INDENT &quot;  &quot;
+ 	set -e
+ 	iusedtobullseyewompratsinmypants
+ 	echo it ran
+@@ -9,10 +9,6 @@
+ 	it ran
+ EOL
+ 
+-# stupid bash3 won't allow LINENO=0 to set the proper lineno.
+-MODIFY:
+-  s/: line \d+:/: line BLAH:/
+-  s/^(\S)/  $1/
+ 
+ STDOUT:
+   set -e
+
+Modified: trunk/test/02-running/21-QuoteFile.test
+===================================================================
+--- trunk/test/02-running/21-QuoteFile.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/02-running/21-QuoteFile.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -16,12 +16,10 @@
+ 	hi
+ EOs
+ 
+-tmtest $CFG -q
++tmtest $CFG -q | REPLACE &quot;$dir&quot; /tmp/DIR
+ rm &quot;vl'hurg.test&quot; '12&quot;.test'
+ 
+ 
+-MODIFY:
+-  s/ by \/.*\/tmtest.conf/ by TMTEST.CONF/
+ STDOUT:
+ 
+ Processing .
+
+Deleted: trunk/test/03-results/05-Abort.test
+===================================================================
+--- trunk/test/03-results/05-Abort.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/05-Abort.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,24 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is aborted.
+-
+-
+-
+-tmtest -q - &lt;&lt;-EOL
+-	ABORT
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	right output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDOUT:
+-ABRT (STDIN)                   
+-
+-1 test run, 0 successes, 1 failure.
+
+Deleted: trunk/test/03-results/05-Disable.test
+===================================================================
+--- trunk/test/03-results/05-Disable.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/05-Disable.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,24 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is disabled.
+-
+-
+-
+-tmtest -q - &lt;&lt;-EOL
+-	DISABLED
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	right output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDOUT:
+-dis  (STDIN)                   
+-
+-1 test run, 0 successes, 0 failures.
+
+Deleted: trunk/test/03-results/06-Abort2.test
+===================================================================
+--- trunk/test/03-results/06-Abort2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/06-Abort2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,24 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is aborted and gives a reason.
+-
+-
+-tmtest -q - &lt;&lt;-EOL
+-	ABORT: This is the reason
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	wrong output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDERR:
+-STDOUT:
+-ABRT (STDIN)                   This is the reason
+-
+-1 test run, 0 successes, 1 failure.
+
+Deleted: trunk/test/03-results/06-Disable2.test
+===================================================================
+--- trunk/test/03-results/06-Disable2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/06-Disable2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,24 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is disabled and gives a reason.
+-
+-
+-tmtest -q - &lt;&lt;-EOL
+-	DISABLED: This is the reason
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	wrong output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDERR:
+-STDOUT:
+-dis  (STDIN)                   This is the reason
+-
+-1 test run, 0 successes, 0 failures.
+
+Deleted: trunk/test/03-results/07-Abort3.test
+===================================================================
+--- trunk/test/03-results/07-Abort3.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/07-Abort3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,24 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is aborted but output is selected.
+-
+-
+-tmtest -q -o - &lt;&lt;-EOL
+-	ABORT This is the reason
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	wrong output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDOUT:
+-ABORT This is the reason
+-echo &quot;right output&quot;
+-STDERR:
+-ERROR Test was aborted: This is the reason
+
+Deleted: trunk/test/03-results/07-Disable3.test
+===================================================================
+--- trunk/test/03-results/07-Disable3.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/07-Disable3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,24 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is disabled but output is selected.
+-
+-
+-tmtest -q -o - &lt;&lt;-EOL
+-	DISABLED This is the reason
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	wrong output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDOUT:
+-DISABLED This is the reason
+-echo &quot;right output&quot;
+-STDERR:
+-ERROR Test is disabled: This is the reason
+
+Deleted: trunk/test/03-results/08-Abort4.test
+===================================================================
+--- trunk/test/03-results/08-Abort4.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/08-Abort4.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,29 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is aborted and gives 
+-# only whitespace as a reason.
+-
+-# this is really weird...  I would expect the colon to be printed
+-# because we DO have a disabled reason -- it's just empty.  But
+-# for some reason it's not.  I'd like to know why.  TODO
+-# dis  (STDIN)                   :    
+-
+-
+-tmtest -q - &lt;&lt;-EOL
+-	ABORT: &quot;   &quot;
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	wrong output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDOUT:
+-ABRT (STDIN)                   
+-
+-1 test run, 0 successes, 1 failure.
+
+Deleted: trunk/test/03-results/08-Disable4.test
+===================================================================
+--- trunk/test/03-results/08-Disable4.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/08-Disable4.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,29 +0,0 @@
+-# author: Scott Bronson
+-# date:   14 Nov 2004
+-
+-# Verifies what happens when a test is disabled and gives 
+-# only whitespace as a reason.
+-
+-# this is really weird...  I would expect the colon to be printed
+-# because we DO have a disabled reason -- it's just empty.  But
+-# for some reason it's not.  I'd like to know why.  TODO
+-# dis  (STDIN)                   :    
+-
+-
+-tmtest -q - &lt;&lt;-EOL
+-	DISABLED: &quot;   &quot;
+-	echo &quot;right output&quot;
+-	STDOUT:
+-	wrong output
+-EOL
+-
+-
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+-STDOUT:
+-dis  (STDIN)                   
+-
+-1 test run, 0 successes, 0 failures.
+
+Deleted: trunk/test/03-results/09-NoNLMod.test
+===================================================================
+--- trunk/test/03-results/09-NoNLMod.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/09-NoNLMod.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,27 +0,0 @@
+-# Scott Bronson
+-# 26 Feb 2006
+-#
+-# Ensures that a test's stdout need not end in &quot;\n&quot; for the test
+-# to pass (see --no-trailing-newline in testfile(5).  This adds a
+-# modify clause because, alas, using a modify clause changes the
+-# code path for the comparison.  This is one reason why modify
+-# clauses are evil...
+-#
+-# Also see: 09-NoNL.test
+-#
+-# (back when we were parsing tests using re2c, lines needed to be
+-# less than BUFSIZ and the results always had to end in a newline).
+-
+-DISABLED &quot;MODIFY won't work here.&quot;
+-
+-tmtest -q - &lt;&lt;-EOL
+-    echo -n Howdy
+-    MODIFY:
+-      s/How/Wen/
+-    STDOUT: -n
+-    Wendy
+-EOL
+-STDOUT: 
+-ok   (STDIN)
+-
+-1 test run, 1 success, 0 failures.
+
+Modified: trunk/test/03-results/11-NoNLOutput.test
+===================================================================
+--- trunk/test/03-results/11-NoNLOutput.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/11-NoNLOutput.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -9,15 +9,12 @@
+ # (back when we were parsing tests using re2c, lines needed to be
+ # less than BUFSIZ and the results always had to end in a newline).
+ 
+-tmtest -o -q - &lt;&lt;-EOL
++tmtest -o -q - &lt;&lt;-EOL | INDENT &quot;   &quot;
+ 	echo -n Howdy
+ 	STDOUT: -n
+ 	Howdy
+ EOL
+ 
+-MODIFY:
+-   s/^(.)/   $1/
+-
+ STDOUT:
+    echo -n Howdy
+    STDOUT: -n
+
+Modified: trunk/test/03-results/11-NoNLOutput2.test
+===================================================================
+--- trunk/test/03-results/11-NoNLOutput2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/11-NoNLOutput2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -9,14 +9,12 @@
+ # (back when we were parsing tests using re2c, lines needed to be
+ # less than BUFSIZ and the results always had to end in a newline).
+ 
+-tmtest -o -q - &lt;&lt;-EOL
++tmtest -o -q - &lt;&lt;-EOL | INDENT &quot;   &quot;
+ 	echo -n Howdy
+ 	STDOUT: --no-trailing-newline
+ 	Howdy
+ EOL
+ 
+-MODIFY:
+-   s/^(.)/   $1/
+ 
+ STDOUT:
+    echo -n Howdy
+
+Deleted: trunk/test/03-results/20-Modify.test
+===================================================================
+--- trunk/test/03-results/20-Modify.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/20-Modify.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,14 +0,0 @@
+-# Ensures a simple substitution works.
+-
+-
+-tmtest -q - &lt;&lt;-EOL
+-	echo Howdy
+-	MODIFY:
+-      s/Howdy/HOWDY/
+-	STDOUT :
+-	HOWDY
+-EOL
+-STDOUT:
+-ok   (STDIN) 
+-
+-1 test run, 1 success, 0 failures.
+
+Deleted: trunk/test/03-results/21-Modify.test
+===================================================================
+--- trunk/test/03-results/21-Modify.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/21-Modify.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,14 +0,0 @@
+-# Ensures a simple substitution works, even when it's not
+-# on the same line as the section name.
+-
+-tmtest -q - &lt;&lt;-EOL
+-	echo Howdy
+-	MODIFY:
+-		s/Howdy/HOWDY/
+-	STDOUT:
+-	HOWDY
+-EOL
+-STDOUT:
+-ok   (STDIN) 
+-
+-1 test run, 1 success, 0 failures.
+
+Deleted: trunk/test/03-results/22-Modify2.test
+===================================================================
+--- trunk/test/03-results/22-Modify2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/22-Modify2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,15 +0,0 @@
+-# Ensures all 3 substitutions work.
+-
+-tmtest -q - &lt;&lt;-EOL
+-	echo Howdy Hi Hody
+-	MODIFY :
+-		s/Howdy/HOWDY/
+-		s/Hody/HODY/
+-		s/Hi/HI/
+-	STDOUT :
+-	HOWDY HI HODY
+-EOL
+-STDOUT:
+-ok   (STDIN) 
+-
+-1 test run, 1 success, 0 failures.
+
+Deleted: trunk/test/03-results/23-Modify2.test
+===================================================================
+--- trunk/test/03-results/23-Modify2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/23-Modify2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,15 +0,0 @@
+-# Ensures multiple substitutions work with multiple options.
+-
+-tmtest -q - &lt;&lt;-EOL
+-	echo hoWdY Hody Hi Hody
+-	MODIFY :
+-		s/Howdy/HOWDY/i
+-		s/Hody/HODY/g
+-		s/hi/HI/
+-	STDOUT :
+-	HOWDY HODY Hi HODY
+-EOL
+-STDOUT:
+-ok   (STDIN) 
+-
+-1 test run, 1 success, 0 failures.
+
+Deleted: trunk/test/03-results/24-Modify2.test
+===================================================================
+--- trunk/test/03-results/24-Modify2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/24-Modify2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,13 +0,0 @@
+-tmtest -q - &lt;&lt;-EOL
+-	echo hoWdY Hody Hi Hody
+-	MODIFY :
+-		s/Howdy/HOWDY/i
+-		s/Hody/HODY/g
+-		s/hi/HI/
+-	STDOUT :
+-	HOWDY HODY Hi HODY
+-EOL
+-STDOUT:
+-ok   (STDIN) 
+-
+-1 test run, 1 success, 0 failures.
+
+Deleted: trunk/test/03-results/25-Modify3.test
+===================================================================
+--- trunk/test/03-results/25-Modify3.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/03-results/25-Modify3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,25 +0,0 @@
+-# Ensures substitutions work on multiple lines.
+-
+-tmtest -q - &lt;&lt;-EOL1
+-	cat &lt;&lt;-EOL2
+-		Cat fud. Fud.  FUD.  fUd.
+-		Look at me!  I'm a cowboy.
+-		Howdy howdy howdy.
+-		And more cat Fud.  high.
+-	EOL2
+-
+-	MODIFY :
+-		s/Howdy/HOWDY/i
+-		s/fud/FUD/gi
+-		s/hi/HI/
+-	STDOUT :
+-	Cat FUD. FUD.  FUD.  FUD.
+-	Look at me!  I'm a cowboy.
+-	HOWDY howdy howdy.
+-	And more cat FUD.  HIgh.
+-EOL1
+-
+-STDOUT:
+-ok   (STDIN) 
+-
+-1 test run, 1 success, 0 failures.
+
+Modified: trunk/test/04-diff/01-Diff.test
+===================================================================
+--- trunk/test/04-diff/01-Diff.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/01-Diff.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -7,20 +7,15 @@
+ # updated for 2.0 on 27 Jan 2005
+ 
+ 
+-tmtest --diff - &lt;&lt;-EOL
++tmtest --diff - &lt;&lt;-EOL | FIX_DIFF
+     echo &quot;right output&quot;
+     STDOUT:
+     wrong output
+ EOL
+ 
+ 
+-MODIFY:
+-    s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-    s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,5 @@
+      echo &quot;right output&quot;
+
+Modified: trunk/test/04-diff/02-MultiDiff.test
+===================================================================
+--- trunk/test/04-diff/02-MultiDiff.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/02-MultiDiff.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -18,22 +18,18 @@
+ 	test 2 wrong output
+ EOF
+ 
+-tmtest --all-files -d &quot;$t1&quot; &quot;$t2&quot;
++tmtest --all-files -d &quot;$t1&quot; &quot;$t2&quot; | FIX_DIFF
+ 
+ 
+-MODIFY:
+-  s/^\-\-\-.*\/tmp\/tmtest.*/--- \/tmp\/testfile DATE TIME TZ/,
+-  s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+ STDOUT:
+---- /tmp/testfile DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,3 @@
+  echo &quot;test 1 right output&quot;
+  STDOUT:
+ -test 1 wrong output
+ +test 1 right output
+---- /tmp/testfile DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,3 @@
+  echo &quot;test 2 right output&quot;
+
+Modified: trunk/test/04-diff/05-AbortDiff.test
+===================================================================
+--- trunk/test/04-diff/05-AbortDiff.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/05-AbortDiff.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest --diff - &lt;&lt;-EOL
++tmtest --diff - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -13,13 +13,8 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  ABORT
+
+Modified: trunk/test/04-diff/05-DisableDiff.test
+===================================================================
+--- trunk/test/04-diff/05-DisableDiff.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/05-DisableDiff.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -13,13 +13,9 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+ 
+-
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  DISABLED
+
+Modified: trunk/test/04-diff/06-AbortDiff2.test
+===================================================================
+--- trunk/test/04-diff/06-AbortDiff2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/06-AbortDiff2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a diff is aborted and gives a reason.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT: This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -12,15 +12,10 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDERR:
+ ERROR Test was aborted: This is the reason
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  ABORT: This is the reason
+
+Modified: trunk/test/04-diff/06-DisableDiff2.test
+===================================================================
+--- trunk/test/04-diff/06-DisableDiff2.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/06-DisableDiff2.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -4,7 +4,7 @@
+ # Verifies what happens when a diff is disabled and gives a reason.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED: This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -12,15 +12,11 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+ 
+-
+ STDERR:
+ ERROR Test is disabled: This is the reason
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  DISABLED: This is the reason
+
+Modified: trunk/test/04-diff/07-AbortDiff3.test
+===================================================================
+--- trunk/test/04-diff/07-AbortDiff3.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/07-AbortDiff3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -6,7 +6,7 @@
+ 
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -14,13 +14,8 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  ABORT This is the reason
+
+Modified: trunk/test/04-diff/07-DisableDiff3.test
+===================================================================
+--- trunk/test/04-diff/07-DisableDiff3.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/07-DisableDiff3.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -6,7 +6,7 @@
+ 
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED This is the reason
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -14,13 +14,8 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  DISABLED This is the reason
+
+Modified: trunk/test/04-diff/08-AbortDiff4.test
+===================================================================
+--- trunk/test/04-diff/08-AbortDiff4.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/08-AbortDiff4.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -8,7 +8,7 @@
+ # printed after the &quot;ERROR Test was aborted&quot;.  TODO.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	ABORT: &quot;   &quot;
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -16,13 +16,8 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  ABORT: &quot;   &quot;
+
+Modified: trunk/test/04-diff/08-DisableDiff4.test
+===================================================================
+--- trunk/test/04-diff/08-DisableDiff4.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/08-DisableDiff4.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -8,7 +8,7 @@
+ # printed after the &quot;ERROR Test is disabled&quot;.  TODO.
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest -d - &lt;&lt;-EOL | FIX_DIFF
+ 	DISABLED: &quot;   &quot;
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -16,13 +16,8 @@
+ EOL
+ 
+ 
+-MODIFY:
+-	s/^\-\-\-.*/--- \/tmp\/STDIN-pid.unique DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+-
+ STDOUT:
+---- /tmp/STDIN-pid.unique DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,4 +1,2 @@
+  DISABLED: &quot;   &quot;
+
+Modified: trunk/test/04-diff/09-MultiLevelDiff.test
+===================================================================
+--- trunk/test/04-diff/09-MultiLevelDiff.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/09-MultiLevelDiff.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -51,45 +51,41 @@
+ EOL
+ 
+ 
+-tmtest --all-files -d
++tmtest --all-files -d | FIX_DIFF
+ 
+ rm -rf t.test one two
+ 
+ 
+-MODIFY:
+-  s/^\-\-\- .*/--- TESTFILE DATE TIME TZ/,
+-  s/^\+\+\+.*/+++ - DATE TIME TZ/
+-
+ STDOUT:
+---- TESTFILE DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,3 @@
+  echo &quot;right output1&quot;
+  STDOUT:
+ -wrong output
+ +right output1
+---- TESTFILE DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,3 @@
+  echo &quot;right output2&quot;
+  STDOUT:
+ -wrong output
+ +right output2
+---- TESTFILE DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,3 @@
+  echo &quot;right output3&quot;
+  STDOUT:
+ -wrong output
+ +right output3
+---- TESTFILE DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,3 @@
+  echo &quot;right output4&quot;
+  STDOUT:
+ -wrong output
+ +right output4
+---- TESTFILE DATE TIME TZ
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1,3 @@
+  echo &quot;right output5&quot;
+
+Modified: trunk/test/04-diff/10-Patch.test
+===================================================================
+--- trunk/test/04-diff/10-Patch.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/10-Patch.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -15,14 +15,11 @@
+ # This is a little exotic...  Patch needs the CWD to be the directory
+ # containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
+ 
+-tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch)
++tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ echo
+ INDENT &quot;\t&quot; &lt; &quot;$tt&quot;
+ 
+-MODIFY:
+-  s/^patching .*/patching FILE/
+-
+ STDOUT:
+ patching FILE
+ And the patched file:
+
+Modified: trunk/test/04-diff/11-MultiPatch.test
+===================================================================
+--- trunk/test/04-diff/11-MultiPatch.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/11-MultiPatch.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -26,7 +26,7 @@
+ 
+ # All tt* files must be in the same directory.
+ 
+-tmtest --all-files -d &quot;$tt1&quot; &quot;$tt2&quot; &quot;$tt3&quot; | (cd `dirname &quot;$tt1&quot;` &amp;&amp; patch)
++tmtest --all-files -d &quot;$tt1&quot; &quot;$tt2&quot; &quot;$tt3&quot; | (cd `dirname &quot;$tt1&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo
+ INDENT &quot;\t&quot; &lt; &quot;$tt1&quot;
+ echo
+@@ -34,8 +34,6 @@
+ echo
+ INDENT &quot;\t&quot; &lt; &quot;$tt3&quot;
+ 
+-MODIFY:
+-  s/^patching .*/patching FILE/
+ 
+ STDOUT:
+ patching FILE
+
+Modified: trunk/test/04-diff/12-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/12-MultiLevelPatch.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/12-MultiLevelPatch.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -51,7 +51,7 @@
+ EOL
+ 
+ 
+-tmtest --all-files -d | patch -p0
++tmtest --all-files -d | patch -p0 | FIX_PATCH
+ echo
+ INDENT &quot;\t&quot; &lt; t.test
+ echo
+@@ -66,9 +66,6 @@
+ rm -rf t.test one two
+ 
+ 
+-MODIFY:
+-  s/^patching .*/patching FILE/
+-
+ STDOUT:
+ patching FILE
+ patching FILE
+
+Modified: trunk/test/04-diff/13-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/13-MultiLevelPatch.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/13-MultiLevelPatch.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -52,7 +52,7 @@
+ 
+ cd two
+ 
+-tmtest --all-files -d .. | patch -p0
++tmtest --all-files -d .. | patch -p0 | FIX_PATCH
+ echo
+ INDENT &quot;\t&quot; &lt; ../t.test
+ echo
+@@ -67,9 +67,6 @@
+ rm -rf ../t.test ../one ../two
+ 
+ 
+-MODIFY:
+-  s/^patching .*/patching FILE/
+-
+ STDOUT:
+ patching FILE
+ patching FILE
+
+Modified: trunk/test/04-diff/17-ConfigError.test
+===================================================================
+--- trunk/test/04-diff/17-ConfigError.test	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/04-diff/17-ConfigError.test	2006-03-05 15:30:53 UTC (rev 105)
+@@ -1,6 +1,9 @@
+ # This is like 17-ConfigError in the running directory except
+ # that it performs a diff.
+ 
++# TODO: We pipe stderr to stdout so it can be rewritten.
++# This needs to be changed!!
++
+ # BUG: notice that the diff IS STILL PRODUCED!  It just erases
+ # all the sections.  This is bad, of course.  Unfortunately,
+ # until we have dynamic status and can terminate the test
+@@ -30,34 +33,25 @@
+ 	he
+ EOs
+ 
+-tmtest -d
++tmtest -d 2&gt;&amp;1 | REPLACE &quot;$dir&quot; /tmp/DIR | FIX_DIFF
+ rm tmtest.conf t1.test t2.test
+ 
+ 
+-MODIFY:
+-	# blow away changing data in the erroneous diff
+-	s/^\-\-\- t1.test.*/--- T1.TEST DATE TIME TZ/
+-	s/^\-\-\- t2.test.*/--- T2.TEST DATE TIME TZ/
+-	s/^\+\+\+.*/+++ - DATE TIME TZ/
+-	# blow away filenames in the STDERR
+-	s/^\/.*\/tmtest.conf/TMTEST.CONF/
+-	s/ in \/.*\/tmtest.conf/ in TMTEST.CONF/
+-
+ STDOUT:
+---- T1.TEST DATE TIME TZ
++/tmp/DIR/tmtest.conf: line 3: dotheyspeakbocceonwhat: command not found
++Error: t1.test was not started due to errors in /tmp/DIR/tmtest.conf.
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1 @@
+  echo hi
+ -STDOUT:
+ -hi
+---- T2.TEST DATE TIME TZ
++/tmp/DIR/tmtest.conf: line 3: dotheyspeakbocceonwhat: command not found
++Error: t2.test was not started due to errors in /tmp/DIR/tmtest.conf.
++--- /tmp/FILE DATE TIME TZ
+ +++ - DATE TIME TZ
+ @@ -1,3 +1 @@
+  echo he
+ -STDOUT:
+ -he
+ STDERR:
+-TMTEST.CONF: line 3: dotheyspeakbocceonwhat: command not found
+-Error: t1.test was not started due to errors in TMTEST.CONF.
+-TMTEST.CONF: line 3: dotheyspeakbocceonwhat: command not found
+-Error: t2.test was not started due to errors in TMTEST.CONF.
+
+Modified: trunk/test/README
+===================================================================
+--- trunk/test/README	2006-03-05 05:07:12 UTC (rev 104)
++++ trunk/test/README	2006-03-05 15:30:53 UTC (rev 105)
+@@ -21,10 +21,12 @@
+ 03-results: tests the results
+     Ensures that we compare the test results properly.
+     For instance, verifies that we handle results that don't
+-    end in newlines, binary characters, etc. properly.
++    end in newlines, binary characters, etc. properly.  If it doesn't
++	exercise the comparison code, a test doesn't belong in here.
+ 
+ 04-diff: ensures diffing and patching works
+ 
+ 09-docs: tests that appear in our documentation.
+     This ensures that tmtest behaves exactly like our docs say it will.
+ 
++
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000021.html">[Tmtest-commits] [104] trunk: Remove MODIFY from the template, update tests to match.
+</A></li>
+	<LI>Next message: <A HREF="000023.html">[Tmtest-commits] [106] trunk: Eradicate MODIFY.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,1100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [126] trunk: Updated to the newest zutest
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B126%5D%20trunk%3A%20Updated%20to%20the%20newest%20zutest&In-Reply-To=%3C200701250102.l0P12nvm022612%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000042.html">
+   <LINK REL="Next"  HREF="000044.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [126] trunk: Updated to the newest zutest</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B126%5D%20trunk%3A%20Updated%20to%20the%20newest%20zutest&In-Reply-To=%3C200701250102.l0P12nvm022612%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [126] trunk: Updated to the newest zutest">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Thu Jan 25 02:04:11 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000042.html">[Tmtest-commits] [125] trunk: Remove all exit() calls from all	files except for main.c.
+</A></li>
+        <LI>Next message: <A HREF="000044.html">[Tmtest-commits] [127] trunk: Run the zutest unit tests before we	run our own.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#43">[ date ]</a>
+              <a href="thread.html#43">[ thread ]</a>
+              <a href="subject.html#43">[ subject ]</a>
+              <a href="author.html#43">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 126
+Author:   bronson
+Date:     2007-01-25 02:02:48 +0100 (Thu, 25 Jan 2007)
+
+Log Message:
+-----------
+Updated to the newest zutest
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/TODO
+    trunk/test/02-running/03-Unit-Tests.test
+    trunk/zutest.c
+    trunk/zutest.h
+
+Removed Paths:
+-------------
+    trunk/zutest-tests.c
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-01-24 23:51:11 UTC (rev 125)
++++ trunk/Makefile	2007-01-25 01:02:48 UTC (rev 126)
+@@ -122,5 +122,5 @@
+ reupdate:
+ 	ls re2c/*.[ch] | (ODIR=`pwd`; cd ../oe; xargs cp --target-directory $$ODIR/re2c)
+ 
+-zutest: zutest.c zutest-tests.c zutest.h
+-	gcc -Wall -Werror -g zutest.c zutest-tests.c -o zutest
++zutest: zutest.c zutest.h Makefile
++	gcc -Wall -Werror -g zutest.c -DZUTEST_MAIN -o zutest
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-01-24 23:51:11 UTC (rev 125)
++++ trunk/TODO	2007-01-25 01:02:48 UTC (rev 126)
+@@ -1,5 +1,4 @@
+ 0.96:
+-- Clean up zutest.h.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+   in the testfile with each line prefixed by :.  Then STDOUT.  No need
+   for this delimiter craziness.
+
+Modified: trunk/test/02-running/03-Unit-Tests.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Tests.test	2007-01-24 23:51:11 UTC (rev 125)
++++ trunk/test/02-running/03-Unit-Tests.test	2007-01-25 01:02:48 UTC (rev 126)
+@@ -3,4 +3,4 @@
+ $tmtest --run-unit-tests
+ 
+ STDOUT:
+-6 tests run, 6 successes.
++All OK.  6 tests run, 6 successes (57 assertions).
+
+Deleted: trunk/zutest-tests.c
+===================================================================
+--- trunk/zutest-tests.c	2007-01-24 23:51:11 UTC (rev 125)
++++ trunk/zutest-tests.c	2007-01-25 01:02:48 UTC (rev 126)
+@@ -1,242 +0,0 @@
+-/* zutest.c
+- * Scott Bronson
+- * 6 Mar 2006
+- *
+- * Runs a bunch of unit tests.  Ensures each macro expands without error
+- * and passes a simple test.  Does not test each macro for all failure
+- * modes because that would be a hell of a lot of code.
+- *
+- * A certain number of tests are expected to fail.  If the name of a
+- * failing test does not end in &quot;_fail&quot; then it is NOT expected to fail.
+- */
+-
+-#include &quot;zutest.h&quot;
+-#include &lt;string.h&gt;
+-
+-
+-void test_fail()
+-{
+-	Fail(&quot;Gone!&quot;);
+-	Fail(&quot;Won't be printed&quot;);
+-}
+-
+-
+-void test_assert_int()
+-{
+-	int a=4, b=3, c=4;
+-
+-	// These should all pass
+-	AssertEq(a,c);
+-	AssertNe(a,b);
+-	AssertGt(a,b);
+-	AssertGe(a,b);
+-	AssertGe(a,c);
+-	AssertLt(b,a);
+-	AssertLe(b,a);
+-	AssertLe(c,a);
+-	AssertIntEq(a,c);
+-	AssertIntNe(a,b);
+-	AssertIntGt(a,b);
+-	AssertIntGe(a,b);
+-	AssertIntGe(a,c);
+-	AssertIntLt(b,a);
+-	AssertIntLe(b,a);
+-	AssertIntLe(c,a);
+-	AssertEqHex(a,c);
+-	AssertNeHex(a,b);
+-	AssertGtHex(a,b);
+-	AssertGeHex(a,b);
+-	AssertGeHex(a,c);
+-	AssertLtHex(b,a);
+-	AssertLeHex(b,a);
+-	AssertLeHex(c,a);
+-}
+-
+-void test_assert_int_eq_fail()
+-{
+-	int a=4, b=3;
+-	AssertEq(a,b);
+-}
+-void test_assert_int_ne_fail()
+-{
+-	int a=4, b=3;
+-	AssertNe(a,b);
+-}
+-void test_assert_int_gt_fail()
+-{
+-	int a=4, b=3;
+-	AssertGt(a,b);
+-}
+-void test_assert_int_ge_fail()
+-{
+-	int a=4, b=3;
+-	AssertGe(a,b);
+-}
+-void test_assert_int_lt_fail()
+-{
+-	int a=4, b=3;
+-	AssertLt(a,b);
+-}
+-void test_assert_int_le_fail()
+-{
+-	int a=4, b=3;
+-	AssertLe(a,b);
+-}
+-
+-void test_assert_ptr()
+-{
+-	int a, b;
+-	int *ap = &a;
+-	int *bp = &b;
+-	int *cp = &a;
+-	int *n = NULL;
+-
+-	// These should all pass
+-	AssertPtr(ap);
+-	AssertNull(n);
+-	AssertPtrEq(ap,cp);
+-	AssertPtrNe(ap,bp);
+-	AssertPtrGt(ap,bp);
+-	AssertPtrGe(ap,bp);
+-	AssertPtrGe(ap,cp);
+-	AssertPtrLt(bp,ap);
+-	AssertPtrLe(bp,ap);
+-	AssertPtrLe(cp,ap);
+-}
+-
+-void test_assert_ptr_fail()
+-{
+-	AssertPtr(NULL);
+-}
+-
+-void test_assert_ptr_null_fail()
+-{
+-	void (*p)() = &amp;test_assert_ptr_null_fail;
+-	AssertPtrNull(p);
+-}
+-
+-void test_assert_int_hex_eq_fail()
+-{
+-	int a=431, b=577;
+-	AssertEqHex(a,b);
+-}
+-
+-void test_assert_float()
+-{
+-	float a=0.0004, b=0.0003, c=0.0004;
+-
+-	// These should all pass
+-	AssertFloatEq(a,c);
+-	AssertFloatNe(a,b);
+-	AssertFloatGt(a,b);
+-	AssertFloatGe(a,b);
+-	AssertFloatGe(a,c);
+-	AssertFloatLt(b,a);
+-	AssertFloatLe(b,a);
+-	AssertFloatLe(c,a);
+-	AssertDblEq(a,c);
+-	AssertDblNe(a,b);
+-	AssertDblGt(a,b);
+-	AssertDblGe(a,b);
+-	AssertDblGe(a,c);
+-	AssertDblLt(b,a);
+-	AssertDblLe(b,a);
+-	AssertDblLe(c,a);
+-	AssertDoubleEq(a,c);
+-	AssertDoubleNe(a,b);
+-	AssertDoubleGt(a,b);
+-	AssertDoubleGe(a,b);
+-	AssertDoubleGe(a,c);
+-	AssertDoubleLt(b,a);
+-	AssertDoubleLe(b,a);
+-	AssertDoubleLe(c,a);
+-}
+-
+-
+-void test_assert_float_eq_fail()
+-{
+-	double a=1.0/3.0, b=0.4;
+-	AssertFloatEq(a,b);
+-}
+-
+-void test_assert_strings()
+-{
+-	const char *a = &quot;Bogozity&quot;;
+-	const char *b = &quot;Arclamp&quot;;
+-	const char *c = &quot;Bogozity&quot;;
+-
+-	// These should all pass
+-	AssertStrEq(a,c);
+-	AssertStrNe(a,b);
+-	AssertStrGt(a,b);
+-	AssertStrGe(a,b);
+-	AssertStrGe(a,c);
+-	AssertStrLt(b,a);
+-	AssertStrLe(b,a);
+-	AssertStrLe(c,a);
+-}
+-
+-void test_assert_string_eq_fail()
+-{
+-	const char *a = &quot;A&quot;;
+-	const char *b = &quot;a&quot;;
+-
+-	AssertStrEq(a,b);
+-}
+-
+-
+-void test_assert_string_ne_fail()
+-{
+-	const char *a = &quot;A&quot;;
+-	const char *b = &quot;A&quot;;
+-
+-	AssertStrNe(a,b);
+-}
+-
+-void test_assert_string_gt_fail()
+-{
+-	const char *a = &quot;A&quot;;
+-	const char *b = &quot;A&quot;;
+-
+-	AssertStrGt(a,b);
+-}
+-
+-zutest_proc zutest_tests[] = {
+-	test_assert_int,
+-	test_assert_ptr,
+-	test_assert_float,
+-	test_assert_strings,
+-	NULL
+-};
+-
+-zutest_proc zutest_empty_suite[] = {
+-	NULL
+-};
+-
+-zutest_proc zutest_failures[] = {
+-	test_fail,
+-	test_assert_int_eq_fail,
+-	test_assert_ptr_fail,
+-	test_assert_ptr_null_fail,
+-	test_assert_int_hex_eq_fail,
+-	test_assert_float_eq_fail,
+-	test_assert_string_eq_fail,
+-	test_assert_string_ne_fail,
+-	test_assert_string_gt_fail,
+-	NULL
+-};
+-
+-zutest_suite all_zutests[] = {
+-	zutest_tests,
+-	zutest_empty_suite,
+-	zutest_failures,
+-	NULL
+-};
+-
+-
+-int main(int argc, char **argv)
+-{
+-	run_unit_tests(all_zutests);
+-	return 0;
+-}
+-
+
+Modified: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2007-01-24 23:51:11 UTC (rev 125)
++++ trunk/zutest.c	2007-01-25 01:02:48 UTC (rev 126)
+@@ -1,6 +1,8 @@
+ /* zutest.c
+  * Scott Bronson
+  * 6 Mar 2006
++ *
++ * Version 0.6, 26 Apr 2006
+  */
+ 
+ #include &lt;stdio.h&gt;
+@@ -11,23 +13,34 @@
+ #include &quot;zutest.h&quot;
+ 
+ 
+-/**
+- * A single procedure is called a test.  If any of the asserts fail
+- * within a test, the test itself is stopped but all other tests will
+- * be run.
++/** @file zutest.c
+  *
+- * Most files will contain a number of tests.  These tests are organized
+- * into a suite.  A test suite contains one or more tests.
++ * This file contains all of the test mechanisms provided by the
++ * Zutest unit testing framework.
+  *
+- * Test suites are organized into a test battery.  You don't need to
+- * know this except when specifying all the suites that will be tested.
++ * A single function is called a test.  If any of the asserts fail
++ * within a test, the test itself is stopped and printed as a failure
++ * but all other tests in the current test suite, and all other test
++ * suites, will still be run.
++ *
++ * A test suite consists of a number of tests.  Typically a C file
++ * will include a test suite that lists all the tests in the file.
++ *
++ * TODO: print test results, test suites, etc as they run.
++ *    Add a quiet flag that will suppress printing unless a test fails.
++ *    quiet=0, full printing
++ *    quiet=1, test results not printed
++ *    quiet=2, suite results not printed
++ *    quiet=3, summary not printed.
+  */
+ 
+ 
+-static jmp_buf test_bail;
+-static int tests_run;
+-static int successes;
+-static int failures;
++static jmp_buf test_bail;	///&lt; If a test fails, this is where we end up.
++int zutest_assertions;		///&lt; A goofy statistic, updated by the assertion macros
++static int tests_run;		///&lt; The number of tests that we have run.  successes+failures==tests_run (if not, then there's a bug somewhere).
++static int successes;		///&lt; The number of successful tests run
++static int failures;		///&lt; The number of failed tests run.
++static jmp_buf *inversion;	///&lt; Where to go if the assertion fails.  This is NULL except when running Zutest's internal unit tests.  See test_fail().
+ 
+ 
+ void zutest_fail(const char *file, int line, const char *func, 
+@@ -35,6 +48,11 @@
+ {
+ 	va_list ap;
+ 
++	// If inversion is set, then an assert correctly failed.
++	if(inversion) {
++		longjmp(*inversion, 1);
++	}
++
+ 	fprintf(stderr, &quot;FAIL %s at %s line %d:\n\t&quot;, func, file, line);
+ 	va_start(ap, msg);
+ 	vfprintf(stderr, msg, ap);
+@@ -61,11 +79,11 @@
+ }
+ 
+ 
+-void run_zutest_battery(const zutest_battery battery)
++void run_zutest_suites(const zutest_suites suites)
+ {
+ 	zutest_suite *suite;
+ 
+-	for(suite=battery; *suite; suite++) {
++	for(suite=suites; *suite; suite++) {
+ 		run_zutest_suite(*suite);
+ 	}
+ }
+@@ -74,19 +92,27 @@
+ void print_zutest_results()
+ {
+ 	if(failures == 0) {
+-		printf(&quot;%d tests run, %d successes.\n&quot;, successes, successes);
++		printf(&quot;All OK.  %d test%s run, %d successe%s (%d assertion%s).\n&quot;,
++				successes, (successes == 1 ? &quot;&quot; : &quot;s&quot;),
++				successes, (successes == 1 ? &quot;&quot; : &quot;s&quot;),
++				zutest_assertions, (zutest_assertions == 1 ? &quot;&quot; : &quot;s&quot;));
+ 		return;
+ 	}
+ 
+-	printf(&quot;%d failures of %d tests run!\n&quot;, failures, tests_run);
++	printf(&quot;ERROR: %d failure%s in %d test%s run!\n&quot;,
++			failures, (failures == 1 ? &quot;&quot; : &quot;s&quot;), 
++			tests_run, (tests_run == 1 ? &quot;&quot; : &quot;s&quot;));
+ }
+ 
+ 
+-void run_unit_tests(const zutest_battery battery)
++/** Runs all the unit tests in all the passed-in test suites.
++ */
++
++void run_unit_tests(const zutest_suites suites)
+ {
+-	run_zutest_battery(battery);
++	run_zutest_suites(suites);
+ 	print_zutest_results();
+-	exit(failures &lt; 99 ? failures : 99);
++	exit(failures &lt; 100 ? failures : 100);
+ }
+ 
+ 
+@@ -101,10 +127,283 @@
+  * without doing anything.
+  */
+ 
+-void unit_test_check(int argc, char **argv, const zutest_battery battery)
++void unit_test_check(int argc, char **argv, const zutest_suites suites)
+ {
+ 	if(argc &gt; 1 &amp;&amp; strcmp(argv[1],&quot;--run-unit-tests&quot;) == 0) {
+-		run_unit_tests(battery);
++		run_unit_tests(suites);
+ 	}
+ }
+ 
++
++
++
++
++#if defined(ZUTEST) || defined(ZUTEST_MAIN)
++
++/* This code runs the zutest unit tests to ensure that zutest itself
++ * is working properly.
++ */
++
++
++/** This macro is used to reverse the sense of the tests. 
++ *
++ * To properly test Zutest, we need to ensure that the Assert macros
++ * handle failures too.  Therefore, we occasionally want to reverse
++ * the sense of the macro, where a failure indicates a successful test
++ * and a passing assert means that the test has failed.
++ *
++ * This macro inverts the sense of the contained assertion.
++ * test_failure(AssertEq(a,b)) causes the test to pass
++ * only when the assertion fails (i.e. when a != b).
++ */
++
++#define test_failure(test) 				\
++	do { 								\
++		jmp_buf jb; 					\
++		int val = setjmp(jb); 			\
++		if(val == 0) { 					\
++			inversion = &jb;			\
++			do { test; } while(0);		\
++			inversion = NULL;			\
++			Fail(&quot;This test should have failed: &quot; #test);	\
++		}								\
++		inversion = NULL;				\
++	} while(0)
++
++
++
++void test_assert_int()
++{
++	int a=4, b=3, c=4, z=0, n=-1;
++
++	AssertEq(a,c);
++	AssertNe(a,b);
++	AssertGt(a,b);
++	AssertGe(a,b);
++	AssertGe(a,c);
++	AssertLt(b,a);
++	AssertLe(b,a);
++	AssertLe(c,a);
++
++	test_failure( AssertEq(a,b) );
++	test_failure( AssertNe(a,c) );
++	test_failure( AssertGt(a,c) );
++	test_failure( AssertGt(b,c) );
++	test_failure( AssertGe(b,a) );
++	test_failure( AssertLt(c,a) );
++	test_failure( AssertLt(c,b) );
++	test_failure( AssertLe(a,b) );
++
++	AssertZero(z);
++	test_failure( AssertZero(a) );
++	AssertNonzero(a);
++	test_failure( AssertNonzero(z) );
++
++	AssertPositive(a);
++	test_failure( AssertPositive(z) );
++	test_failure( AssertPositive(n) );
++
++	AssertNonPositive(n);
++	AssertNonPositive(z);
++	test_failure( AssertNonPositive(a) );
++
++	AssertNegative(n);
++	test_failure( AssertNegative(z) );
++	test_failure( AssertNegative(a) );
++
++	AssertNonNegative(a);
++	AssertNonNegative(z);
++	test_failure( AssertNonNegative(n) );
++}
++
++
++void test_assert_hex()
++{
++	int a=4, b=3, c=4, z=0, n=-1;
++
++	AssertEqHex(a,c);
++	AssertNeHex(a,b);
++	AssertGtHex(a,b);
++	AssertGeHex(a,b);
++	AssertGeHex(a,c);
++	AssertLtHex(b,a);
++	AssertLeHex(b,a);
++	AssertLeHex(c,a);
++
++	test_failure( AssertEqHex(a,b) );
++	test_failure( AssertNeHex(a,c) );
++	test_failure( AssertGtHex(a,c) );
++	test_failure( AssertGtHex(b,c) );
++	test_failure( AssertGeHex(b,a) );
++	test_failure( AssertLtHex(c,a) );
++	test_failure( AssertLtHex(c,b) );
++	test_failure( AssertLeHex(a,b) );
++
++	AssertZeroHex(z);
++	test_failure( AssertZeroHex(a) );
++	AssertNonzeroHex(a);
++	test_failure( AssertNonzeroHex(z) );
++
++	AssertPositiveHex(a);
++	test_failure( AssertPositiveHex(z) );
++	test_failure( AssertPositiveHex(n) );
++
++	AssertNonPositiveHex(n);
++	AssertNonPositiveHex(z);
++	test_failure( AssertNonPositiveHex(a) );
++
++	AssertNegativeHex(n);
++	test_failure( AssertNegativeHex(z) );
++	test_failure( AssertNegativeHex(a) );
++
++	AssertNonNegativeHex(a);
++	AssertNonNegativeHex(z);
++	test_failure( AssertNonNegativeHex(n) );
++}
++
++
++void test_assert_ptr()
++{
++	int a, b;
++	int *ap = &a;
++	int *bp = &b;
++	int *cp = &a;
++	int *n = NULL;
++
++	AssertPtr(ap);
++	AssertNull(n);
++
++	test_failure( AssertPtr(n) );
++	test_failure( AssertNull(ap) );
++
++	AssertPtrEq(ap,cp);
++	AssertPtrNe(ap,bp);
++	AssertPtrGt(ap,bp);
++	AssertPtrGe(ap,bp);
++	AssertPtrGe(ap,cp);
++	AssertPtrLt(bp,ap);
++	AssertPtrLe(bp,ap);
++	AssertPtrLe(cp,ap);
++
++	test_failure( AssertPtrEq(ap,bp) );
++	test_failure( AssertPtrNe(ap,cp) );
++	test_failure( AssertPtrGt(ap,cp) );
++	test_failure( AssertPtrGt(bp,cp) );
++	test_failure( AssertPtrGe(bp,ap) );
++	test_failure( AssertPtrLt(cp,ap) );
++	test_failure( AssertPtrLt(cp,bp) );
++	test_failure( AssertPtrLe(ap,bp) );
++}
++
++
++void test_assert_float()
++{
++	float a=0.0004, b=0.0003, c=0.0004;
++
++	AssertFloatEq(a,c);
++	AssertFloatNe(a,b);
++	AssertFloatGt(a,b);
++	AssertFloatGe(a,b);
++	AssertFloatGe(a,c);
++	AssertFloatLt(b,a);
++	AssertFloatLe(b,a);
++	AssertFloatLe(c,a);
++
++	test_failure( AssertFloatEq(a,b) );
++	test_failure( AssertFloatNe(a,c) );
++	test_failure( AssertFloatGt(a,c) );
++	test_failure( AssertFloatGt(b,c) );
++	test_failure( AssertFloatGe(b,a) );
++	test_failure( AssertFloatLt(c,a) );
++	test_failure( AssertFloatLt(c,b) );
++	test_failure( AssertFloatLe(a,b) );
++
++	AssertDoubleEq(a,c);
++	AssertDoubleNe(a,b);
++	AssertDoubleGt(a,b);
++	AssertDoubleGe(a,b);
++	AssertDoubleGe(a,c);
++	AssertDoubleLt(b,a);
++	AssertDoubleLe(b,a);
++	AssertDoubleLe(c,a);
++
++	test_failure( AssertDoubleEq(a,b) );
++	test_failure( AssertDoubleNe(a,c) );
++	test_failure( AssertDoubleGt(a,c) );
++	test_failure( AssertDoubleGt(b,c) );
++	test_failure( AssertDoubleGe(b,a) );
++	test_failure( AssertDoubleLt(c,a) );
++	test_failure( AssertDoubleLt(c,b) );
++	test_failure( AssertDoubleLe(a,b) );
++}
++
++
++void test_assert_strings()
++{
++	const char *a = &quot;Bogozity&quot;;
++	const char *b = &quot;Arclamp&quot;;
++	const char *c = &quot;Bogozity&quot;;
++	const char *e = &quot;&quot;;
++	const char *n = NULL;
++
++	AssertStrEq(a,c);
++	AssertStrNe(a,b);
++	AssertStrGt(a,b);
++	AssertStrGe(a,b);
++	AssertStrGe(a,c);
++	AssertStrLt(b,a);
++	AssertStrLe(b,a);
++	AssertStrLe(c,a);
++
++	test_failure( AssertStrEq(a,b) );
++	test_failure( AssertStrNe(a,c) );
++	test_failure( AssertStrGt(a,c) );
++	test_failure( AssertStrGt(b,c) );
++	test_failure( AssertStrGe(b,a) );
++	test_failure( AssertStrLt(c,a) );
++	test_failure( AssertStrLt(c,b) );
++	test_failure( AssertStrLe(a,b) );
++
++	AssertStrEmpty(e);
++	test_failure( AssertStrEmpty(a) );
++	test_failure( AssertStrEmpty(n) );
++
++	AssertStrNonEmpty(a);
++	test_failure( AssertStrNonEmpty(e) );
++	test_failure( AssertStrNonEmpty(n) );
++}
++
++
++zutest_proc zutest_tests[] = {
++	test_assert_int,
++	test_assert_hex,
++	test_assert_ptr,
++	test_assert_float,
++	test_assert_strings,
++	NULL
++};
++
++
++// Ensure that zutest doesn't crash if handed an empty suite.
++zutest_proc zutest_empty_suite[] = {
++	NULL
++};
++
++
++zutest_suite all_zutests[] = {
++	zutest_empty_suite,
++	zutest_tests,
++	NULL
++};
++
++
++#ifdef ZUTEST_MAIN
++int main(int argc, char **argv)
++{
++	run_unit_tests(all_zutests);
++	return 0;
++}
++#endif
++
++#endif
++
+
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-01-24 23:51:11 UTC (rev 125)
++++ trunk/zutest.h	2007-01-25 01:02:48 UTC (rev 126)
+@@ -2,118 +2,270 @@
+  * Scott Bronson
+  * 6 Mar 2006
+  *
+- * This is a ground-up rewrite of Asim Jalis's &quot;CuTest&quot; library.
++ * TODO: make tests self-documenting.  The test name is the same as the
++ * function name, but they should also have a short and long description.
++ * TODO: make zutest suites able to be arranged in a hierarchy.
++ *
++ * Version 0.62, 22 Jan 2007
++ * Version 0.61, 30 Apr 2006
++ */
++
++
++/* @file zutest.h
++ *
++ * This file contains the declarations and all the Assert macros
++ * required to use Zutest in your own applications.
++ *
++ * Zutest is a ground-up rewrite of Asim Jalis's &quot;CuTest&quot; library.
+  * It is released under the MIT License.
++ *
++ * To compile Zutest to run its own unit tests, do this:
++ * 
++ * &lt;pre&gt;
++ * 	$ cc -DZUTEST_MAIN zutest.c -o zutest
++ * 	$ ./zutest
++ * 	4 tests run, 4 successes (132 assertions).
++ * &lt;/pre&gt;
++ *
++ * If your non-gcc compiler complains about a missing __func__ macro,
++ * add -D__func__='&quot;test&quot;' to the compiler's command line.
++ *
++ * See ::zutest_tests for instructions on how to add zutest's
++ * built-in unit tests to your application's test suite.
+  */
+ 
+ 
+-// If your compiler doesn't provide __func__, compile with -D__func__='&quot;test&quot;'
++#ifndef ZUTEST_H
++#define ZUTEST_H
++
++// Note that Fail doesn't increment zutest_assertions (the number of assertions
++// that have been made) because it doesn't assert anything.  It only fails.
++// If you call fail, you might want to increment zutest_assertions
++// manually if you care about this number.  Normally you won't care.
+ #define Fail(...) zutest_fail(__FILE__, __LINE__, __func__, __VA_ARGS__)
++
+ // If the expression returns false, it is printed in the failure message.
+-#define Assert(x) do { if(!(x)) { Fail(#x); } } while(0)
++#define Assert(x) do { zutest_assertions++; \
++		if(!(x)) { Fail(#x); } } while(0)
++
+ // If the expression returns false, the given format string is printed.
+-#define AssertFmt(x,...) do { if(!(x)) { Fail(__VA_ARGS__); } } while(0)
+-// On failure the expression is printed followed by the format string.
+-#define AssertExp(ex,...) AssertFmt(ex,#ex __VA_ARGS__)
++// This is the same as Assert, just with much more helpful error messages.
++// For instance: AssertFmt(isdigit(x), &quot;isdigit but x=='%c'&quot;, x);
++#define AssertFmt(x,...) do { zutest_assertions++; \
++		if(!(x)) { Fail(__VA_ARGS__); } } while(0)
+ 
+-#define AssertExpType(x,y,op,type,fmt) \
+-	AssertExp(x op y,&quot; but &quot;#x&quot;==&quot;fmt&quot; and &quot;#y&quot;==&quot;fmt&quot;!&quot;,(type)x,(type)y)
+-
+-// get ready...
+-// These only work with integer and pointer values!
++// integers, longs, chars...
+ #define AssertEq(x,y) AssertOp(x,y,==)
+ #define AssertNe(x,y) AssertOp(x,y,!=)
+ #define AssertGt(x,y) AssertOp(x,y,&gt;)
+ #define AssertGe(x,y) AssertOp(x,y,&gt;=)
+ #define AssertLt(x,y) AssertOp(x,y,&lt;)
+ #define AssertLe(x,y) AssertOp(x,y,&lt;=)
+-#define AssertPositive(x) AssertOp(x,0,&gt;)
+-#define AssertNegative(x) AssertOp(x,0,&lt;)
+-#define AssertNonNegative(x) AssertOp(x,0,&gt;=)
+-#define AssertIntEq(x,y) AssertOp(x,y,==)
+-#define AssertIntNe(x,y) AssertOp(x,y,!=)
+-#define AssertIntGt(x,y) AssertOp(x,y,&gt;)
+-#define AssertIntGe(x,y) AssertOp(x,y,&gt;=)
+-#define AssertIntLt(x,y) AssertOp(x,y,&lt;)
+-#define AssertIntLe(x,y) AssertOp(x,y,&lt;=)
+-#define AssertOp(x,y,op) AssertExpType(x,y,op,long,&quot;%ld&quot;)
+-// Same as above but the values are printed in hex rather than decimal.
++
++#define AssertZero(x) AssertOpToZero(x,==)
++#define AssertNonzero(x) AssertOpToZero(x,!=)
++#define AssertNonZero(x) AssertNonzero(x)
++#define AssertPositive(x) AssertOpToZero(x,&gt;);
++#define AssertNegative(x) AssertOpToZero(x,&lt;);
++#define AssertNonNegative(x) AssertOpToZero(x,&gt;=);
++#define AssertNonPositive(x) AssertOpToZero(x,&lt;=);
++
++// Also integers but failure values are printed in hex rather than decimal.
+ #define AssertEqHex(x,y) AssertHexOp(x,y,==)
+ #define AssertNeHex(x,y) AssertHexOp(x,y,!=)
+ #define AssertGtHex(x,y) AssertHexOp(x,y,&gt;)
+ #define AssertGeHex(x,y) AssertHexOp(x,y,&gt;=)
+ #define AssertLtHex(x,y) AssertHexOp(x,y,&lt;)
+ #define AssertLeHex(x,y) AssertHexOp(x,y,&lt;=)
+-// Same as above but all 8 digits are printed
+-// If you give me a 64 bit computer, I will give you 16 digits!
+-#define AssertHexOp(x,y,op) AssertExpType(x,y,op,long,&quot;0x%lX&quot;)
++
++#define AssertZeroHex(x) AssertHexOpToZero(x,==)
++#define AssertNonzeroHex(x) AssertHexOpToZero(x,!=)
++#define AssertNonZeroHex(x) AssertNonzeroHex(x)
++#define AssertPositiveHex(x) AssertHexOpToZero(x,&gt;);
++#define AssertNegativeHex(x) AssertHexOpToZero(x,&lt;);
++#define AssertNonNegativeHex(x) AssertHexOpToZero(x,&gt;=);
++#define AssertNonPositiveHex(x) AssertHexOpToZero(x,&lt;=);
++
++// Pointers...
+ #define AssertPtr(p)  AssertFmt(p != NULL, \
+-		#p&quot; != NULL but &quot;#p&quot;==0x%08lX!&quot;, (unsigned long)p)
++		#p&quot; != NULL but &quot;#p&quot;==0x%lX!&quot;, (unsigned long)p)
+ #define AssertNull(p) AssertFmt(p == NULL, \
+-		#p&quot; == NULL but &quot;#p&quot;==0x%08lX!&quot;, (unsigned long)p)
++		#p&quot; == NULL but &quot;#p&quot;==0x%lX!&quot;, (unsigned long)p)
++#define AssertNonNull(p) AssertPtr(p)
++
+ #define AssertPtrNull(p) AssertNull(p)
++#define AssertPtrNonNull(p) AssertNonNull(p)
+ #define AssertPtrEq(x,y) AssertPtrOp(x,y,==)
+ #define AssertPtrNe(x,y) AssertPtrOp(x,y,!=)
+ #define AssertPtrGt(x,y) AssertPtrOp(x,y,&gt;)
+ #define AssertPtrGe(x,y) AssertPtrOp(x,y,&gt;=)
+ #define AssertPtrLt(x,y) AssertPtrOp(x,y,&lt;)
+ #define AssertPtrLe(x,y) AssertPtrOp(x,y,&lt;=)
+-#define AssertPtrOp(x,y,op) AssertExpType(x,y,op,unsigned long,&quot;0x%lX&quot;)
++
+ // These work with floats and doubles
++// (everything is handled internally as double)
+ #define AssertFloatEq(x,y) AssertFloatOp(x,y,==)
+ #define AssertFloatNe(x,y) AssertFloatOp(x,y,!=)
+ #define AssertFloatGt(x,y) AssertFloatOp(x,y,&gt;)
+ #define AssertFloatGe(x,y) AssertFloatOp(x,y,&gt;=)
+ #define AssertFloatLt(x,y) AssertFloatOp(x,y,&lt;)
+ #define AssertFloatLe(x,y) AssertFloatOp(x,y,&lt;=)
+-// Dbl is implemented the same as Float internally.
+-// We just provide a Dbl and Double names so that the programmer can
+-// use whatever name she prefers and the macro can exactly equal the type.
+-#define AssertDblEq(x,y) AssertFloatOp(x,y,==)
+-#define AssertDblNe(x,y) AssertFloatOp(x,y,!=)
+-#define AssertDblGt(x,y) AssertFloatOp(x,y,&gt;)
+-#define AssertDblGe(x,y) AssertFloatOp(x,y,&gt;=)
+-#define AssertDblLt(x,y) AssertFloatOp(x,y,&lt;)
+-#define AssertDblLe(x,y) AssertFloatOp(x,y,&lt;=)
++// supply Doubles so people don't worry about precision when they see Float
+ #define AssertDoubleEq(x,y) AssertFloatOp(x,y,==)
+ #define AssertDoubleNe(x,y) AssertFloatOp(x,y,!=)
+ #define AssertDoubleGt(x,y) AssertFloatOp(x,y,&gt;)
+ #define AssertDoubleGe(x,y) AssertFloatOp(x,y,&gt;=)
+ #define AssertDoubleLt(x,y) AssertFloatOp(x,y,&lt;)
+ #define AssertDoubleLe(x,y) AssertFloatOp(x,y,&lt;=)
+-#define AssertFloatOp(x,y,op) AssertExpType(x,y,op,double,&quot;%lf&quot;)
+-// These work with strings
++
++// Strings (uses strcmp)...
+ #define AssertStrEq(x,y) AssertStrOp(x,y,EQ,==)
+ #define AssertStrNe(x,y) AssertStrOp(x,y,NE,!=)
+ #define AssertStrGt(x,y) AssertStrOp(x,y,GT,&gt;)
+ #define AssertStrGe(x,y) AssertStrOp(x,y,GE,&gt;=)
+ #define AssertStrLt(x,y) AssertStrOp(x,y,LT,&lt;)
+ #define AssertStrLe(x,y) AssertStrOp(x,y,LE,&lt;=)
++
++// ensures a string is non-null but zero-length
++#define AssertStrEmpty(p) do { zutest_assertions++; \
++		if(!(p)) { Fail(#p&quot; is empty but &quot;#p&quot; is NULL!&quot;); } \
++		if((p)[0]) { Fail(#p&quot; is empty but &quot;#p&quot; is: %s&quot;,p); } \
++	} while(0)
++// ensures a string is non-null and non-zero-length
++#define AssertStrNonEmpty(p) do { zutest_assertions++; \
++		if(!(p)) { Fail(#p&quot; is nonempty but &quot;#p&quot; is NULL!&quot;); } \
++		if(!(p)[0]) { Fail(#p&quot; is nonempty but &quot;#p&quot;[0] is 0&quot;); } \
++	} while(0)
++
++
++
++//
++// helper macros, not intended to be called directly.
++//
++
++// On failure the expression is printed followed by the format string.
++#define AssertExp(ex,...) AssertFmt(ex,#ex __VA_ARGS__)
++// Like AssertExp but enforces a type while performing the comparison.
++#define AssertExpType(x,y,op,type,fmt) \
++	AssertExp((type)x op (type)y,&quot; failed because &quot;#x&quot;==&quot;fmt&quot; and &quot;#y&quot;==&quot;fmt&quot;!&quot;, (type)x,(type)y)
++// It's weird hearing &quot;x==0 failed because x==1 and 0==0&quot; so we'll
++// special-case checking against 0: x==0 failed because x==1).
++#define AssertExpToZero(x,op,type,fmt) \
++	AssertExp((type)x op 0,&quot; failed because &quot;#x&quot;==&quot;fmt&quot;!&quot;, (type)x)
++
++#define AssertOp(x,y,op) AssertExpType(x,y,op,long,&quot;%ld&quot;)
++#define AssertHexOp(x,y,op) AssertExpType(x,y,op,long,&quot;0x%lX&quot;)
++#define AssertOpToZero(x,op) AssertExpToZero(x,op,long,&quot;%ld&quot;)
++#define AssertHexOpToZero(x,op) AssertExpToZero(x,op,long,&quot;0x%lX&quot;)
++#define AssertPtrOp(x,y,op) AssertExpType(x,y,op,unsigned long,&quot;0x%lX&quot;)
++#define AssertFloatOp(x,y,op) AssertExpType(x,y,op,double,&quot;%lf&quot;)
+ #define AssertStrOp(x,y,opn,op) AssertFmt(strcmp(x,y) op 0, \
+ 	#x&quot; &quot;#opn&quot; &quot;#y&quot; but &quot;#x&quot; is \&quot;%s\&quot; and &quot;#y&quot; is \&quot;%s\&quot;!&quot;,x,y)
+ 
+-// if none of those macros above fit your fancy, call fail directly.
+-void zutest_fail(const char *file, int line, const char *func,
+-		const char *msg, ...);
+ 
+ 
++/** Keeps track of how many assertions have been made.
++ * This needs to be updated manually each time an assertion
++ * is made.  The Zutest built-in assertion macros all
++ * update this variable properly.
++ */
+ 
++extern int zutest_assertions;
++
++
++/** A single test
++ *
++ * This routine is called to run the test.  If it returns, the test
++ * succeeds.  If zutest_fail() is called (either directly or indirectly
++ * via an Assert macro), then the test fails.
++ */
+ typedef void (*zutest_proc)();
++
++
++/** A suite of tests
++ *
++ * A zutest_suite is simply a list of tests.  Generally, each .c file
++ * in your project will include a test suite that ensures all the tests
++ * contained in the .c file are run.  A suite is just a NULL-terminated
++ * list of tests.
++ */
+ typedef zutest_proc *zutest_suite;
+-typedef zutest_suite *zutest_battery;
+ 
++
++/** A suite of test suites
++ *
++ * Zutests runs through each test suite in your project, running all the
++ * tests in each suite.  A suite of suites is just a NULL-terminated list
++ * of suites.  This is the topmost data structure used by zutest.
++ * TODO: make it so zutest chan handle an arbitrary hierarchy of suites.
++ * That way this data structure can go away.
++ */
++typedef zutest_suite *zutest_suites;
++
++
++/** Fails the current test.
++ *
++ * This function may only be called from within a ::zutest_proc.
++ *
++ * If none of the built-in Assert macros fit your fancy, you can do the
++ * check on your own and call zutest_fail in the event that it fails.
++ * 
++ * Example:
++ * 
++ * &lt;pre&gt;
++ * if(my_error) {
++ *    zutest_fail(__FILE__, __LINE__, __func__, &quot;Error Message %d&quot;, 1);
++ * }
++ * &lt;/pre&gt;
++ *
++ * But, really, it's easier just to call the Fail() macro.
++ */
++
++void zutest_fail(const char *file, int line, const char *func,
++		const char *msg, ...);
++
++
++/** Runs all the tests in a suite. */
+ void run_zutest_suite(const zutest_suite suite);
+-void run_zutest_battery(const zutest_battery battery);
++/** Runs all the tests in all the suites passed in. */
++void run_zutest_suites(const zutest_suites suites);
++
+ void print_zutest_results();
+ 
+-// Call this on the very first line of your application.  If the user
+-// ran your program with the first arg of &quot;--run-unit-tests&quot;, this will
+-// run the tests and exit.  Otherwise your program will run as normal.
+-// If you would rather create a dedicated executable, just call
+-// run_zutest_battery() directly.
+-void unit_test_check(int argc, char **argv, const zutest_battery battery);
+ 
+-// This runs all the unit tests supplied and then exits.  Use this
+-// if you want to handle the arguments yourself.
+-void run_unit_tests(const zutest_battery battery);
++/** 
++ *
++ * Call this on the very first line of your application.  If the user
++ * ran your program with the first arg of &quot;--run-unit-tests&quot;, this will
++ * run the tests and exit.  Otherwise your program will run as normal.
++ * If you would rather create a dedicated executable, just call
++ * run_zutest_suites() directly.
++ */
+ 
++void unit_test_check(int argc, char **argv, const zutest_suites suites);
++
++/**
++ *
++ * This runs all the unit tests supplied and then exits.  Use this
++ * if you want to handle the arguments yourself.
++ */
++
++void run_unit_tests(const zutest_suites suites);
++
++
++/** Zutest's built-in test suite.
++ *
++ * This allows you to add the Zutest unit test suite to your application's
++ * test suites.  This way, you can ensure that Zutest's unit tests pass
++ * before running your application's.  This is for the especially pedantic. :)
++ *
++ * Unfortunately, there is one test that cannot be run if you do this:
++ * ensuring that zutest properly handles empty test suites.
++ * Other than this one test, adding zutest_tests
++ * to your application's test suite is equivalent to causing zutest to
++ * compile and run its unit tests as described in zutest.h.
++ */
++
++extern zutest_proc zutest_tests[];
++
++#endif
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000042.html">[Tmtest-commits] [125] trunk: Remove all exit() calls from all	files except for main.c.
+</A></li>
+	<LI>Next message: <A HREF="000044.html">[Tmtest-commits] [127] trunk: Run the zutest unit tests before we	run our own.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#43">[ date ]</a>
+              <a href="thread.html#43">[ thread ]</a>
+              <a href="subject.html#43">[ subject ]</a>
+              <a href="author.html#43">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

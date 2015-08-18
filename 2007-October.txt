@@ -1,0 +1,929 @@
+From tmtest-commits at lists.berlios.de  Sat Oct 20 21:39:28 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sat, 20 Oct 2007 21:39:28 +0200
+Subject: [Tmtest-commits] [148] trunk: Update tmtest to latest mutest.
+Message-ID: <200710201939.l9KJdSfF000174@sheep.berlios.de>
+
+Revision: 148
+Author:   bronson
+Date:     2007-10-20 21:38:59 +0200 (Sat, 20 Oct 2007)
+
+Log Message:
+-----------
+Update tmtest to latest mutest.
+
+Modified Paths:
+--------------
+    trunk/.settings/org.eclipse.cdt.core.prefs
+    trunk/Makefile
+    trunk/TODO
+    trunk/main.c
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/units.c
+    trunk/units.h
+
+Added Paths:
+-----------
+    trunk/.cproject
+Added: trunk/.cproject
+===================================================================
+--- trunk/.cproject	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/.cproject	2007-10-20 19:38:59 UTC (rev 148)
+@@ -0,0 +1,102 @@
++<?xml version="1.0" encoding="UTF-8" standalone="no"?>
++<?fileVersion 4.0.0?>
++
++<cproject>
++<storageModule moduleId="org.eclipse.cdt.core.settings">
++<cconfiguration id="converted.config.1720523811">
++<storageModule moduleId="scannerConfiguration">
++<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile"/>
++<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
++<buildOutputProvider>
++<openAction enabled="false" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="specsFile">
++<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="gcc" useDefault="true"/>
++<parser enabled="true"/>
++</scannerInfoProvider>
++</profile>
++<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile">
++<buildOutputProvider>
++<openAction enabled="true" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="makefileGenerator">
++<runAction arguments="-f ${project_name}_scd.mk" command="make" useDefault="true"/>
++<parser enabled="true"/>
++</scannerInfoProvider>
++</profile>
++<profile id="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfile">
++<buildOutputProvider>
++<openAction enabled="false" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="specsFile">
++<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="gcc" useDefault="true"/>
++<parser enabled="false"/>
++</scannerInfoProvider>
++</profile>
++<profile id="org.eclipse.cdt.managedbuilder.core.GCCWinManagedMakePerProjectProfile">
++<buildOutputProvider>
++<openAction enabled="false" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="specsFile">
++<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="gcc" useDefault="true"/>
++<parser enabled="false"/>
++</scannerInfoProvider>
++</profile>
++</storageModule>
++<storageModule moduleId="org.eclipse.cdt.core.pathentry">
++<pathentry kind="src" path=""/>
++<pathentry kind="out" path=""/>
++<pathentry kind="con" path="org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO"/>
++</storageModule>
++<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
++<buildTargets>
++<target name="units" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments/>
++<buildTarget>units</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="run-units" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments/>
++<buildTarget>run-units</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="test" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments/>
++<buildTarget>test</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="mutest" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments/>
++<buildTarget>mutest</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="run-mutest" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments/>
++<buildTarget>run-mutest</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++</buildTargets>
++</storageModule>
++<storageModule buildSystemId="org.eclipse.cdt.core.defaultConfigDataProvider" id="converted.config.1720523811" moduleId="org.eclipse.cdt.core.settings" name="convertedConfig">
++<externalSettings/>
++<extensions>
++<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
++</extensions>
++</storageModule>
++</cconfiguration>
++</storageModule>
++</cproject>
+
+Modified: trunk/.settings/org.eclipse.cdt.core.prefs
+===================================================================
+--- trunk/.settings/org.eclipse.cdt.core.prefs	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/.settings/org.eclipse.cdt.core.prefs	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1,3 +1,5 @@
+-#Thu Feb 15 17:47:47 PST 2007
++#Sat Oct 20 16:53:25 GMT 2007
+ eclipse.preferences.version=1
++indexer/indexerId=org.eclipse.cdt.core.fastIndexer
+ indexerId=org.eclipse.cdt.core.fastIndexer
++instance/org.eclipse.core.net/org.eclipse.core.net.hasMigrated=true
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/Makefile	2007-10-20 19:38:59 UTC (rev 148)
+@@ -71,8 +71,8 @@
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: $(USRC) $(UHDR) mutest/main.c $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall $(USRC) mutest/main.c $(SCANC) -o units -DUNITS_MAIN
++units: $(USRC) $(UHDR) $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall $(USRC) $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/TODO	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1,4 +1,7 @@
+ 0.96:
++- The installed .tmtestrc has, at the very top:
++  # This is the system-wide configuration file for tmtest.
++  Uh, no.  It's certainly not system-wide!
+ - Put the zutest macro inside the tests (zutest { ... }) instead of outside.
+ - Remove the allfiles and quiet options.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/main.c	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1051,11 +1051,13 @@
+ 				break;
+ 
+ 			case 'U':
+-				run_unit_tests(all_tests);
++				all_tests();
++				mutest_exit();
+ 				exit(0);
+ 
+ 			case 257:
+-				run_unit_tests_showing_failures(all_tests);
++				mutest_show_failures();
++				all_tests();
+ 				exit(0);
+ 
+ 			case 'V':
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1,6 +1,7 @@
+ # This shows all the failure messages tested by zutest.
+ # This tests zutest, not tmtest.  Oh well, it's worth keeping an
+ # eye on our unit tester.
++# UPDATE: now mutest includes an identical test.
+ 
+ # This won't work until we're fully event-based.
+ # exec 2> >(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g 1>&2)
+@@ -11,7 +12,7 @@
+ # $tmtest --show-unit-fails > >(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g) 2>&1
+ 
+ $tmtest --show-unit-fails 2>&1 | \
+-	sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | \
++	sed s/0x[A-Fa-f0-9][A-Fa-f0-9]*/0xHEXDIGIT/g | \
+ 	sed s/^.*\\.c:[0-9]\*:/mutest.c:NNN:/
+ 
+ STDOUT:
+@@ -47,7 +48,7 @@
+ mutest.c:NNN: In test_assert_hex, assert z < 0 failed. z==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_hex, assert a < 0 failed. a==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_hex, assert n >= 0 failed. n==0xHEXDIGIT!
+-mutest.c:NNN: In test_assert_ptr, assert n != NULL failed. n==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert n != NULL failed. n is NULL!
+ mutest.c:NNN: In test_assert_ptr, assert ap == NULL failed. ap==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_ptr, assert ap == bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_ptr, assert ap != cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
+@@ -85,4 +86,3 @@
+ mutest.c:NNN: In test_assert_strings, assert n is empty failed. n is NULL!
+ mutest.c:NNN: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
+ mutest.c:NNN: In test_assert_strings, assert n is nonempty failed. n is NULL!
+-All OK.  33 tests run, 33 successes (252 assertions).
+
+Modified: trunk/units.c
+===================================================================
+--- trunk/units.c	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/units.c	2007-10-20 19:38:59 UTC (rev 148)
+@@ -8,3 +8,19 @@
+ 	compare_tests();
+ 	pathstack_tests();
+ }
++
++
++#ifdef UNITS_MAIN
++
++#include "mutest/mutest.h"
++
++int main(int argc, char **argv)
++{
++	all_tests();
++	mutest_exit();
++	
++	// this will never be reached
++	return 0;
++}
++
++#endif
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/units.h	2007-10-20 19:38:59 UTC (rev 148)
+@@ -3,6 +3,6 @@
+ void compare_tests();
+ void pathstack_tests();
+ 
+-void run_all_unit_tests();
++void all_tests();
+ 
+ 
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Sun Oct 21 00:29:37 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sun, 21 Oct 2007 00:29:37 +0200
+Subject: [Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves
+	turds in /tmp.
+Message-ID: <200710202229.l9KMTbX4007290@sheep.berlios.de>
+
+Revision: 149
+Author:   bronson
+Date:     2007-10-21 00:29:29 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Make tmtest abort if MKDIR leaves turds in /tmp.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/test/02-running/34-Mkdir.test
+    trunk/tmlib.sh
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-10-20 19:38:59 UTC (rev 148)
++++ trunk/TODO	2007-10-20 22:29:29 UTC (rev 149)
+@@ -1,4 +1,6 @@
+ 0.96:
++- Disabled tests are not ignored when running tmtest -d?
++  /home/bronson/workspace-tmtest/tmtest/test/02-running/50-OpenFDsTest.test
+ - The installed .tmtestrc has, at the very top:
+   # This is the system-wide configuration file for tmtest.
+   Uh, no.  It's certainly not system-wide!
+
+Modified: trunk/test/02-running/34-Mkdir.test
+===================================================================
+--- trunk/test/02-running/34-Mkdir.test	2007-10-20 19:38:59 UTC (rev 148)
++++ trunk/test/02-running/34-Mkdir.test	2007-10-20 22:29:29 UTC (rev 149)
+@@ -6,7 +6,7 @@
+ dn=`mktemp -d -t`
+ 
+ cd "$TESTDIR"
+-$tmtest $cfg -q - <<-EOL
++$tmtest $cfg -q - <<-EOL | sed 's/MKDIR: .* was not empty/MKDIR: TMPDIR was not empty/'
+ 
+ 	# normally we run tests in pedantic mode, where any single error
+ 	# will cause the test to bail and return a nonzero result code.
+@@ -55,9 +55,9 @@
+ 
+ 
+ STDOUT:
+-ok   (STDIN) 
++ABRT (STDIN)                   MKDIR: TMPDIR was not empty, cant delete it!
+ 
+-1 test run, 1 success, 0 failures.
++1 test run, 0 successes, 1 failure.
+ 
+ Dir still exists after test ran.  Good.
+ Directory was successfully deleted.
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2007-10-20 19:38:59 UTC (rev 148)
++++ trunk/tmlib.sh	2007-10-20 22:29:29 UTC (rev 149)
+@@ -204,7 +204,7 @@
+ 	fi
+ 
+ 	eval "$1='$name'"
+-	ATEXIT "rmdir '$name'"
++	ATEXIT "rmdir '$name' || ABORT 'MKDIR: '$name' was not empty, can't delete it!"
+ }
+ 
+ 
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Sun Oct 21 02:56:43 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sun, 21 Oct 2007 02:56:43 +0200
+Subject: [Tmtest-commits] [150] trunk/main.c: Fix an uninitialized variable
+	bug (would cause
+Message-ID: <200710210056.l9L0uh10000784@sheep.berlios.de>
+
+Revision: 150
+Author:   bronson
+Date:     2007-10-21 02:56:40 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Fix an uninitialized variable bug (would cause tmtest to stop testing early if there were no testfiles in a particular directory)
+
+Modified Paths:
+--------------
+    trunk/main.c
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-10-20 22:29:29 UTC (rev 149)
++++ trunk/main.c	2007-10-21 00:56:40 UTC (rev 150)
+@@ -736,10 +736,9 @@
+ 	struct pathstate save;
+     mode_t *modes;
+     int i, n, ret;
+-	int keepontruckin;
++	int keepontruckin = 1;
+ 
+-    for(n=0; ents[n]; n++)
+-        ;
++    for(n=0; ents[n]; n++) { } // count n
+ 
+     modes = malloc(n * sizeof(mode_t));
+     if(!modes) {
+@@ -1150,7 +1149,7 @@
+ 	char **ents;
+ 	int i, n, oldlen;
+ 
+-    for(n=0; argv[n]; n++) { }
++    for(n=0; argv[n]; n++) { }	// count n
+ 
+ 	ents = malloc((n+1)*sizeof(*ents));
+ 	ents[n] = NULL;
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Sun Oct 21 02:57:21 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sun, 21 Oct 2007 02:57:21 +0200
+Subject: [Tmtest-commits] [151] trunk: Fix up docs a bit,
+	make install message a little nicer, 
+Message-ID: <200710210057.l9L0vLHA000800@sheep.berlios.de>
+
+Revision: 151
+Author:   bronson
+Date:     2007-10-21 02:57:17 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Fix up docs a bit, make install message a little nicer, nothing important.
+
+Modified Paths:
+--------------
+    trunk/Makefile
+    trunk/TODO
+    trunk/tmlib.sh
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-10-21 00:56:40 UTC (rev 150)
++++ trunk/Makefile	2007-10-21 00:57:17 UTC (rev 151)
+@@ -98,6 +98,7 @@
+ 	# configuration already exists, don't overwrite it.
+ 	@echo "---> Not installing new config file over '$(conf_dst).'"
+ 	@echo "---> Please merge changes in 'sample.conf' by hand."
++	@echo "--->   (run 'diff -u $(conf_dst) sample.conf' to show differences)"
+ else
+ 	# global configuration file doesn't exist so install it
+ 	install sample.conf $(conf_dst)
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-10-21 00:56:40 UTC (rev 150)
++++ trunk/TODO	2007-10-21 00:57:17 UTC (rev 151)
+@@ -167,6 +167,9 @@
+   "(pcrs:) Syntax error while parsing command (-11)."
+ 
+ ????:
++- Right now we're tied really tightly to bash.  Any chance of getting
++  rid of the Bashisms and allowing tmtest to be run by any POSIX shell?
++  (not very important since testfiles tend to end up with Bashisms anyway).
+ - There should be a way to repeatedly run a single test with only tiny
+   differences.  i.e. test all permeutations of DISABLE DISABLE:
+   DISABLED DISABLED:  Hopefully that will clean up 05-08-Disable/Abort.test
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2007-10-21 00:56:40 UTC (rev 150)
++++ trunk/tmlib.sh	2007-10-21 00:57:17 UTC (rev 151)
+@@ -96,7 +96,7 @@
+ # Example:  (will produce "BA" on stdout when the test ends)
+ #
+ #     ATEXIT echo A
+-#     ATEXIT echo -n B
++#     ATEXIT echo -n B 
+ 
+ ATEXIT ()
+ {
+@@ -116,8 +116,12 @@
+ #
+ # You need to be aware that if you supply an easily predictable filename
+ # (such as a PID), you are exposing your users to symlink attacks.  You
+-# should never supply a filename unless you know EXACTLY what you are doing.
++# should never supply your own filename unless you know EXACTLY what you
++# are doing.
+ #
++# If a command produces the filename in its output (bad, because the
++# filename always changes), you can fix it with the <REPLACE> function.
++#
+ # Examples:
+ #
+ # create a new file with a random name in $TMPDIR or /tmp:
+@@ -127,6 +131,9 @@
+ #     EOL
+ #     cat "$fn"		<-- prints "Initial file contents."
+ #
++# Remove the file name from a command's output:
++#     echo "$fn" | REPLACE "$fn" TMPFILE   <-- prints "TMPFILE"
++#
+ # create a new empty file with the given name (open to symlink attack,
+ # DO NOT USE UNLESS YOU ARE SURE WHAT YOU ARE DOING).
+ #
+@@ -172,9 +179,11 @@
+ #
+ # Like MKFILE, but creates a directory instead of a file.  If you
+ # supply a directory name, and that directory already exists, then
+-# MKDIR ensures it is deleted when the script ends.  The directory
+-# will not be deleted if it still contains any files.
++# MKDIR ensures it is deleted when the script ends.
+ #
++# If the directory still contains files when the test ends, it
++# will not be deleted and the test will abort with an error.
++#
+ # argument 1: varname, the name of the variable that will contain the new directory name.
+ # argument 2: dirname, (optional) the name/fullpath to give the directory.
+ #
+@@ -183,6 +192,9 @@
+ #   The one exception is if you're creating a directory inside another
+ #   directory that was created with the single arg.
+ #
++# If a command produces the directory name in its output (bad, because the
++# name always changes), you can fix it with the <REPLACE> function.
++#
+ # Examples:
+ #
+ # create a new directory with a random name in $TMPDIR or /tmp:
+@@ -190,6 +202,9 @@
+ #     MKDIR dn
+ #     cd "$dn"
+ #
++# Remove the directory name from a command's output:
++# 	svn co svn://repo "$dn/local" | REPLACE "$dn" TMPDIR
++#
+ # TODO: should emulate mkdir -p too.  Right now tmtest forces you to
+ # call MKDIR for each dir you want to create.  Too wordy.
+ #
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Sun Oct 21 09:59:16 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sun, 21 Oct 2007 09:59:16 +0200
+Subject: [Tmtest-commits] [152] trunk: Add .tmtest-ignore (allows whole
+	directories to be ignored)
+Message-ID: <200710210759.l9L7xG0r031063@sheep.berlios.de>
+
+Revision: 152
+Author:   bronson
+Date:     2007-10-21 09:59:04 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Add .tmtest-ignore (allows whole directories to be ignored)
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/TODO
+    trunk/main.c
+    trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+    trunk/test/02-running/05-Running.test
+    trunk/tmtest.pod
+
+Added Paths:
+-----------
+    trunk/test/02-running/24-SkipDirectory.test
+    trunk/test/02-running/25-SkipMyDirectory.test
+    trunk/test/02-running/26-SkipNamedDirectory.test
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/CHANGES	2007-10-21 07:59:04 UTC (rev 152)
+@@ -1,3 +1,6 @@
++- Added .tmtest-ignore (allows whole directories to be skipped).
++- Fixed a bug where there was a chance that the test would not complete
++  if tmtest spent any time looking through folders with no testfiles.
+ - Rewrote the path handling code and gave it some unit tests.
+ - Added -f command-line option to print only the failed tests.
+ - Made REPLACE handle multiple text substitutions; could only handle 1 before.
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/TODO	2007-10-21 07:59:04 UTC (rev 152)
+@@ -70,6 +70,12 @@
+   test; it's helped in the past to ensure that we don't leak fds.
+ 
+ 0.98:
++- Document tmtest and testfile with naturaldocs?
++  This should be an example of how to print all important variables.
++	for i in MYDIR MYFILE TESTDIR TESTFILE PWD; do
++		eval o=\$$i
++		echo $i: $o
++	done
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+   Convert to using the async io library.  Don't use temporary files.
+   This would allow us to recognize that the test is disabled before
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/main.c	2007-10-21 07:59:04 UTC (rev 152)
+@@ -681,14 +681,6 @@
+ {
+ 	char buf[PATH_MAX];
+ 	struct pathstack stack;
+-
+-	if(outmode == outmode_test) {
+-		if(print_absolute) {
+-			printf("\nProcessing %s\n", abspath);
+-		} else {
+-			printf("\nProcessing ./%s\n", origpath);
+-		}
+-	}
+ 	
+ 	pathstack_init(&stack, buf, sizeof(buf), abspath);
+ 	pathstack_normalize(&stack);
+@@ -696,7 +688,7 @@
+ }
+ 
+ 
+-static void print_relative_dir(struct pathstack *ps, int print_absolute)
++static void print_processing_progress(struct pathstack *ps, int print_absolute)
+ {
+ 	char buf[PATH_MAX];
+ 	
+@@ -704,6 +696,10 @@
+     if(outmode != outmode_test) {
+     	return;
+     }
++    
++    if(print_absolute == -1) {
++    	return;
++    }
+ 
+ 	if(print_absolute) {
+ 		printf("\nProcessing %s\n", pathstack_absolute(ps));
+@@ -712,11 +708,13 @@
+ 			printf("Path couldn't be converted \"\%s\"\n", pathstack_absolute(ps));
+ 			exit(runtime_error);
+ 		}
+-		printf("\nProcessing ./%s\n", buf);
++		// special-case "." so we don't print the silly-looking "./."
++		printf("\nProcessing %s%s\n", (buf[0] == '.' && buf[1] == '\0' ? "" : "./"), buf);
+ 	}
+ }
+ 
+ 
++
+ /** Process all entries in a directory.
+  *
+  * @param ps The pathstack to use.  It comes pre-set-up with whatever
+@@ -750,6 +748,12 @@
+     for(i=0; i<n; i++) {
+         if(!is_dash(ents[i])) {
+ 			const char *cp = ents[i];
++			
++			if(strcmp(ents[i], ".tmtest-ignore") == 0) {
++				// skip this directory but continue processing
++				goto abort;
++			}
++			
+ 			if(ents[i][0] != '/') {
+ 				ret = pathstack_push(ps, ents[i], &save);
+ 				if(ret != 0) {
+@@ -771,6 +775,9 @@
+         }
+     }
+     
++    // Now that we're sure we're going to process this dir, print a notice.
++    print_processing_progress(ps, print_absolute);
++    
+     // process all files in dir
+     for(i=0; i<n; i++) {
+         if(is_dash(ents[i]) || S_ISREG(modes[i])) {
+@@ -812,7 +819,6 @@
+ 				} else {
+ 					// Otherwise, we just push the path and chug.
+ 					ret = pathstack_push(ps, ents[i], &save);
+-					print_relative_dir(ps, print_absolute);
+ 					keepontruckin = process_dir(ps, print_absolute);
+ 					pathstack_pop(ps, &save);
+ 				}
+@@ -831,11 +837,25 @@
+ 
+ /** This routine filters out any dirents that begin with '.'.
+  *  We don't want to process any hidden files or special directories.
++ * 
++ * NOTE: we DO allow .tmtest-ignore files through.  Otherwise, how
++ * would the directory scanner know which directories to skip?
+  */
+ 
+ static int select_nodots(const struct dirent *d)
+ {
+-    return d->d_name[0] != '.';
++	// common case: if the filename doesn't begin with a dot, use it.
++    if(d->d_name[0] != '.') {
++    	return 1;
++    }
++    
++    // if it's named '.tmtest-ignore', use it
++    if(strcmp(d->d_name, ".tmtest-ignore") == 0) {
++    	return 1;
++    }
++    
++    // otherwise, ignore it.
++    return 0;
+ }
+ 
+ 
+@@ -1195,9 +1215,6 @@
+     if(optind < argc) {
+ 		process_argv(&pathstack, argv+optind);
+     } else {
+-        if(outmode == outmode_test) {
+-            printf("\nProcessing .\n");
+-        }
+         process_dir(&pathstack, 0);
+     }
+     stop_tests();
+
+Modified: trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -32,7 +32,7 @@
+ 	
+ 	Processing ./..
+ 	
+-	Processing ./.
++	Processing .
+ 	echo START >&FD
+ 	
+ 	ABORT ()  { echo "ABORTED: $*" >&FD; exit 0; }
+
+Modified: trunk/test/02-running/05-Running.test
+===================================================================
+--- trunk/test/02-running/05-Running.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/05-Running.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -52,7 +52,7 @@
+ Processing ./sub
+ ok   sub.test 
+ 
+-Processing ./.
++Processing .
+ ok   mid.test 
+ 
+ Processing ./sub
+@@ -61,7 +61,7 @@
+ Processing ./..
+ ok   sup.test 
+ 
+-Processing ./.
++Processing .
+ ok   mid.test 
+ 
+ Processing ./sub
+
+Added: trunk/test/02-running/24-SkipDirectory.test
+===================================================================
+--- trunk/test/02-running/24-SkipDirectory.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/24-SkipDirectory.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -0,0 +1,40 @@
++# Ensures that a directory disabled by a .tmtest-ignore file is skipped
++# but subsequent tests are still run.
++
++MKDIR dir
++cd "$dir"
++
++mkdir disabled
++touch disabled/.tmtest-ignore
++cat > disabled/t1.test <<-EOs
++	echo hi
++	STDOUT:
++	hi
++EOs
++
++mkdir enabled
++cat > enabled/t2.test <<-EOs
++	echo he
++	STDOUT:
++	he
++EOs
++
++cat > t3.test <<-EOs
++	echo he
++	STDOUT:
++	he
++EOs
++
++$tmtest -q | REPLACE "$dir" /tmp/DIR
++rm -rf "$dir"/*
++
++
++STDOUT:
++
++Processing .
++ok   t3.test 
++
++Processing ./enabled
++ok   t2.test 
++
++2 tests run, 2 successes, 0 failures.
+
+Added: trunk/test/02-running/25-SkipMyDirectory.test
+===================================================================
+--- trunk/test/02-running/25-SkipMyDirectory.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/25-SkipMyDirectory.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -0,0 +1,26 @@
++# Ensures that a skip file in the starting directory results in no tests run.
++
++MKDIR dir
++cd "$dir"
++
++cat > t1.test <<-EOs
++	echo hi
++	STDOUT:
++	hi
++EOs
++
++cat > t2.test <<-EOs
++	echo he
++	STDOUT:
++	he
++EOs
++
++touch .tmtest-ignore
++
++$tmtest -q | REPLACE "$dir" /tmp/DIR
++rm t1.test t2.test .tmtest-ignore
++
++
++STDOUT:
++
++0 tests run, 0 successes, 0 failures.
+
+Added: trunk/test/02-running/26-SkipNamedDirectory.test
+===================================================================
+--- trunk/test/02-running/26-SkipNamedDirectory.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/26-SkipNamedDirectory.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -0,0 +1,21 @@
++# Ensures that a directory disabled by a .tmtest-ignore file is skipped
++# but subsequent tests are still run.
++
++MKDIR dir
++cd "$dir"
++
++mkdir disabled
++touch disabled/.tmtest-ignore
++cat > disabled/t1.test <<-EOs
++	echo hi
++	STDOUT:
++	hi
++EOs
++
++$tmtest -q disabled | REPLACE "$dir" /tmp/DIR
++rm -rf "$dir"/disabled
++
++
++STDOUT:
++
++0 tests run, 0 successes, 0 failures.
+
+Modified: trunk/tmtest.pod
+===================================================================
+--- trunk/tmtest.pod	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/tmtest.pod	2007-10-21 07:59:04 UTC (rev 152)
+@@ -101,6 +101,14 @@
+ 
+ =back
+ 
++If you place an empty file named ".tmtest-ignore" into a directory,
++tmtest will ignore that directory and all directories below it.
++tmtest does not check parent directories for a .tmtest-ignore file!
++It only checks for it when descending into subdirectories.  Therefore,
++if you explicitly name a testfile on the command-line, the test will
++be run even if it's in the same directory as a .tmtest-ignore file.
++
++
+ =head1 EXIT VALUE
+ 
+ tmtest exits with the number of tests that failed or were aborted.
+@@ -120,6 +128,7 @@
+ =head1 TEST RESULTS
+ 
+ There are two schools of thought on how testfiles should be written:
++
+ - like a shell script, where you need to manually check after the
+ commands that matter if they failed or not.
+ 
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Sun Oct 21 10:04:45 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sun, 21 Oct 2007 10:04:45 +0200
+Subject: [Tmtest-commits] [153] trunk: Get rid of misleading "system-wide"
+	at the top of
+Message-ID: <200710210804.l9L84jtB031339@sheep.berlios.de>
+
+Revision: 153
+Author:   bronson
+Date:     2007-10-21 10:04:42 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Get rid of misleading "system-wide" at the top of sample.conf
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/sample.conf
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-10-21 07:59:04 UTC (rev 152)
++++ trunk/TODO	2007-10-21 08:04:42 UTC (rev 153)
+@@ -1,9 +1,6 @@
+ 0.96:
+ - Disabled tests are not ignored when running tmtest -d?
+   /home/bronson/workspace-tmtest/tmtest/test/02-running/50-OpenFDsTest.test
+-- The installed .tmtestrc has, at the very top:
+-  # This is the system-wide configuration file for tmtest.
+-  Uh, no.  It's certainly not system-wide!
+ - Put the zutest macro inside the tests (zutest { ... }) instead of outside.
+ - Remove the allfiles and quiet options.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+
+Modified: trunk/sample.conf
+===================================================================
+--- trunk/sample.conf	2007-10-21 07:59:04 UTC (rev 152)
++++ trunk/sample.conf	2007-10-21 08:04:42 UTC (rev 153)
+@@ -1,4 +1,4 @@
+-# This is the system-wide configuration file for tmtest.
++# This is a configuration file for tmtest.
+ 
+ # tmtest configuration files are read in the following order:
+ #
+
+
+
+
+

@@ -1,0 +1,2348 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [99] trunk: Major changes.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B99%5D%20trunk%3A%20Major%20changes.&In-Reply-To=%3C200603022357.k22Nv7po015763%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000015.html">
+   <LINK REL="Next"  HREF="000017.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [99] trunk: Major changes.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B99%5D%20trunk%3A%20Major%20changes.&In-Reply-To=%3C200603022357.k22Nv7po015763%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [99] trunk: Major changes.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Fri Mar  3 00:57:07 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000015.html">[Tmtest-commits] [98] trunk: Add tests for an empty test with empty stdout or stderr
+</A></li>
+        <LI>Next message: <A HREF="000017.html">[Tmtest-commits] [100] trunk: Purge ATEXIT from the template, minor cleanup
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#16">[ date ]</a>
+              <a href="thread.html#16">[ thread ]</a>
+              <a href="subject.html#16">[ subject ]</a>
+              <a href="author.html#16">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 99
+Author:   bronson
+Date:     2006-03-03 00:56:35 +0100 (Fri, 03 Mar 2006)
+
+Log Message:
+-----------
+Major changes.  Fix config file handling and a bunch of other stuff.
+
+Modified Paths:
+--------------
+    trunk/BUGS
+    trunk/CHANGES
+    trunk/Makefile
+    trunk/TODO
+    trunk/compare.c
+    trunk/compare.h
+    trunk/curdir.c
+    trunk/main.c
+    trunk/test/01-testfile/08-GarbageInStdout.test
+    trunk/test/01-testfile/10-DumpScript.test
+    trunk/test/02-running/21-QuoteFile.test
+    trunk/test/02-running/40-Replace.test
+    trunk/test/03-results/33-BinaryHuge.test
+    trunk/test/04-diff/01-Diff.test
+    trunk/test/04-diff/02-MultiDiff.test
+    trunk/test/04-diff/05-AbortDiff.test
+    trunk/test/04-diff/21-PatchNoNL.test
+    trunk/test/04-diff/22-PatchNoNL2.test
+    trunk/test/04-diff/23-PatchNoNL3.test
+    trunk/test/tmtest.sub.conf
+    trunk/test.c
+    trunk/test.h
+    trunk/tfscan.c
+    trunk/tmlib.sh
+    trunk/tmtest.conf
+    trunk/vars.c
+    trunk/vars.h
+
+Added Paths:
+-----------
+    trunk/examples/docs/testfile/
+    trunk/examples/docs/testfile/Idiom-Indent1.test
+    trunk/examples/docs/testfile/Idiom-Indent2.test
+    trunk/examples/docs/testfile/Idiom-Indent3.test
+    trunk/examples/docs/testfile/Idiom-Replace1.test
+    trunk/test/00-cmdline/10-CfgDir.test
+    trunk/test/00-cmdline/11-CfgMissing.test
+    trunk/test/00-cmdline/12-CfgEmpty.test
+    trunk/test/01-testfile/02-StdOutNK.test
+    trunk/test/01-testfile/03-StdErrNK.test
+    trunk/test/01-testfile/11-InnerConfig.test
+    trunk/test/01-testfile/20-TestVars.test
+    trunk/test/01-testfile/21-TestVarsABS.test
+    trunk/test/01-testfile/22-TestVarsRel.test
+    trunk/test/02-running/41-Indent.test
+    trunk/test/03-results/01-YstderrOut.test
+    trunk/test/03-results/01-YstdoutOut.test
+    trunk/test/03-results/14-NoNLWarn.test
+    trunk/test/03-results/17-NoStderr.test
+    trunk/test/03-results/18-NoNLWarnOut.test
+    trunk/test/04-diff/18-NeedNLWarn.test
+Modified: trunk/BUGS
+===================================================================
+--- trunk/BUGS	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/BUGS	2006-03-02 23:56:35 UTC (rev 99)
+@@ -8,6 +8,7 @@
+ 
+ Bash Gotchas:
+ 
++These are bugs that tmtest inherits from Bash:
+ 
+ Bash3 has removed the ability to set LINENO, so you may see the
+ wrong line number be printed if there's an error.  If you want to
+@@ -26,18 +27,29 @@
+ 	EOL
+ 
+ The first heredoc flattens everything and then the EOLs get mixed up.
++Sometimes you can work around this by renaming your EOL words,
++sometimes you can't.
++
++Another problem is that Bash ONLY strips tabs.  This makes it a royal
++pain to edit heredocs in an editor that expands tabs.  Thanks to
++how common Python is becoming, many editors are expanding tabs now!
++If you edit a bash script with an editor that automatically expands
++tabs, you may destroy the heredoc even though you never even saw it!
++Invisible syntax problems always suck.
++
+ What bash *SHOULD* do (and what tmtest did before it was integrated
+ with Bash) is discover the whitespace sequence indenting the
+ first line of a heredoc, then remove exactly that sequence from all
+ subsequent lines.  If a line doesn't begin with that sequence, then
+-it is unchanged.  This is safer and more useful than just blowing away
++it remains unchanged.  This is safer and more useful than just blowing away
+ all tabs wholesale!
+ 
+ 
+-Bashisms:
++Strange Bashisms:
+ 
+ Why does &amp;&gt; redirect both stdout and stderr to a file, but &amp;| doesn't
+ redirect both stdout and stderr to a pipe?
+ 
+ Why is the unset command totally unrelated to the set command?
+ 
++Why can I &quot;exec &gt; file&quot; but I can't &quot;exec | prog&quot;?
+
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/CHANGES	2006-03-02 23:56:35 UTC (rev 99)
+@@ -1,22 +1,24 @@
+-- Release next version.
+-----
++get rid of ATEXIT from template.sh.  Can also merge 3&gt;&amp;- and 5&gt;&amp; in template.sh
++- Release 0.94 on 2 Mar 2006
++- NOTE: Bash3 has made it so that the regex can not appear on the same line as
++  the MODIFY keyword.  I updated all tests and accelerated MODIFY deprecation.
++- Added the INDENT and REPLACE functions to tmlib.
++- Standardized licensing: everything under my control is MIT, package is LGPL.
+ - --dump-script now cleans up after itself (before we'd leave turds in /tmp).
+-- Now reports in the test results if child was terminated by a signal.
+-- Added the INDENT and REPLACE functions to tmlib.
+-- Bash3 has made it so that the RE can no longer appear on the same line as
+-  the MODIFY command.  I updated all tests and accelerated MODIFY deprecation.
++- Now reports in the test results when child is terminated by a signal.
++- When installing locally, it's ~/.tmlib.sh instead of ~/share/tmtest/tmlib.sh
+ - Added -n (--no-trailing-newline) capability to STDOUT and STDERR sections.
++- Got rid of all AUTHOR and DATE automation.  Too heavyhanded.
++- Added --patch/-p to do the same thing as --diff/-d.  Just feels natural.
++- Now only &quot;\nSTDOUT[ \t\r\n:]&quot; starts a section.  Anything else is just data.
+ - Rewrote the re2c parser in C so we should now be totally binary transparent.
+-- Got rid of all AUTHOR and DATE automation.  Too heavyhanded.
+-- Standardized licensing: everything under my control is MIT, package is LGPL.
+-- When installing locally, it's ~/.tmlib.sh instead of ~/share/tmtest/tmlib.sh
+ 
+ - Bump to 0.92
++- Tests now start with /tmp as the cwd, not the testdir.
++  The testdir is supplied in $TESTDIR (or $MYDIR inside the testfile)
++- Added timing information to test summary.  Disable with new -q option.
++- Added the --config option to override default config files.
+ - install now installs config files too.
+-- Added the --config option to override default config files.
+-- Added timing information to test summary.  Disable with new -q option.
+ - Created tmlib, a &quot;standard library&quot; for tests.
+ - We now stop running all tests if any test aborts.  DISABLE stops the current
+   test but lets all other tests finish; ABORT stops testing altogether.
+-- Tests now start with /tmp as the cwd, not the testdir.
+-  The testdir is supplied in $TESTDIR (or $MYDIR inside the testfile)
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/Makefile	2006-03-02 23:56:35 UTC (rev 99)
+@@ -65,7 +65,9 @@
+ install: tmtest
+ 	install -d -m755 $(bindir)
+ 	install tmtest $(bindir)
++ifneq ($(libdir),$(HOME))
+ 	install -d -m755 $(libdir)
++endif
+ 	install tmlib.sh $(stdlib)
+ ifeq ($(wildcard $(conf_dst)),$(conf_dst))
+ 	# configuration already exists, don't overwrite it.
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/TODO	2006-03-02 23:56:35 UTC (rev 99)
+@@ -1,9 +1,11 @@
+-0.94:
+-- Print a warning if we notice that an output section doesn't end in
+-  a newline, but the testfile hasn't marked that section with a &quot;-n&quot;.
+-  See 22-PatchNoNL2.test for more.  Make sure a test for this is in 03 too.
+-
+ 0.96:
++- Put $args into EVERY test we run.
++- There's some sort of a bug with 10-DumpScript.test.  When running with
++  -o or -d, sometimes it complains about a missing newline.  Odd.
++- Write a test to ensure we can run tests named &quot;-.test&quot;
++- Write tests to verify what FDs are still open when we run
++  config files, test files, and diff.
++- Add --diff and --shell to change the executables that get launched.
+ - Get rid of MODIFY clauses.  It's unnecessary complexity.
+   And it's a LOT.  First remove it from the tests, then from the code.
+ - Add the ability to specify test arguments on the command line.
+@@ -21,16 +23,27 @@
+   abort the test.
+   should get rid of a whole bunch in main.c as well.
+   this should prevent us from dropping turds in /tmp all the time too.
++- Rename --all-files to --ignore-extension.
++- Move newline suppressing out of compare.c.  If it can't be moved out,
++  at least clean it up!   (maybe?)
++- Figure out how to ensure that we run the binary in the project tree
++  when testing rather than the globally installed one.  What happened?
++- Ensure it compiles and runs on freebsd.
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+   Convert to using the async io library.  Don't use temporary files.
+   This would allow us to recognize that the test is disabled before
+   producing a partial diff, blowing away output sections.
++  - Make sure to keep reading both stdin and stderr to eof.
++  - This also allows us to get rid of STATUSFD so that NO other fds are open
++    when running the test.  OUTFD and ERRFD still need to be open when
++	running the config files though.
+ - Use i/o lib for everything.  No need for temp files.
+   This means that we stream everything EXCEPT stderr, which we memory
+   buffer.  If your stderr is more than 100K or so in size, just redirect
+-  it to stdout.
++  it to a file, then cat the file at the end.  We truncate stderr if it
++  gets too big.
+ - stdin is all buggered up.  why is it that &quot;cat&quot; with no args will print
+   the rest of the test script?  And why is it that if you fork, diff freezes?
+   They're related problems I suspect.
+@@ -44,6 +57,10 @@
+ 	command if you want testing to continue in that subfolder.
+ - Tighten up printing a folder name when there are no testfiles in it.
+   No need for double spacing.
++- Add a --continuous argument that will cycle through all tests tmtest
++  can find.  It prints nothing if a test succeeds, or the fail notice
++  if it fails.  Runs until cancelled with ^C.  Let it run overnight and
++  see if any of your tests have intermittent failures.
+ 
+ 1.0!
+ 
+@@ -63,6 +80,15 @@
+ - add the ability to run valgrind over each test and print success/failure
+   of that.  (gives deep valgrind coverage)
+   - One problem with this will be all the false warnings that valgrind spews.
++- Get rid of exNEW and all the definitions from tfscan.h.  It's uuuugly!
++  Not quite sure how... I mean, I see how to clean it up some but not
++  a lot.  Probably not worth it.  It's an ugly problem.
++- Is it possible to add a SECOND diff to the output from tmtest -d to
++  add a &quot;-n&quot; to the output section?  That way, instead of printing a
++  warning telling the user what to edit, we could just fix it ourselves.
++  See 18-NoNLWarn.test for more.
++- Maybe make an option to run the command from a pty so it looks just
++  like the user is running the command.
+ 
+ No longer a problem when we dump pcrs:
+ - allow multiple s/// expressions on a single line.  will probably require
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/compare.c	2006-03-02 23:56:35 UTC (rev 99)
+@@ -41,8 +41,9 @@
+ 	const char *pbuf;
+ 	int pcursor;
+ 	int plimit;
+-    int no_trailing_newline;
+-    int nl_suppressed;
++    int no_trailing_newline;    ///&lt; true if this section isn't supposed to end with a newline
++    int nl_suppressed;          ///&lt; if no_trailing_newline is true, we need to suppress the newline in the execpted output when matching against the actual (because of the way heredocs work, the expected always ends in a newline).
++    int warn_no_newline;             ///&lt; true if the section expected a trailing newline (no_trailing_newline == false), but the last buffer seen (presumably the end of the file) didn't end with a newline.
+ } compare_state;
+ 
+ 
+@@ -61,9 +62,6 @@
+ {
+ 	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+     *cmp-&gt;output = newval;
+-	if(cmp-&gt;pbuf) free((char*)cmp-&gt;pbuf);
+-	free(cmp);
+-    ss-&gt;scanref = NULL;
+ }
+ 
+ 
+@@ -81,7 +79,8 @@
+ 	cmp-&gt;output = mv;
+ 	cmp-&gt;jobs = jobs;
+     cmp-&gt;no_trailing_newline = nonl;
+-    cmp-&gt;nl_suppressed = 0;;
++    cmp-&gt;nl_suppressed = 0;
++    cmp-&gt;warn_no_newline = 0;
+     ss-&gt;scanref = cmp;
+ }
+ 
+@@ -89,6 +88,7 @@
+ 
+ static void compare_continue_bytes(scanstate *ss, const char *ptr, int len)
+ {
++	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+     int n;
+ 
+     while(len &gt; 0) {
+@@ -106,6 +106,12 @@
+                 compare_halt(ss, match_no);
+                 return;
+             }
++           
++            if(n &gt; 0) {
++                // shouldn't force user to put a -n on empty sections!
++                // therefore, we'll only issue the warning if we've seen data.
++                cmp-&gt;warn_no_newline = (ss-&gt;limit[-1] != '\n' &amp;&amp; ss-&gt;limit[-1] != '\r');
++            }
+         }
+ 
+         if(len &lt; n) {
+@@ -240,8 +246,8 @@
+ {
+ 	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+ 
+-    if(!ss-&gt;scanref) {
+-        // we already decided the files don't match
++    if(*cmp-&gt;output != match_inprogress) {
++        // we already decided an answer
+         // so don't waste time comparing more.
+         return;
+     }
+@@ -273,39 +279,36 @@
+ }
+ 
+ 
+-void compare_end(scanstate *ss)
++void compare_end(scanstate *ss, int *warn_nl)
+ {
+ 	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+ 
+-    if(!ss-&gt;scanref) {
+-        // we already decided the files don't match
+-        // so don't waste time comparing more.
+-        return;
++    // Tell the caller to emit a warning if the expected section was marked
++    // as having a trailing newline but the actual section didn't have it.
++    if(warn_nl &amp;&amp; !cmp-&gt;no_trailing_newline) {
++        *warn_nl = cmp-&gt;warn_no_newline;
+     }
+ 
+-	assert(cmp-&gt;pcursor &lt;= cmp-&gt;plimit);
+-	assert(ss-&gt;cursor &lt;= ss-&gt;limit);
++    if(*cmp-&gt;output == match_inprogress) {
++        assert(cmp-&gt;pcursor &lt;= cmp-&gt;plimit);
++        assert(ss-&gt;cursor &lt;= ss-&gt;limit);
+ 
+-	if(cmp-&gt;jobs) {
+-		// if there's more data in the pbuf then fail.
+-		if(cmp-&gt;plimit - cmp-&gt;pcursor != 0) {
+-			compare_halt(ss, match_no);
+-			return;
+-		}
+-	}
++        *cmp-&gt;output = match_no;
++        if(cmp-&gt;jobs &amp;&amp; cmp-&gt;plimit - cmp-&gt;pcursor != 0) {
++            // get rid of this asap.
++            *cmp-&gt;output = match_no;
++        } else if(scan_finished(ss)) {
++            // if we're totally out of data and we still don't know
++            // if they match, then they do match.
++            *cmp-&gt;output = match_yes;
++        }
++    }
+ 
+-	// if we have no data left in the scan buffer
+-	if(ss-&gt;cursor == ss-&gt;limit) {
+-		// and our input file is at eof
+-		if(compare_fill(ss) == 0) {
+-			// then the two data streams match
+-			compare_halt(ss, match_yes);
+-			return;
+-		}
+-	}
++	if(cmp-&gt;pbuf) {
++        free((char*)cmp-&gt;pbuf);
++    }
+ 
+-    // otherwise, they don't.
+-    compare_halt(ss, match_no);
++	free(cmp);
++    ss-&gt;scanref = NULL;
+ }
+ 
+-
+
+Modified: trunk/compare.h
+===================================================================
+--- trunk/compare.h	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/compare.h	2006-03-02 23:56:35 UTC (rev 99)
+@@ -20,7 +20,7 @@
+ 
+ void compare_attach(scanstate *ss, matchval *mv, pcrs_job *joblist, int nonl);
+ void compare_continue(scanstate *ss, const char *ptr, int len);
+-void compare_end(scanstate *cmp);
++void compare_end(scanstate *cmp, int *warn_nl);
+ 
+ // no better place to put this for now...
+ char* substitute_string(pcrs_job *job, const char *cp, const char *ce, size_t *newsize);
+
+Modified: trunk/curdir.c
+===================================================================
+--- trunk/curdir.c	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/curdir.c	2006-03-02 23:56:35 UTC (rev 99)
+@@ -9,7 +9,7 @@
+  *
+  * Unfortunately this file got hacked to shreds when tmtest was
+  * made to run with /tmp as the constant cwd.  It's pretty
+- * incomprehensible and in dire need of a rewrite.
++ * incomprehensible and in dire dire DIRE need of a rewrite.
+  */
+ 
+ #include &lt;stdio.h&gt;
+
+Added: trunk/examples/docs/testfile/Idiom-Indent1.test
+===================================================================
+--- trunk/examples/docs/testfile/Idiom-Indent1.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/examples/docs/testfile/Idiom-Indent1.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,11 @@
++DISABLED: neads streaming tmtest?
++
++echo test output &gt; &gt;(INDENT)
++
++# What the hell?  These two sleeps make this test mostly reliable
++# but not 100%.
++sleep 0.001
++sleep 0.001
++
++STDOUT:
++    test output
+
+Added: trunk/examples/docs/testfile/Idiom-Indent2.test
+===================================================================
+--- trunk/examples/docs/testfile/Idiom-Indent2.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/examples/docs/testfile/Idiom-Indent2.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,8 @@
++{
++  echo output1
++  echo output2
++} | INDENT
++
++STDOUT:
++    output1
++    output2
+
+Added: trunk/examples/docs/testfile/Idiom-Indent3.test
+===================================================================
+--- trunk/examples/docs/testfile/Idiom-Indent3.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/examples/docs/testfile/Idiom-Indent3.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,8 @@
++(
++  echo output1
++  echo output2
++) | INDENT
++
++STDOUT:
++    output1
++    output2
+
+Added: trunk/examples/docs/testfile/Idiom-Replace1.test
+===================================================================
+--- trunk/examples/docs/testfile/Idiom-Replace1.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/examples/docs/testfile/Idiom-Replace1.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,6 @@
++# Testfile to demonstrate fixing a temporary filename
++MKFILE tt &lt;&lt;&lt; &quot;file contents&quot;
++echo &quot;patching $tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++
++STDOUT:
++patching /tmp/FILE
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/main.c	2006-03-02 23:56:35 UTC (rev 99)
+@@ -91,7 +91,7 @@
+ /** Returns zero if s1 ends with s2, nonzero if not.
+  */
+ 
+-int strcmpend(const char *s1, const char *s2)
++static int strcmpend(const char *s1, const char *s2)
+ {
+     size_t n1 = strlen(s1);
+     size_t n2 = strlen(s2);
+@@ -104,10 +104,60 @@
+ }
+ 
+ 
++static int i_have_permission(const struct stat *st, int op)
++{
++	if(st-&gt;st_mode &amp; S_IRWXU &amp; op) {
++		if(geteuid() == st-&gt;st_uid) {
++			return 1;
++		}
++	}
++
++	if(st-&gt;st_mode &amp; S_IRWXG &amp; op) {
++		if(getegid() == st-&gt;st_gid) {
++			return 1;
++		}
++	}
++
++	if(st-&gt;st_mode &amp; S_IRWXO &amp; op) {
++		return 1;
++	}
++
++	return 0;
++}
++
++
++static int verify_readable(const char *file, struct stat *st, int regfile)
++{
++	struct stat sts;
++	
++	// arg is optional so we can pass the stat struct back
++	// if the caller wants to do more with it.
++	if(st == NULL) {
++		st = &sts;
++	}
++
++
++	if(stat(file, st) &lt; 0) {
++		fprintf(stderr, &quot;Could not locate %s: %s\n&quot;, file, strerror(errno));
++		return 0;
++	}
++	if(regfile &amp;&amp; !S_ISREG(st-&gt;st_mode)) {
++		fprintf(stderr, &quot;Could not open %s: not a file!\n&quot;, file);
++		return 0;
++	}
++	if(!i_have_permission(st, 0444)) {
++		fprintf(stderr, &quot;Could not open %s: permission denied!\n&quot;, file);
++		return 0;
++	}
++
++	return 1;
++}
++
++
+ /** Prints the given template to the given file, performing substitutions.
+  */
+ 
+-void print_template(struct test *test, const char *tmpl,  FILE *fp)
++static void print_template(struct test *test, const char *tmpl,  FILE *fp)
+ {
+     char varbuf[32];
+     const char *cp, *ocp, *ce;
+@@ -153,7 +203,7 @@
+  */
+ 
+ 
+-void reset_fd(int fd, const char *fname)
++static void reset_fd(int fd, const char *fname)
+ {
+     if(lseek(fd, 0, SEEK_SET) &lt; 0) {
+         fprintf(stderr, &quot;Couldn't seek to start of %s: %s\n&quot;,
+@@ -169,7 +219,7 @@
+ }
+ 
+ 
+-int wait_for_child(int child, const char *name)
++static int wait_for_child(int child, const char *name)
+ {
+     int pid;
+     int status;
+@@ -200,7 +250,7 @@
+ }
+ 
+ 
+-int open_file(char *fn, const char *name, int flags)
++static int open_file(char *fn, const char *name, int flags)
+ {
+ 	strcpy(fn, g_testdir);
+ 	strcat(fn, &quot;/&quot;);
+@@ -216,7 +266,7 @@
+ }
+ 
+ 
+-int write_stdin_to_tmpfile(struct test *test)
++static int write_stdin_to_tmpfile(struct test *test)
+ {
+ 	char *buf;
+ 	int fd;
+@@ -240,7 +290,7 @@
+ /** Forks off a diff process and sets it up to receive the dumped test.
+  */
+ 
+-int start_diff(struct test *test)
++static int start_diff(struct test *test)
+ {
+     int pipes[2];
+     int child;
+@@ -312,7 +362,7 @@
+ /** Waits for the forked diff process to finish.
+  */
+ 
+-void finish_diff(struct test *test, int diffpid)
++static void finish_diff(struct test *test, int diffpid)
+ {
+     int status;
+     int exitcode;
+@@ -341,7 +391,7 @@
+  * If warn_suffix is true and the ffilename doesn't end in &quot;.test&quot;
+  * then we'll print a warning to stderr.  This is used when
+  * processing the cmdline args so the user will know why a file
+- * explicitly named didn't run.
++ * that was explicitly named didn't run.
+  *
+  * When config files are executing, they use the standard stdout
+  * and stderr.  That way, the user sees any output while the test
+@@ -355,7 +405,7 @@
+  * @returns 1 if we should keep testing, 0 if we should stop now.
+  */
+ 
+-int run_test(const char *name, int warn_suffix)
++static int run_test(const char *name, int warn_suffix)
+ {
+     struct test test;
+     char buf[BUFSIZ];   // scan buffer for the testfile
+@@ -533,7 +583,7 @@
+  *  We don't want to process any hidden files or special directories.
+  */
+ 
+-int select_nodots(const struct dirent *d)
++static int select_nodots(const struct dirent *d)
+ {
+     return d-&gt;d_name[0] != '.';
+ }
+@@ -543,6 +593,33 @@
+ int process_dir();
+ 
+ 
++/**
++ * Sucks the dirname from an absolute file path and calls curinit with it.
++ */
++
++static void init_path(const char *path)
++{
++	const char *cp;
++	int loc;
++	char buf[PATH_MAX];
++	
++	cp = strrchr(path, '/');
++	if(cp == NULL) {
++		fprintf(stderr, &quot;Illegal absolute path '%s'\n&quot;, path);
++		exit(runtime_error);
++	}
++
++	strncpy(buf, path, sizeof(buf));
++
++	loc = cp - path;
++	if(sizeof(buf)-1 &lt; loc) {
++		loc = sizeof(buf)-1;
++	}
++
++	buf[loc] = '\0';
++	curinit(buf);
++}
++
+ /** Processes a directory specified using an absolute path.
+  *
+  * We need to save and restore curpath to do this.
+@@ -550,13 +627,13 @@
+  * @returns 1 if we should continue testing, 0 if we should abort.
+  */
+ 
+-int process_absolute_file(const char *path, int warn_suffix)
++static int process_absolute_file(const char *path, int warn_suffix)
+ {
+ 	struct cursave save;
+ 	int keepontruckin;
+ 
+ 	cursave(&amp;save);
+-	curinit(&quot;/&quot;);
++	init_path(path);
+ 
+ 	if(outmode == outmode_test) {
+ 		printf(&quot;\nProcessing %s\n&quot;, path);
+@@ -573,7 +650,7 @@
+  * We need to save and restore curpath to do this.
+  */
+ 
+-int process_absolute_dir(const char *path)
++static int process_absolute_dir(const char *path)
+ {
+ 	struct cursave save;
+ 	int keepontruckin;
+@@ -597,9 +674,9 @@
+  * See run_test() for an explanation of warn_suffix.
+  */
+ 
+-int process_ents(char **ents, int warn_suffix)
++static int process_ents(char **ents, int warn_suffix)
+ {
+-    struct stat st;
++	struct stat st;
+     mode_t *modes;
+     int i, n;
+ 	int keepontruckin;
+@@ -626,8 +703,10 @@
+ 				}
+ 				cp = curabsolute();
+ 			}
+-            if(stat(cp, &amp;st) &lt; 0) {
+-                fprintf(stderr, &quot;%s: %s\n&quot;, cp, strerror(errno));
++			// Need to be careful to test that file does exist.
++			// Bash opens it, not us, so the error message might
++			// be confusing.
++			if(!verify_readable(cp,&amp;st,0)) {
+                 exit(runtime_error);
+             }
+ 			if(ents[i][0] != '/') curpop(keep);
+@@ -716,7 +795,7 @@
+ }
+ 
+ 
+-void stop_tests()
++static void stop_tests()
+ {
+ 	checkerr(close(g_outfd), &quot;closing&quot;, g_outname);
+ 	checkerr(close(g_errfd), &quot;closing&quot;, g_errname);
+@@ -744,7 +823,7 @@
+  * This should save some inode thrashing.
+  */
+ 
+-void start_tests()
++static void start_tests()
+ {
+ 	char *cp;
+ 
+@@ -780,12 +859,17 @@
+ }
+ 
+ 
+-void set_config_file(const char *cfg)
++static void set_config_file(const char *cfg)
+ {
+ 	char cwd[PATH_MAX];
+ 	char out[PATH_MAX];
+ 	char *path;
+ 
++	if(cfg[0] == '\0') {
++		fprintf(stderr, &quot;You must specify a directory for --config.\n&quot;);
++		exit(argument_error);
++	}
++
+ 	if(!getcwd(cwd, PATH_MAX)) {
+ 		perror(&quot;Couldn't get current working directory&quot;);
+ 		exit(runtime_error);
+@@ -798,6 +882,13 @@
+ 		exit(runtime_error);
+ 	}
+ 
++	// need to ensure as well as we can that the file is readable because
++	// we don't open it ourselves.  Bash does.  And that can lead to some
++	// really cryptic error messages.
++	if(!verify_readable(out,NULL,1)) {
++		exit(runtime_error);
++	}
++
+ 	config_file = strdup(out);
+ 	if(!config_file) {
+ 		perror(&quot;strdup&quot;);
+@@ -806,7 +897,7 @@
+ }
+ 
+ 
+-void usage()
++static void usage()
+ {
+ 	printf(
+ 			&quot;Usage: tmtest [OPTION]... [DLDIR]\n&quot;
+@@ -819,7 +910,7 @@
+ }
+ 
+ 
+-void process_args(int argc, char **argv)
++static void process_args(int argc, char **argv)
+ {
+     char buf[256], *cp;
+     int optidx, i, c;
+@@ -833,6 +924,7 @@
+ 		{&quot;dump-script&quot;, 0, &amp;dumpscript, 1},
+ 		{&quot;help&quot;, 0, 0, 'h'},
+ 		{&quot;output&quot;, 0, 0, 'o'},
++		{&quot;patch&quot;, 0, 0, 'p'},
+ 		{&quot;quiet&quot;, 0, 0, 'q'},
+ 		{&quot;version&quot;, 0, 0, 'V'},
+ 		{0, 0, 0, 0},
+@@ -871,6 +963,10 @@
+                 outmode = outmode_dump;
+ 				break;
+ 
++			case 'p':
++                outmode = outmode_diff;
++                break;
++
+ 			case 'q':
+ 				quiet++;
+ 				break;
+
+Added: trunk/test/00-cmdline/10-CfgDir.test
+===================================================================
+--- trunk/test/00-cmdline/10-CfgDir.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/00-cmdline/10-CfgDir.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,7 @@
++tmtest $args --config=/tmp - &lt;&lt;-EOL
++	echo Test!
++EOL
++
++RESULT: 2
++STDERR:
++Could not open /tmp: not a file!
+
+Added: trunk/test/00-cmdline/11-CfgMissing.test
+===================================================================
+--- trunk/test/00-cmdline/11-CfgMissing.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/00-cmdline/11-CfgMissing.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,20 @@
++# Ensures that tmtest correctly handles when we specify a nonexistent file.
++# NOTE: the result is the result of the sed command, not the result of
++# the tmtest command.  tmtest should return 2.  This is unfortunate.
++# TODO: how can I fix this?
++
++
++SANIFY ()
++{
++	sed -e 's/Could not locate .*zzyzx: No such file or directory/Could not locate ...zzyzx: No such file or directory/'
++}
++
++tmtest $args --config=&quot;$MYDIR/zzyzx&quot; - &lt;&lt;-EOL 2&gt;&amp;1 | SANIFY
++	echo Howdy
++	STDOUT:
++	Howdy
++EOL
++
++RESULT: 0
++STDOUT:
++Could not locate ...zzyzx: No such file or directory
+
+Added: trunk/test/00-cmdline/12-CfgEmpty.test
+===================================================================
+--- trunk/test/00-cmdline/12-CfgEmpty.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/00-cmdline/12-CfgEmpty.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,9 @@
++tmtest $args --config= - &lt;&lt;-EOL
++	echo Howdy
++	STDOUT:
++	Howdy
++EOL
++
++RESULT: 1
++STDERR:
++You must specify a directory for --config.
+
+Added: trunk/test/01-testfile/02-StdOutNK.test
+===================================================================
+--- trunk/test/01-testfile/02-StdOutNK.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/02-StdOutNK.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,14 @@
++# Ensure that a keyword can appear in the output clause as long as the
++# following char isn't a delimiter (&quot;STDOUT &quot;, &quot;STDOUT:&quot; and &quot;STDOUT\n&quot;
++# are all keywords, &quot;STDOUTx&quot; is not).
++
++tmtest $args -q - &lt;&lt;-EOL
++	echo STDOUTx
++	STDOUT:
++	STDOUTx
++EOL
++
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/01-testfile/03-StdErrNK.test
+===================================================================
+--- trunk/test/01-testfile/03-StdErrNK.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/03-StdErrNK.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,17 @@
++# Ensure that a keyword can appear in the output clause as long as the
++# following char isn't a delimiter (&quot;STDOUT &quot;, &quot;STDOUT:&quot; and &quot;STDOUT\n&quot;
++# are all keywords, &quot;STDOUTx&quot; is not).
++#
++# Same as 02, but works on STDERR not STDOUT.
++
++
++tmtest $args -q - &lt;&lt;-EOL
++	echo STDERR. 1&gt;&amp;2
++	STDERR:
++	STDERR.
++EOL
++
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Modified: trunk/test/01-testfile/08-GarbageInStdout.test
+===================================================================
+--- trunk/test/01-testfile/08-GarbageInStdout.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/08-GarbageInStdout.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -8,9 +8,9 @@
+ 	STDOUT: crapola
+     crapola
+ EOL
+-STDERR:
++STDERR
+ (STDIN) line 2: unknown arguments &quot;crapola&quot;
+-STDOUT:
++STDOUT
+ FAIL (STDIN)                   O..  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/01-testfile/10-DumpScript.test
+===================================================================
+--- trunk/test/01-testfile/10-DumpScript.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/10-DumpScript.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -2,11 +2,23 @@
+ # This is just so we don't surprise ourselves...  Any time you modify
+ # template.sh, you should expect test to fail.
+ 
+-tmtest $args --dump-script - &lt;&lt;-EOL
+-THE-SCRIPT THE-SCRIPT THE-SCRIPT 1
+-THE-SCRIPT THE-SCRIPT THE-SCRIPT 2
+-THE-SCRIPT THE-SCRIPT THE-SCRIPT 3
+-THE-SCRIPT THE-SCRIPT THE-SCRIPT 4
++SANIFY ()
++{
++	# This function cleans the absolute pathnames specifying the
++	# 'tmtest.sub.conf' config file from the script.
++
++	sed \
++	-e &quot;s/echo 'CONFIG: .*tmtest.sub.conf' .*/echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD/&quot; \
++	-e &quot;s/MYDIR='.*test'/MYDIR='...test'/&quot; \
++	-e &quot;s/MYFILE='.*tmtest.sub.conf'/MYFILE='...tmtest.sub.conf'/&quot; \
++	-e &quot;s/\\. '.*tmtest.sub.conf'/. '...tmtest.sub.conf'/&quot;
++}
++
++tmtest $args --dump-script - &lt;&lt;-EOL | SANIFY
++	THE-SCRIPT THE-SCRIPT THE-SCRIPT 1
++	THE-SCRIPT THE-SCRIPT THE-SCRIPT 2
++	THE-SCRIPT THE-SCRIPT THE-SCRIPT 3
++	THE-SCRIPT THE-SCRIPT THE-SCRIPT 4
+ EOL
+ 
+ MODIFY:
+@@ -28,8 +40,12 @@
+ 	DISABLE:  () { DISABLED $*; }
+ 
+ 	TESTDIR='/tmp'
+-	TESTFILE='/tmp/-'
++	TESTFILE='(STDIN)'
+ 
++	echo 'CONFIG: ...tmtest.sub.conf' &gt;STATUSFD
++	MYDIR='...test'
++	MYFILE='...tmtest.sub.conf'
++	. '...tmtest.sub.conf'
+ 
+ 
+ 	echo PREPARE &gt;&amp;7
+@@ -43,9 +59,9 @@
+ 	MODIFY () { exit 0; }
+ 	MODIFY: () { exit 0; }
+ 
+-	echo 'RUNNING: /tmp/-' &gt;&amp;7
++	echo 'RUNNING: (STDIN)' &gt;&amp;7
+ 	MYDIR='/tmp'
+-	MYFILE='/tmp/-'
++	MYFILE='(STDIN)'
+ 	exec &gt;&amp;3 2&gt;&amp;5
+ 	exec 3&gt;&amp;-
+ 	exec 5&gt;&amp;-
+
+Added: trunk/test/01-testfile/11-InnerConfig.test
+===================================================================
+--- trunk/test/01-testfile/11-InnerConfig.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/11-InnerConfig.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,15 @@
++# Ensure that inner tests don't read any config files outside of the
++# test directory.  (seems like there's got to be a better way of doing
++# this but this works for now).
++
++tmtest $args -q - &lt;&lt;-'EOL'
++	if [ $OUTER_CONFIG_FILE ]; then
++		# this is what happens when inner tests don't have $args
++		ABORT &quot;inner test read outer config file!&quot;
++	fi
++EOL
++
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/01-testfile/20-TestVars.test
+===================================================================
+--- trunk/test/01-testfile/20-TestVars.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/20-TestVars.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,23 @@
++# Ensure the variables are set up correctly when we're running a test
++# from stdin.
++
++# MYDIR=/tmp, MYFILE=&quot;(STDIN)&quot;, TESTDIR=/tmp, TESTFILE=&quot;(STDIN)&quot;
++
++
++tmtest $args -o -q - &lt;&lt;-'EOL' | INDENT
++	echo MYDIR:    &quot;$MYDIR&quot;
++	echo MYFILE:   &quot;$MYFILE&quot;
++	echo TESTDIR:  &quot;$TESTDIR&quot;
++	echo TESTFILE: &quot;$TESTFILE&quot;
++EOL
++
++STDOUT:
++    echo MYDIR:    &quot;$MYDIR&quot;
++    echo MYFILE:   &quot;$MYFILE&quot;
++    echo TESTDIR:  &quot;$TESTDIR&quot;
++    echo TESTFILE: &quot;$TESTFILE&quot;
++    STDOUT:
++    MYDIR: /tmp
++    MYFILE: (STDIN)
++    TESTDIR: /tmp
++    TESTFILE: (STDIN)
+
+Added: trunk/test/01-testfile/21-TestVarsABS.test
+===================================================================
+--- trunk/test/01-testfile/21-TestVarsABS.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/21-TestVarsABS.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,22 @@
++# Make sure the variables are set up correctly when we are running a
++# test with an absolute pathname.
++
++MKFILE tt &lt;&lt;-'EOL'
++	echo MYDIR:    &quot;$MYDIR&quot;
++	echo MYFILE:   &quot;$MYFILE&quot;
++	echo TESTDIR:  &quot;$TESTDIR&quot;
++	echo TESTFILE: &quot;$TESTFILE&quot;
++EOL
++
++tmtest $args --all-files -o -q &quot;$tt&quot; &lt;&lt;-EOL | REPLACE &quot;$tt&quot; /tmp/FILE | INDENT
++
++STDOUT:
++    echo MYDIR:    &quot;$MYDIR&quot;
++    echo MYFILE:   &quot;$MYFILE&quot;
++    echo TESTDIR:  &quot;$TESTDIR&quot;
++    echo TESTFILE: &quot;$TESTFILE&quot;
++    STDOUT:
++    MYDIR: /tmp
++    MYFILE: /tmp/FILE
++    TESTDIR: /tmp
++    TESTFILE: /tmp/FILE
+
+Added: trunk/test/01-testfile/22-TestVarsRel.test
+===================================================================
+--- trunk/test/01-testfile/22-TestVarsRel.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/01-testfile/22-TestVarsRel.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,23 @@
++# Make sure the variables are set up correctly when we are running a
++# test with a relative pathname.
++
++MKFILE tt &lt;&lt;-'EOL'
++	echo MYDIR:    &quot;$MYDIR&quot;
++	echo MYFILE:   &quot;$MYFILE&quot;
++	echo TESTDIR:  &quot;$TESTDIR&quot;
++	echo TESTFILE: &quot;$TESTFILE&quot;
++EOL
++
++cd `dirname &quot;$tt&quot;`
++tmtest $args --all-files -o -q `basename &quot;$tt&quot;` &lt;&lt;-EOL | REPLACE $tt /tmp/FILE | INDENT
++
++STDOUT:
++    echo MYDIR:    &quot;$MYDIR&quot;
++    echo MYFILE:   &quot;$MYFILE&quot;
++    echo TESTDIR:  &quot;$TESTDIR&quot;
++    echo TESTFILE: &quot;$TESTFILE&quot;
++    STDOUT:
++    MYDIR: /tmp
++    MYFILE: /tmp/FILE
++    TESTDIR: /tmp
++    TESTFILE: /tmp/FILE
+
+Modified: trunk/test/02-running/21-QuoteFile.test
+===================================================================
+--- trunk/test/02-running/21-QuoteFile.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/02-running/21-QuoteFile.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -1,4 +1,5 @@
+-# Ensures that a test disabled by a config file doesn't run.
++# Ensures that testfiles with quotes in their names are skipped
++# (might as well close this potential security hole right now)
+ 
+ MKDIR dir
+ cd &quot;$dir&quot;
+
+Modified: trunk/test/02-running/40-Replace.test
+===================================================================
+--- trunk/test/02-running/40-Replace.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/02-running/40-Replace.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -2,47 +2,71 @@
+ # regular expression metachars are correctly interpreted as
+ # regular characters.
+ 
+-echo $'Abc  : '   $'abc'       | REPLACE abc def
+-echo $'A\'b  : '  $'a\'b'      | REPLACE $'a\'b' def
+-echo $'A\&quot;b  : '  $'a\&quot;b'      | REPLACE $'a\&quot;b' def
+-echo $'A\'\'b : ' $'a\'\'b'    | REPLACE $'a\'\'b' def
+-echo $'A\&quot;\&quot;b : ' $'a\&quot;\&quot;b'    | REPLACE $'a\&quot;\&quot;b' def
+-echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
+-echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
+-echo $'A\'\\b : ' $'a\'\\b'    | REPLACE $'a\'\\b' def
+-echo $'A\&quot;\\b : ' $'a\&quot;\\b'    | REPLACE $'a\&quot;\\b' def
+-echo $'A\\\\b : ' $'a\\\\b'    | REPLACE $'a\\\\b' def
+-echo  'A/b  : '   'a/b'        | REPLACE a/b def
+-echo  'A.b  : '   'a.b'        | REPLACE 'a.b' def
+-echo  'A*b  : '   'a*b'        | REPLACE 'a*b' def
+-echo  'A+b  : '   'a+b'        | REPLACE 'a+b' def
+-echo  'A$b  : '   'a$b'        | REPLACE 'a$b' def
+-echo  'A$$b : '   'a$$b'       | REPLACE 'a$$b' def
+-echo  '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">A at b</A>  : '   '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>'        | REPLACE '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>' def
+-echo  'D.f  : '   'def'        | REPLACE 'd.f' BAD
+-echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
+-echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
+-echo $'A\\Q\\Eb:' $'a\\Q\\Eb' | REPLACE $'a\\Q\\Eb' def
++tmtest $CFG -o - &lt;&lt;'EOL' | INDENT
++	echo $'Abc  : '   $'abc'       | REPLACE abc def
++	echo $'A\'b  : '  $'a\'b'      | REPLACE $'a\'b' def
++	echo $'A\&quot;b  : '  $'a\&quot;b'      | REPLACE $'a\&quot;b' def
++	echo $'A\'\'b : ' $'a\'\'b'    | REPLACE $'a\'\'b' def
++	echo $'A\&quot;\&quot;b : ' $'a\&quot;\&quot;b'    | REPLACE $'a\&quot;\&quot;b' def
++	echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
++	echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
++	echo $'A\'\\b : ' $'a\'\\b'    | REPLACE $'a\'\\b' def
++	echo $'A\&quot;\\b : ' $'a\&quot;\\b'    | REPLACE $'a\&quot;\\b' def
++	echo $'A\\\\b : ' $'a\\\\b'    | REPLACE $'a\\\\b' def
++	echo  'A/b  : '   'a/b'        | REPLACE a/b def
++	echo  'A.b  : '   'a.b'        | REPLACE 'a.b' def
++	echo  'A*b  : '   'a*b'        | REPLACE 'a*b' def
++	echo  'A+b  : '   'a+b'        | REPLACE 'a+b' def
++	echo  'A$b  : '   'a$b'        | REPLACE 'a$b' def
++	echo  'A$$b : '   'a$$b'       | REPLACE 'a$$b' def
++	echo  '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">A at b</A>  : '   '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>'        | REPLACE '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>' def
++	echo  'D.f  : '   'def'        | REPLACE 'd.f' BAD
++	echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
++	echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
++	echo $'A\\Q\\Eb:' $'a\\Q\\Eb'  | REPLACE $'a\\Q\\Eb' def
++EOL
+ 
+ STDOUT:
+-Abc  :  def
+-A'b  :  def
+-A&quot;b  :  def
+-A''b :  def
+-A&quot;&quot;b :  def
+-A\'b :  def
+-A\&quot;b :  def
+-A'\b :  def
+-A&quot;\b :  def
+-A\\b :  def
+-A/b  :  def
+-A.b  :  def
+-A*b  :  def
+-A+b  :  def
+-A$b  :  def
+-A$$b :  def
+<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">-A at b</A>  :  def
+-D.f  :  def
+-A\'b :  def
+-A\&quot;b :  def
+-A\Q\Eb: def
++    	echo $'Abc  : '   $'abc'       | REPLACE abc def
++    	echo $'A\'b  : '  $'a\'b'      | REPLACE $'a\'b' def
++    	echo $'A\&quot;b  : '  $'a\&quot;b'      | REPLACE $'a\&quot;b' def
++    	echo $'A\'\'b : ' $'a\'\'b'    | REPLACE $'a\'\'b' def
++    	echo $'A\&quot;\&quot;b : ' $'a\&quot;\&quot;b'    | REPLACE $'a\&quot;\&quot;b' def
++    	echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
++    	echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
++    	echo $'A\'\\b : ' $'a\'\\b'    | REPLACE $'a\'\\b' def
++    	echo $'A\&quot;\\b : ' $'a\&quot;\\b'    | REPLACE $'a\&quot;\\b' def
++    	echo $'A\\\\b : ' $'a\\\\b'    | REPLACE $'a\\\\b' def
++    	echo  'A/b  : '   'a/b'        | REPLACE a/b def
++    	echo  'A.b  : '   'a.b'        | REPLACE 'a.b' def
++    	echo  'A*b  : '   'a*b'        | REPLACE 'a*b' def
++    	echo  'A+b  : '   'a+b'        | REPLACE 'a+b' def
++    	echo  'A$b  : '   'a$b'        | REPLACE 'a$b' def
++    	echo  'A$$b : '   'a$$b'       | REPLACE 'a$$b' def
++    	echo  '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">A at b</A>  : '   '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>'        | REPLACE '<A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">a at b</A>' def
++    	echo  'D.f  : '   'def'        | REPLACE 'd.f' BAD
++    	echo $'A\\\'b : ' $'a\\\'b'    | REPLACE $'a\\\'b' def
++    	echo $'A\\\&quot;b : ' $'a\\\&quot;b'    | REPLACE $'a\\\&quot;b' def
++    	echo $'A\\Q\\Eb:' $'a\\Q\\Eb'  | REPLACE $'a\\Q\\Eb' def
++    STDOUT:
++    Abc  :  def
++    A'b  :  def
++    A&quot;b  :  def
++    A''b :  def
++    A&quot;&quot;b :  def
++    A\'b :  def
++    A\&quot;b :  def
++    A'\b :  def
++    A&quot;\b :  def
++    A\\b :  def
++    A/b  :  def
++    A.b  :  def
++    A*b  :  def
++    A+b  :  def
++    A$b  :  def
++    A$$b :  def
++    <A HREF="https://lists.berlios.de/mailman/listinfo/tmtest-commits">A at b</A>  :  def
++    D.f  :  def
++    A\'b :  def
++    A\&quot;b :  def
++    A\Q\Eb: def
+
+Added: trunk/test/02-running/41-Indent.test
+===================================================================
+--- trunk/test/02-running/41-Indent.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/02-running/41-Indent.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,29 @@
++# Ensures that INDENT works.  Also tests that we can exec to a process
++# group to cause all further output from the script to be indented.
++
++tmtest $CFG -o - &lt;&lt;-EOL | INDENT &quot;| &quot;
++	# this technique doesn't work.  Fixes scheduled for 0.98 should
++	# fix it.  Put it into its own test when that happens.
++	# exec &gt; &gt;(INDENT)
++
++	(
++	echo one
++	echo two
++	echo three!
++	) | INDENT &quot;in --&gt; &quot;
++EOL
++
++STDOUT:
++| # this technique doesn't work.  Fixes scheduled for 0.98 should
++| # fix it.  Put it into its own test when that happens.
++| # exec &gt; &gt;(INDENT)
++| 
++| (
++| echo one
++| echo two
++| echo three!
++| ) | INDENT &quot;in --&gt; &quot;
++| STDOUT:
++| in --&gt; one
++| in --&gt; two
++| in --&gt; three!
+
+Added: trunk/test/03-results/01-YstderrOut.test
+===================================================================
+--- trunk/test/03-results/01-YstderrOut.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/03-results/01-YstderrOut.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,12 @@
++# Ensures an empty STDOUT clause won't affect the test results.
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR:
++	Howdy
++	STDOUT:
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/01-YstdoutOut.test
+===================================================================
+--- trunk/test/03-results/01-YstdoutOut.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/03-results/01-YstdoutOut.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,12 @@
++# Ensures an empty stderr section won't affect the test results.
++
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy
++	STDOUT :
++	Howdy
++	STDERR:
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/14-NoNLWarn.test
+===================================================================
+--- trunk/test/03-results/14-NoNLWarn.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/03-results/14-NoNLWarn.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,22 @@
++# Scott Bronson
++# 26 Feb 2006
++#
++# Verifies that a warning is printed when a the actual output for a
++# section didn't include a newline, but the expected output for that
++# section had one.  (this error can only be fixed by editing the
++# testfile; patch can't fix it).
++
++# See also 18-NoNLWarnOut.test and 04-diff/22-PatchNoNL2.test
++
++tmtest -q - &lt;&lt;-EOL
++	echo -n Howdy
++	STDOUT:
++	Howdy
++EOL
++STDOUT : 
++FAIL (STDIN)                   O..  stdout differed
++
++1 test run, 0 successes, 1 failure.
++STDERR:
++WARNING: STDOUT didn't end with a newline!
++   Add a -n to (STDIN) line 3 if this is the expected behavior.
+
+Added: trunk/test/03-results/17-NoStderr.test
+===================================================================
+--- trunk/test/03-results/17-NoStderr.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/03-results/17-NoStderr.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,10 @@
++tmtest -q - &lt;&lt;-EOL
++	echo Howdy 1&gt;&amp;2
++	STDERR :
++	Howdy
++	STDOUT:
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/18-NoNLWarnOut.test
+===================================================================
+--- trunk/test/03-results/18-NoNLWarnOut.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/03-results/18-NoNLWarnOut.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,31 @@
++# If a section is marked as having a trailing newline, but one wasn't
++# found in the actual output, we need to print a warning.
++
++# By the time we figure out that the section didn't end in a trailing
++# newline, we've long since output the section header and so we missed
++# our chance to fix it ourselves.  Therefore, we'll warn the user that
++# he has to fix it himself).
++
++# See also 14-NoNLWarn.test and 04-diff/18-NeedNLWarn.test
++
++tmtest -o -q - &lt;&lt;-EOL | INDENT
++	echo -n &quot;right output&quot;
++	echo -n &quot;stderr text&quot; 1&gt;&amp;2
++	STDOUT:
++	right output
++	STDERR:
++	stderr text
++EOL
++
++STDERR:
++WARNING: STDOUT didn't end with a newline!
++   Add a -n to (STDIN) line 3 if this is the expected behavior.
++WARNING: STDERR didn't end with a newline!
++   Add a -n to (STDIN) line 5 if this is the expected behavior.
++STDOUT:
++    echo -n &quot;right output&quot;
++    echo -n &quot;stderr text&quot; 1&gt;&amp;2
++    STDOUT:
++    right outputSTDERR:
++    stderr text
++    
+
+Modified: trunk/test/03-results/33-BinaryHuge.test
+===================================================================
+--- trunk/test/03-results/33-BinaryHuge.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/03-results/33-BinaryHuge.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -3,18 +3,20 @@
+ # of 2 1-byte values (64K of data).
+ 
+ # We need to manually create the testfile because Bash will screw 
+-# things up if we use a heredoc.
++# things up if we use a heredoc.  We also ensure that the test data
++# ends in a newline, otherwise tmtest will complain (we could also
++# just have specified -n).
+ 
+ 
+ MKFILE tt &lt;&lt;-'EOL'
+-    perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}'
++    perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}; print &quot;\n&quot;;'
+     # stdout will be filled in below
+ 	STDOUT:
+ EOL
+ 
+ 
+ # Add the expected results to the testfile.
+-perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}' &gt;&gt; &quot;$tt&quot;
++perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}; print &quot;\n&quot;;' &gt;&gt; &quot;$tt&quot;
+ 
+ # and run the test
+ tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+
+Modified: trunk/test/04-diff/01-Diff.test
+===================================================================
+--- trunk/test/04-diff/01-Diff.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/04-diff/01-Diff.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -7,7 +7,7 @@
+ # updated for 2.0 on 27 Jan 2005
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest --diff - &lt;&lt;-EOL
+     echo &quot;right output&quot;
+     STDOUT:
+     wrong output
+
+Modified: trunk/test/04-diff/02-MultiDiff.test
+===================================================================
+--- trunk/test/04-diff/02-MultiDiff.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/04-diff/02-MultiDiff.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -18,7 +18,7 @@
+ 	test 2 wrong output
+ EOF
+ 
+-tmtest --all-files -d &quot;$t1&quot; &quot;$t2&quot;
++tmtest --all-files -p &quot;$t1&quot; &quot;$t2&quot;
+ 
+ 
+ MODIFY:
+
+Modified: trunk/test/04-diff/05-AbortDiff.test
+===================================================================
+--- trunk/test/04-diff/05-AbortDiff.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/04-diff/05-AbortDiff.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -5,7 +5,7 @@
+ 
+ 
+ 
+-tmtest -d - &lt;&lt;-EOL
++tmtest --patch - &lt;&lt;-EOL
+ 	ABORT
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+
+Added: trunk/test/04-diff/18-NeedNLWarn.test
+===================================================================
+--- trunk/test/04-diff/18-NeedNLWarn.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/04-diff/18-NeedNLWarn.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -0,0 +1,40 @@
++# If a section is marked as having a trailing newline, but one wasn't
++# found in the actual output, we need to print a warning.
++
++# By the time we figure out that the section didn't end in a trailing
++# newline, we've long since output the section header and so we missed
++# our chance to fix it ourselves.  Therefore, we'll warn the user that
++# he has to fix it himself).  It's also too late to stop ourselves from
++# outputting an incorrect patch.  No problem -- user can make the change
++# and patch again, fixing the problem.
++
++# See also the corresponding test in 03-Running/18-NeedNLWarn.test
++
++
++tmtest --diff -q - &lt;&lt;-EOL | FIX_DIFF
++	echo -n &quot;right output&quot;
++	echo -n &quot;stderr text&quot; 1&gt;&amp;2
++	STDOUT:
++	right output
++	STDERR:
++	stderr text
++EOL
++
++STDERR:
++WARNING: STDOUT didn't end with a newline!
++   Add a -n to (STDIN) line 3 if this is the expected behavior.
++WARNING: STDERR didn't end with a newline!
++   Add a -n to (STDIN) line 5 if this is the expected behavior.
++STDOUT:
++--- /tmp/FILE DATE TIME TZ
+++++ - DATE TIME TZ
++@@ -1,6 +1,5 @@
++ echo -n &quot;right output&quot;
++ echo -n &quot;stderr text&quot; 1&gt;&amp;2
++ STDOUT:
++-right output
++-STDERR:
++-stderr text
+++right outputSTDERR:
+++stderr text
++\ No newline at end of file
+
+Modified: trunk/test/04-diff/21-PatchNoNL.test
+===================================================================
+--- trunk/test/04-diff/21-PatchNoNL.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/04-diff/21-PatchNoNL.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -17,8 +17,10 @@
+ 
+ # This is a little exotic...  Patch needs the CWD to be the directory
+ # containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
++# Ignore stderr because we want to ignore the warning that tmtest prints
++# about the sections not having matching trailing newlines.
+ 
+-tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++tmtest --all-files -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+@@ -27,7 +29,7 @@
+ STDOUT:
+ patching FILE
+ And the patched file:
+-  echo -n &quot;right output&quot;
+-  STDOUT:
+-  right output&lt;&lt;DONE&gt;&gt;
++    echo -n &quot;right output&quot;
++    STDOUT:
++    right output&lt;&lt;DONE&gt;&gt;
+ (since there's no trailing newline, DONE should appear on the prevous line)
+
+Modified: trunk/test/04-diff/22-PatchNoNL2.test
+===================================================================
+--- trunk/test/04-diff/22-PatchNoNL2.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/04-diff/22-PatchNoNL2.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -9,7 +9,9 @@
+ # of the last STDOUT line.  This is not real good, but at least it
+ # guarantees that the test will fail until the user fixes it.
+ 
++# See also test/03-results/18-NoNLWarn.test
+ 
++
+ MKFILE tt &lt;&lt;-EOL
+ 	echo -n &quot;right output&quot;
+     echo &quot;stderr text&quot; 1&gt;&amp;2
+@@ -22,8 +24,10 @@
+ 
+ # This is a little exotic...  Patch needs the CWD to be the directory
+ # containing the file to patch.  &quot;dirname $(tt.test)&quot; gives that dir.
++# Pipe STDERR to /dev/null because we want to ignore the warning that
++# tmtest prints (other tests ensure the warning works)
+ 
+-tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
++tmtest --all-files -d &quot;$tt&quot; 2&gt;/dev/null | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch | FIX_PATCH)
+ echo &quot;And the patched file:&quot;
+ INDENT &lt; &quot;$tt&quot;
+ echo &quot;&lt;&lt;DONE&gt;&gt;&quot;
+@@ -31,9 +35,9 @@
+ STDOUT:
+ patching FILE
+ And the patched file:
+-  echo -n &quot;right output&quot;
+-      echo &quot;stderr text&quot; 1&gt;&amp;2
+-  STDOUT:
+-  right outputSTDERR:
+-  stderr text
++    echo -n &quot;right output&quot;
++        echo &quot;stderr text&quot; 1&gt;&amp;2
++    STDOUT:
++    right outputSTDERR:
++    stderr text
+ &lt;&lt;DONE&gt;&gt;
+
+Modified: trunk/test/04-diff/23-PatchNoNL3.test
+===================================================================
+--- trunk/test/04-diff/23-PatchNoNL3.test	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/04-diff/23-PatchNoNL3.test	2006-03-02 23:56:35 UTC (rev 99)
+@@ -29,8 +29,8 @@
+ STDOUT:
+ patching FILE
+ And the patched file:
+-  echo &quot;right output&quot;
+-  STDOUT: -n
+-  right output
+-  
++    echo &quot;right output&quot;
++    STDOUT: -n
++    right output
++    
+ &lt;&lt;DONE&gt;&gt;
+
+Modified: trunk/test/tmtest.sub.conf
+===================================================================
+--- trunk/test/tmtest.sub.conf	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test/tmtest.sub.conf	2006-03-02 23:56:35 UTC (rev 99)
+@@ -14,5 +14,5 @@
+ 
+ 
+ # Include the standard tmtest functions
+-. ../tmlib.sh
++. &quot;$MYDIR/../tmlib.sh&quot;
+ 
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test.c	2006-03-02 23:56:35 UTC (rev 99)
+@@ -347,13 +347,6 @@
+ {
+     assert(!compare_in_progress(cmpscan));
+ 
+-    // associates the scanstate with the fd and prepares to compare.
+-    if(*mv != match_unknown) {
+-        fprintf(stderr, &quot;'%s' has multiple %s sections!\n&quot;,
+-                filename, sectionname);
+-        exit(10);
+-    }
+-
+     // rewind the file
+     if(lseek(fd, 0, SEEK_SET) &lt; 0) {
+         fprintf(stderr, &quot;read_file lseek for status file: %s\n&quot;, strerror(errno));
+@@ -579,7 +572,13 @@
+ }
+ 
+ 
+-void start_output_section(struct test *test, const char *tok,
++/**
++ * Called when we're at the start of a STDOUT or STDERR section.
++ * Sets the cmpscanner up to compare the section.
++ * See end_output_section().
++ */
++
++int start_output_section(struct test *test, const char *tok,
+         int toklen, scanstate *cmpscan, int fd, matchval *val,
+         const char *secname)
+ {
+@@ -595,16 +594,47 @@
+         fprintf(stderr, &quot;%s line %d Error: duplicate %s &quot;
+                 &quot;section.  Ignored.\n&quot;, get_testfile_name(test),
+                 test-&gt;testfile.line, secname);
+-        // as long as scanref == null, no comparison will happen.
+-        assert(!cmpscan-&gt;scanref);
+-        return;
++        return 0;
+     }
+ 
+     compare_section_start(cmpscan, fd, test-&gt;eachline, val,
+         get_testfile_name(test), secname, suppress_trailing_newline);
++
++    return 1;
+ }
+ 
+ 
++/** 
++ * If the actual test results were found to not end in a newline,
++ * but the expected results were marked in the testfile as expecting
++ * a newline, this function prints the warning.
++ */
++
++void warn_section_newline(struct test *test, const char *name)
++{
++	fprintf(stderr, &quot;WARNING: %s didn't end with a newline!\n&quot;
++			&quot;   Add a -n to %s line %d if this is the expected behavior.\n&quot;,
++			name, get_testfile_name(test), test-&gt;testfile.line);
++}
++
++
++/**
++ * Finishes comparing a section.
++ * see start_output_section().
++ */
++
++void end_output_section(struct test *test, scanstate *cmpscan,
++        const char *name)
++{
++    int warn_nl = 0;
++
++    compare_end(cmpscan, &amp;warn_nl);
++    if(warn_nl) {
++		warn_section_newline(test, name);
++    }
++}
++
++
+ /** This routine parses the tokens returned by scan_sections() and
+  * compares them against the actual test results.  It stores the
+  * results in test-&gt;match_stdout, match_stderr, and match_result.
+@@ -621,30 +651,26 @@
+     #define get_cur_state(ss)    ((int)(ss)-&gt;userref)
+     #define set_cur_state(ss,x)  ((ss)-&gt;userref=(void*)(x))
+ 
+-    // compscan is the comparison scanner -- it is used to diff the
+-    // current output section (either stdout or stderr).
++    // cmpscan is the scanner used to perform the diff.
+     scanstate *cmpscan = refcon;
+ 
+-    // the section that we're entering (without the NEW flag attached)
++    // the section that we're processing (without the NEW flag attached)
+     int newsec = EX_TOKEN(sec);
+ 
+-    if(get_cur_state(cmpscan) == 0) {
+-        // This is the first time this scanner has been used.
+-        set_cur_state(cmpscan, exCOMMAND);
+-    }
++    // make sure we're not fed an illegal token.
++    assert(is_section_token(newsec) || sec == 0);
++    // make sure we're not starting from an illegal state.
++    assert(is_section_token(get_cur_state(cmpscan)) ||
++            get_cur_state(cmpscan) == 0);
+ 
+-    if(!is_section_token(newsec) &amp;&amp; sec != 0) {
+-        // We only work with result section tokens.  Ignore all
+-        // non-section-tokens except the eof token.
+-        return;
+-    }
+-
+     if(EX_ISNEW(sec) || sec == 0) {
+         // ensure previoius section is finished
+         switch(get_cur_state(cmpscan)) {
+             case exSTDOUT:
++                end_output_section(test, cmpscan, &quot;STDOUT&quot;);
++                break;
+             case exSTDERR:
+-                compare_end(cmpscan);
++                end_output_section(test, cmpscan, &quot;STDERR&quot;);
+                 break;
+             default:
+                 ;
+@@ -652,14 +678,23 @@
+ 
+         // then fire up the new section
+         set_cur_state(cmpscan, newsec);
+-        switch(get_cur_state(cmpscan)) {
++        switch(newsec) {
++            case 0:
++                // don't start a new section if eof.
++                break;
+             case exSTDOUT:
+-                start_output_section(test, datap, len, cmpscan,
+-                        test-&gt;outfd, &amp;test-&gt;stdout_match, &quot;STDOUT&quot;);
++                if(!start_output_section(test, datap, len, cmpscan,
++                        test-&gt;outfd, &amp;test-&gt;stdout_match, &quot;STDOUT&quot;))
++                {
++                    set_cur_state(cmpscan, 0);
++                }
+                 break;
+             case exSTDERR:
+-                start_output_section(test, datap, len, cmpscan,
+-                        test-&gt;errfd, &amp;test-&gt;stderr_match, &quot;STDERR&quot;);
++                if(!start_output_section(test, datap, len, cmpscan,
++                        test-&gt;errfd, &amp;test-&gt;stderr_match, &quot;STDERR&quot;))
++                {
++                    set_cur_state(cmpscan, 0);
++                }
+                 break;
+             case exRESULT:
+ 				parse_exit_clause(test, datap, len);
+@@ -668,19 +703,15 @@
+ 				parse_modify_clause(test, skip_section_name(datap,len),
+                         datap+len);
+                 break;
+-            case exCOMMAND:
+-                fprintf(stderr, &quot;%s line %d Error: Well, this is impossible.  &quot;
+-                        &quot;How did you start a new command section??\n&quot;,
+-                        get_testfile_name(test), test-&gt;testfile.line);
+-                // it should be harmless to continue but this definitely
+-                // indicates a bug in the scanner.
+-                break;
+         }
+     } else {
+         // we're continuing an already started section.
+-        assert(get_cur_state(cmpscan) == newsec);
++        assert(get_cur_state(cmpscan) == newsec || get_cur_state(cmpscan) == 0);
+ 
+         switch(get_cur_state(cmpscan)) {
++            case 0:
++                // do nothing
++                break;
+             case exSTDOUT:
+             case exSTDERR:
+                 compare_continue(cmpscan, datap, len);
+@@ -854,10 +885,11 @@
+ }
+ 
+ 
+-void write_raw_file(int outfd, int infd)
++int write_raw_file(int outfd, int infd)
+ {
+     char buf[BUFSIZ];
+     int rcnt, wcnt;
++	int ending_newline;
+ 
+     // first rewind the input file
+     if(lseek(infd, 0, SEEK_SET) &lt; 0) {
+@@ -871,6 +903,7 @@
+             rcnt = read(infd, buf, sizeof(buf));
+         } while(rcnt &lt; 0 &amp;&amp; errno == EINTR);
+         if(rcnt &gt; 0) {
++			ending_newline = (buf[rcnt-1] == '\n');
+             do {
+                 wcnt = write(outfd, buf, rcnt);
+             } while(wcnt &lt; 0 &amp;&amp; errno == EINTR);
+@@ -885,6 +918,8 @@
+             break;
+         }
+     } while(rcnt);
++
++	return ending_newline;
+ }
+ 
+ 
+@@ -947,62 +982,78 @@
+ }
+ 
+ 
+-static void write_file(int outfd, int infd, pcrs_job *job)
++static int write_file(int outfd, int infd, pcrs_job *job)
+ {
+ 	if(!job) {
+ 		// use the simple, fast routine
+-		write_raw_file(outfd, infd);
+-	} else {
+-		// use the line buffered routine
+-		write_modified_file(outfd, infd, job);
++		return write_raw_file(outfd, infd);
+ 	}
++
++	// use the line buffered routine
++	// (don't bother with the return value because we
++	// know that MODIFY sections are going away in the
++	// next release anyway)
++	write_modified_file(outfd, infd, job);
++	return 0;
+ }
+ 
+ 
++static void write_section(struct test *test, const char *datap, int len,
++		int fd, const char *name)
++{
++    int marked_no_nl = 0;
++	int has_nl;
++
++	parse_section_args(datap, len,
++			get_testfile_name(test), test-&gt;testfile.line,
++			start_output_section_argproc, &amp;marked_no_nl);
++
++	write(test-&gt;rewritefd, datap, len);
++	has_nl = write_file(test-&gt;rewritefd, fd, test-&gt;eachline);
++
++	if(marked_no_nl) {
++		// if a section is marked with --no-trailing-newline, we need
++		// to print a newline here so that the testfile isn't messed up.
++		// Otherwise, you'd end up with &quot;STDOUT -n:STDERR:&quot; on one line.
++		write_strconst(test-&gt;rewritefd, &quot;\n&quot;);
++	} else if(!has_nl) {
++		// If the section isn't marked with --no-trailing-newline, but
++		// the output DOESN'T have one, we need to print a warning.
++		// First, if the user will be viewing the test output, we need
++		// to add the final CR so our error message will appear at the
++		// start of the line.
++		if(test-&gt;rewritefd == STDOUT_FILENO) {
++			printf(&quot;\n&quot;);
++		}
++
++		warn_section_newline(test, name);
++	}
++}
++
++
+ /** Writes the actual results in place of the expected results.
+  */
+ 
+ void parse_section_output(struct test *test, int sec,
+         const char *datap, int len, void *refcon)
+ {
+-    int *needs_nl = (int*)refcon;
+-
+     assert(sec &gt;= 0);
+ 
+-    if(sec &amp; exNEW) {
+-        // check to see if previous section needs a newline appended.
+-        if(*needs_nl) {
+-            write_strconst(test-&gt;rewritefd, &quot;\n&quot;);
+-        }
+-
+-        *needs_nl = 0;
+-    }
+-
+     switch(sec) {
+-        case 0:
+-            if(*needs_nl) {
+-                write_strconst(test-&gt;rewritefd, &quot;\n&quot;);
+-            }
+-            break;
++		case 0:
++			// eof!  nothing to do.
++			break;
+ 
+         case exSTDOUT|exNEW:
+-            parse_section_args(datap, len,
+-                    get_testfile_name(test), test-&gt;testfile.line,
+-                    start_output_section_argproc, needs_nl);
+-            write(test-&gt;rewritefd, datap, len);
+-            write_file(test-&gt;rewritefd, test-&gt;outfd, test-&gt;eachline);
+-            test-&gt;stdout_match = match_yes;
++			write_section(test, datap, len, test-&gt;outfd, &quot;STDOUT&quot;);
++			test-&gt;stdout_match = match_yes;
+             break;
+         case exSTDOUT:
+             // ignore all data in the expected stdout.
+             break;
+ 
+         case exSTDERR|exNEW:
+-            parse_section_args(datap, len,
+-                    get_testfile_name(test), test-&gt;testfile.line,
+-                    start_output_section_argproc, needs_nl);
+-            write(test-&gt;rewritefd, datap, len);
+-            write_file(test-&gt;rewritefd, test-&gt;errfd, test-&gt;eachline);
++			write_section(test, datap, len, test-&gt;errfd, &quot;STDERR&quot;);
+             test-&gt;stderr_match = match_yes;
+             break;
+         case exSTDERR:
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/test.h	2006-03-02 23:56:35 UTC (rev 99)
+@@ -39,7 +39,7 @@
+ // all strings are malloc'd and need to be freed when the test is finished.
+ 
+ struct test {
+-    const char *testfilename;   ///&lt; will be &quot;-&quot; if reading from stdin.
++    const char *testfilename;   ///&lt; name of the test file.  does not include any directories.  will be &quot;-&quot; if reading from stdin.
+     scanstate testfile;         ///&lt; scans the testfile.  may be stdin so seeking is not allowed.
+ 
+     int rewritefd;          ///&lt; where to dump the rewritten test.  -1 if we're just running the tests, or the fd of the file that should receive the test contents.
+@@ -82,6 +82,7 @@
+ void test_free(struct test *test);
+ 
+ 
+-// random utility function for start_diff:
+-void write_raw_file(int outfd, int infd);
++// random utility function for start_diff.  Return value is true if the
++// file ends in a newline, false if not.
++int write_raw_file(int outfd, int infd);
+ 
+
+Modified: trunk/tfscan.c
+===================================================================
+--- trunk/tfscan.c	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/tfscan.c	2006-03-02 23:56:35 UTC (rev 99)
+@@ -8,6 +8,11 @@
+  * This file is covered by the MIT License.
+  */
+ 
++// STDOUT\n starts a new section.  STDOUT my be followed by
++// either whitespace or a colon -- nothing else.  If it's followed
++// by anything else, it's interpreted as data.
++
++
+ // TOTEST: &gt;8K token not containing a cr
+ // STDOUT:, STDERR:, etc at the EOF with no data.
+ // STDOUT at the beginning of the file.
+@@ -42,7 +47,7 @@
+ 
+ /*!re2c
+  
+-  // This is almost the scanner that this file implements, except that
++  // The following is almost the scanner that this file implements, except that
+   // this file handles data at EOF correctly.
+ 
+ WS      = [ \t];
+@@ -67,24 +72,82 @@
+ */
+ 
+ 
++static int nontok_start(scanstate *ss)
++{
++	if(YYCURSOR &gt;= YYLIMIT) {
++		int r = (*ss-&gt;read)(ss);
++		// if there was an error, return an error token.
++		if(r &lt; 0) return r;
++		// if we're completely out of data, return eof.
++		// (this is why we can't use re2c for this scanner)
++		if(ss-&gt;token &gt;= ss-&gt;limit) return 0;
++	}
+ 
++	// Since it's impossible to have a token at this point so we
++	// scan forward to the next CR/LF.
++	while(YYCURSOR &lt; YYLIMIT) {
++		if(*YYCURSOR == '\r' || *YYCURSOR == '\n') break;
++		YYCURSOR++;
++	}
++	if(YYCURSOR &gt;= YYLIMIT) {
++		// We have to assume that we previously read as much data as
++		// possible.  So the entire buffer is just data with no tokens
++		// and no CR/LF.
++		return (int)ss-&gt;scanref;
++	}
++
++	if(*YYCURSOR == '\r') YYCURSOR++;
++	if(*YYCURSOR == '\n') YYCURSOR++;
++
++    ss-&gt;line += 1;
++
++	// We have potential for finding a token at this point.
++	ss-&gt;state = tfscan_tok_start;
++	return (int)ss-&gt;scanref;
++}
++
++
++
+ static int scan_to_end_of_keyword(scanstate *ss, int tok)
+ {
++    int r;
++
+ 	// We assume that we're immediately at the end of a keyword
+ 	// section.  The first six bytes just guarantees the keyword.
+ 
+ 	// skip all characters up to the final nl.
+ 
++    // there's a chance we can be called with an empty buffer.
++    // If so, we need to fill it before proceeding.
++    if(YYCURSOR &gt;= YYLIMIT) {
++        r = (*ss-&gt;read)(ss);
++        if(r &lt; 0) return r;
++        // if we're at eof, then the current token is just data.
++        if(r == 0) return (int)ss-&gt;scanref;
++    }
++
++    if(*YYCURSOR != '\r' &amp;&amp; *YYCURSOR != '\n' &amp;&amp; *YYCURSOR != ':' &amp;&amp;
++            *YYCURSOR != ' ' &amp;&amp; *YYCURSOR != '\t')
++    {
++        // We had a keyword but it didn't end in a proper delimiter.
++        // Therefore, it's data, not a keyword.
++        ss-&gt;state = tfscan_nontok_start;
++        return nontok_start(ss);
++    }
++
+ 	while(*YYCURSOR != '\r' &amp;&amp; *YYCURSOR != '\n') {
+ 		YYCURSOR++;
+ 		if(YYCURSOR &gt;= YYLIMIT) {
+-			break;
++            // try to fill the buffer (maybe it's a really long keyword)
++            r = (*ss-&gt;read)(ss);
++            if(r &lt; 0) return r;
++            // if we're at eof, then the current token is just data.
++            if(r == 0) return (int)ss-&gt;scanref;
+ 		}
+ 	}
+ 
+ 	if(*YYCURSOR == '\r') YYCURSOR++;
+ 	if(*YYCURSOR == '\n') YYCURSOR++;
+-
+     ss-&gt;line += 1;
+ 
+ 	START(tok);
+@@ -101,17 +164,24 @@
+ 
+ int tfscan_tok_start(scanstate *ss)
+ {
++    int r;
++
+     scanner_enter(ss);
+ 
+     // if we can read at least 8 more bytes from the current buffer,
+     // we won't bother reloading it.  This should cut down drastically
+-    // on the number of small reads we make.
+-	if(YYCURSOR+8 &gt;= YYLIMIT) {
+-		int r = (*ss-&gt;read)(ss);
++    // on the number of small reads we make.  The constant in the if
++    // statement is an arbitrary number; if we have less than that
++    // number of bytes available in the buffer, we read some more data.
++	if(YYCURSOR+16 &gt;= YYLIMIT) {
++		r = (*ss-&gt;read)(ss);
+ 		// if there was an error, return an error token.
+ 		if(r &lt; 0) return r;
+ 		// Only if we're _completely_ out of data, return eof.
+ 		// (this is why we can't use re2c for this scanner)
++        // we can handle cursor==limit; we just return the
++        // final token.  But, if token==limit, we're out of data.
++        // (except, at this point in the function, cursor == token).
+ 		if(ss-&gt;token &gt;= ss-&gt;limit) return 0;
+ 	}
+ 
+@@ -119,7 +189,7 @@
+     // of a line (previous character was either start-of-file or \n).
+ 	// So check to see if there's a token.
+ 
+-	if(YYCURSOR + 8 &lt; YYLIMIT) {
++	if(YYCURSOR + 7 &lt;= YYLIMIT) {
+ 		// There's enough data in this buffer to contain a keyword.
+ 		// If there are less than 8 bytes in the buffer then it means
+ 		// that we're 7 bytes from the EOF and there's no chance that
+@@ -129,9 +199,11 @@
+ 			case 'S':
+ 				if(YYCURSOR[1] == 'T' &amp;&amp; YYCURSOR[2] == 'D') {
+ 					if(YYCURSOR[3]=='O' &amp;&amp; YYCURSOR[4]=='U' &amp;&amp; YYCURSOR[5]=='T') {
++                        YYCURSOR += 6;
+ 						return scan_to_end_of_keyword(ss, exSTDOUT);
+ 					}
+ 					if(YYCURSOR[3]=='E' &amp;&amp; YYCURSOR[4]=='R' &amp;&amp; YYCURSOR[5]=='R') {
++                        YYCURSOR += 6;
+ 						return scan_to_end_of_keyword(ss, exSTDERR);
+ 					}
+ 				}
+@@ -141,6 +213,7 @@
+ 				if(YYCURSOR[1]=='E' &amp;&amp; YYCURSOR[2]=='S' &amp;&amp;
+ 					YYCURSOR[3]=='U' &amp;&amp; YYCURSOR[4]=='L' &amp;&amp; YYCURSOR[5]=='T')
+ 				{
++                    YYCURSOR += 6;
+ 					return scan_to_end_of_keyword(ss, exRESULT);
+ 				}
+ 				break;
+@@ -148,6 +221,7 @@
+ 				if(YYCURSOR[1]=='O' &amp;&amp; YYCURSOR[2]=='D' &amp;&amp;
+ 					YYCURSOR[3]=='I' &amp;&amp; YYCURSOR[4]=='F' &amp;&amp; YYCURSOR[5]=='Y')
+ 				{
++                    YYCURSOR += 6;
+ 					return scan_to_end_of_keyword(ss, exMODIFY);
+ 				}
+ 				break;
+@@ -167,37 +241,7 @@
+ int tfscan_nontok_start(scanstate *ss)
+ {
+ 	scanner_enter(ss);
+-
+-	if(YYCURSOR &gt;= YYLIMIT) {
+-		int r = (*ss-&gt;read)(ss);
+-		// if there was an error, return an error token.
+-		if(r &lt; 0) return r;
+-		// if we're completely out of data, return eof.
+-		// (this is why we can't use re2c for this scanner)
+-		if(ss-&gt;token &gt;= ss-&gt;limit) return 0;
+-	}
+-
+-	// Since it's impossible to have a token at this point so we
+-	// scan forward to the next CR/LF.
+-	while(YYCURSOR &lt; YYLIMIT) {
+-		if(*YYCURSOR == '\r' || *YYCURSOR == '\n') break;
+-		YYCURSOR++;
+-	}
+-	if(YYCURSOR &gt;= YYLIMIT) {
+-		// We have to assume that we previously read as much data as
+-		// possible.  So the entire buffer is just data with no tokens
+-		// and no CR/LF.
+-		return (int)ss-&gt;scanref;
+-	}
+-
+-	if(*YYCURSOR == '\r') YYCURSOR++;
+-	if(*YYCURSOR == '\n') YYCURSOR++;
+-
+-    ss-&gt;line += 1;
+-
+-	// We have potential for finding a token at this point.
+-	ss-&gt;state = tfscan_tok_start;
+-	return (int)ss-&gt;scanref;
++    return nontok_start(ss);
+ }
+ 	
+ 
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/tmlib.sh	2006-03-02 23:56:35 UTC (rev 99)
+@@ -3,7 +3,11 @@
+ # Utilities useful for writing tmtest testfiles.
+ # This file is covered by the MIT License.
+ 
++# DO NOT EDIT THIS FILE!  Edit /etc/tmtest.conf or ~/.tmtestrc instead.
++# This file is replaced when you reinstall tmtest and your changes
++# will be lost!
+ 
++
+ # TODO: should these routines be prefixed by &quot;TM&quot;?
+ # TODO: is there any way to get rid of MKFILE_EMPTY?  Can't MKFILE notice
+ #       if read would block and, if so, just create an empty file.?
+@@ -193,7 +197,7 @@
+ # Note that this only works with stdout!  You'll have to combine
+ # the stdout and stderr streams if you want to indent stderr.
+ #
+-# By default this script indents each line with two spaces.
++# By default this script indents each line with four spaces.
+ # Pass an argument to tell this function what to put before
+ # each line.
+ #
+@@ -207,9 +211,9 @@
+ INDENT ()
+ {
+     # sed appears more binary transparent than bash's builtins so I'm
+-    # using sed instead of read.
++    # using sed instead of builtin read.  It might even be faster.
+ 
+-    sed -e &quot;s/^/${1-  }/&quot;
++    sed -e &quot;s/^/${1-    }/&quot;
+ 
+     # even though this might be faster, it mucks things up.
+     #
+
+Modified: trunk/tmtest.conf
+===================================================================
+--- trunk/tmtest.conf	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/tmtest.conf	2006-03-02 23:56:35 UTC (rev 99)
+@@ -52,12 +52,21 @@
+ # that the tests are not succeeding due to some local configuration;
+ # their environment is as clean as we can possibly make it.
+ 
+-args=&quot;--config=$MYPATH/test/tmtest.sub.conf&quot;
++args=&quot;--config=$MYDIR/test/tmtest.sub.conf&quot;
+ 
+ 
+ # This allows us to run tests without installing tmtest first.
+-# (todo: will this cause problems if you DO have a currently-installed
+-# tmtest?)
++# This is generally a good thing but it will cause problems if
++# this tmlib has problems...  Maybe we should check to see if
++# a particular function has been defined and include tmlib only
++# if it hasn't.
+ 
+ . tmlib.sh
+ 
++
++# We set OUTER_CONFIG_FILE so that we can check later that this file
++# has or has not been read.  We need to ensure that subtests have NOT
++# read this file (we need to restrict the config files that they read
++# to the testdir ONLY).
++
++OUTER_CONFIG_FILE=1
+
+Modified: trunk/vars.c
+===================================================================
+--- trunk/vars.c	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/vars.c	2006-03-02 23:56:35 UTC (rev 99)
+@@ -43,7 +43,14 @@
+ 
+ static int var_testfile(struct test *test, FILE* fp, const char *var)
+ {
+-	fprintf(fp, &quot;%s/%s&quot;, curabsolute(), test-&gt;testfilename);
++	if(test-&gt;testfilename[0] == '-' &amp;&amp; test-&gt;testfilename[1] == '\0') {
++		fprintf(fp, &quot;(STDIN)&quot;);
++	} else if(test-&gt;testfilename[0] == '/') {
++		fprintf(fp, &quot;%s&quot;, test-&gt;testfilename);
++	} else {
++		fprintf(fp, &quot;%s/%s&quot;, curabsolute(), test-&gt;testfilename);
++	}
++
+     return 0;
+ }
+ 
+@@ -60,13 +67,17 @@
+     // from stdin.  Otherwise, just have the shell execute the testfile.
+ 
+     if(test-&gt;testfilename[0] == '-' &amp;&amp; test-&gt;testfilename[1] == '\0') {
+-		// bash doesn't support setting LINENO any more but,
++		// bash3 doesn't support setting LINENO anymore.  Bash2 did.
+ 		// what the hell, it's worth a shot.
+ 		fprintf(fp, &quot;LINENO=0\n&quot;);
+         test_command_copy(test, fp);
+     } else {
+         test_command_copy(test, NULL);
+-        fprintf(fp, &quot;. '%s/%s'&quot;, curabsolute(), test-&gt;testfilename);
++		if(test-&gt;testfilename[0] == '/') {
++			fprintf(fp, &quot;. %s&quot;, test-&gt;testfilename);
++		} else {
++			fprintf(fp, &quot;. '%s/%s'&quot;, curabsolute(), test-&gt;testfilename);
++		}
+     }
+ 
+     return 0;
+@@ -190,16 +201,25 @@
+ static int var_config_files(struct test *test, FILE *fp, const char *var)
+ {
+ 	char buf[PATH_MAX];
+-    char *cp;
++    char *cp, *oldcfg;
+ 	int confbaselen;
+ 
+ 	// check global configuration files
+ 	if(config_file) {
+-		// Need to obliterate config_file, otherwise it will think that
+-		// it has included config_file twice and refuse to include it.
+-		char *oldcfg = config_file;
++		// Need to temporarily forget config_file, otherwise it will think
++		// that it has included config_file twice and refuse to include it.
++		oldcfg = config_file;
+ 		config_file = NULL;
+-		check_config_str(test, fp, oldcfg, NULL);
++
++		strncpy(buf, oldcfg, sizeof(buf));
++		buf[sizeof(buf)-1] = '\0';
++		cp = strrchr(buf, '/');
++		if(cp == NULL) {
++			fprintf(stderr, &quot;Illegal config_file: '%s'\n&quot;, buf); 
++			exit(1);
++		}
++		*cp = '\0';
++		check_config_str(test, fp, buf, cp+1);
+ 		config_file = oldcfg;
+ 	} else {
+ 		check_config_str(test, fp, &quot;/etc&quot;, CONFIG_FILE);
+@@ -209,6 +229,7 @@
+ 
+ 	// check config files in the current hierarchy
+ 	strncpy(buf, curabsolute(), sizeof(buf));
++	buf[sizeof(buf)-1] = '\0';
+ 	if(config_file) {
+ 		confbaselen = strrchr(config_file, '/') - config_file;
+ 	}
+
+Modified: trunk/vars.h
+===================================================================
+--- trunk/vars.h	2006-03-01 14:57:44 UTC (rev 98)
++++ trunk/vars.h	2006-03-02 23:56:35 UTC (rev 99)
+@@ -1,2 +1,3 @@
+ struct test;
++int file_exists(char *path);
+ int printvar(struct test *test, FILE *fp, const char *varname);
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000015.html">[Tmtest-commits] [98] trunk: Add tests for an empty test with empty stdout or stderr
+</A></li>
+	<LI>Next message: <A HREF="000017.html">[Tmtest-commits] [100] trunk: Purge ATEXIT from the template, minor cleanup
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#16">[ date ]</a>
+              <a href="thread.html#16">[ thread ]</a>
+              <a href="subject.html#16">[ subject ]</a>
+              <a href="author.html#16">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

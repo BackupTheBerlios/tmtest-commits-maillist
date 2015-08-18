@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [118] trunk/test/03-results: Fix silly mistakes in	some testfiles.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B118%5D%20trunk/test/03-results%3A%20Fix%20silly%20mistakes%20in%0A%09some%20testfiles.&In-Reply-To=%3C200701231008.l0NA8O0V013248%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000034.html">
+   <LINK REL="Next"  HREF="000036.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [118] trunk/test/03-results: Fix silly mistakes in	some testfiles.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B118%5D%20trunk/test/03-results%3A%20Fix%20silly%20mistakes%20in%0A%09some%20testfiles.&In-Reply-To=%3C200701231008.l0NA8O0V013248%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [118] trunk/test/03-results: Fix silly mistakes in	some testfiles.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Tue Jan 23 11:09:49 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000034.html">[Tmtest-commits] [117] trunk: Create the TOUCH tmlib function,	mark MKFILE_EMPTY for
+</A></li>
+        <LI>Next message: <A HREF="000036.html">[Tmtest-commits] [119] trunk: Further eradicate MODIFY from the	source tree and the
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#35">[ date ]</a>
+              <a href="thread.html#35">[ thread ]</a>
+              <a href="subject.html#35">[ subject ]</a>
+              <a href="author.html#35">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 118
+Author:   bronson
+Date:     2007-01-23 11:08:23 +0100 (Tue, 23 Jan 2007)
+
+Log Message:
+-----------
+Fix silly mistakes in some testfiles.
+
+Modified Paths:
+--------------
+    trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+    trunk/test/02-running/50-OpenFDsTest.test
+    trunk/test/03-results/32-BinaryLarge.test
+Modified: trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2007-01-23 09:48:03 UTC (rev 117)
++++ trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2007-01-23 10:08:23 UTC (rev 118)
+@@ -15,8 +15,6 @@
+ 	config=&quot;yes!&quot;
+ EOL
+ 
+-echo &quot;$di/tmtest.conf&quot; &gt;&gt; /tmp/tt
+-
+ MKFILE cc2 &quot;$di/tmtest.conf&quot; &lt;&lt;'EOL'
+ 	config=&quot;yes!&quot;
+ EOL
+
+Modified: trunk/test/02-running/50-OpenFDsTest.test
+===================================================================
+--- trunk/test/02-running/50-OpenFDsTest.test	2007-01-23 09:48:03 UTC (rev 117)
++++ trunk/test/02-running/50-OpenFDsTest.test	2007-01-23 10:08:23 UTC (rev 118)
+@@ -1,20 +1,25 @@
+ # Ensure we don't leak fds to the running test.
+ # Ideally, there would be NO open FDs.  This will be the case for tmtest 0.98.
+ 
++# This used to output the following text but platforms just differ too
++# much exactly what fds they leave open.  So, just so long as there's 4
++# fds open, we're as happy as we can be.
++#    open: 4
++#    open: 6
++#    open: 7
++#    open: 10
++
+ $tmtest -o -q - &lt;&lt;-'EOL' | INDENT
+ 	for i in `seq 3 255`; do
+ 		exec 2&gt;/dev/null
+ 		echo -n &gt;&amp;$i &amp;&amp; echo open: $i
+-	done
++	done | wc -l
+ EOL
+ 
+ STDOUT:
+     for i in `seq 3 255`; do
+     exec 2&gt;/dev/null
+     echo -n &gt;&amp;$i &amp;&amp; echo open: $i
+-    done
++    done | wc -l
+     STDOUT:
+-    open: 4
+-    open: 6
+-    open: 7
+-    open: 10
++    4
+
+Modified: trunk/test/03-results/32-BinaryLarge.test
+===================================================================
+--- trunk/test/03-results/32-BinaryLarge.test	2007-01-23 09:48:03 UTC (rev 117)
++++ trunk/test/03-results/32-BinaryLarge.test	2007-01-23 10:08:23 UTC (rev 118)
+@@ -1,7 +1,7 @@
+ # Ensures that a testfile can contain some arbitrary binary
+ # data and the test will still work.  This just tests control chars.
+ 
+-# We need to manuall create the testfile because Bash will screw 
++# We need to manually create the testfile because Bash will screw 
+ # things up if we use a heredoc.
+ 
+ MKFILE tt &lt;&lt;-'EOL'
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000034.html">[Tmtest-commits] [117] trunk: Create the TOUCH tmlib function,	mark MKFILE_EMPTY for
+</A></li>
+	<LI>Next message: <A HREF="000036.html">[Tmtest-commits] [119] trunk: Further eradicate MODIFY from the	source tree and the
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#35">[ date ]</a>
+              <a href="thread.html#35">[ thread ]</a>
+              <a href="subject.html#35">[ subject ]</a>
+              <a href="author.html#35">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

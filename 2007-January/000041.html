@@ -1,0 +1,541 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [124] trunk: Added the tmtest -f command-line	option
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B124%5D%20trunk%3A%20Added%20the%20tmtest%20-f%20command-line%0A%09option&In-Reply-To=%3C200701240745.l0O7jZAm015082%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000040.html">
+   <LINK REL="Next"  HREF="000042.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [124] trunk: Added the tmtest -f command-line	option</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B124%5D%20trunk%3A%20Added%20the%20tmtest%20-f%20command-line%0A%09option&In-Reply-To=%3C200701240745.l0O7jZAm015082%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [124] trunk: Added the tmtest -f command-line	option">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Wed Jan 24 08:46:55 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000040.html">[Tmtest-commits] [123] trunk: Make REPLACE accept any number of	substitutions to perform
+</A></li>
+        <LI>Next message: <A HREF="000042.html">[Tmtest-commits] [125] trunk: Remove all exit() calls from all	files except for main.c.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 124
+Author:   bronson
+Date:     2007-01-24 08:45:34 +0100 (Wed, 24 Jan 2007)
+
+Log Message:
+-----------
+Added the tmtest -f command-line option
+Also fixed up some old tests that were conflicting with -e.
+
+Modified Paths:
+--------------
+    trunk/BUGS
+    trunk/CHANGES
+    trunk/TODO
+    trunk/main.c
+    trunk/test/00-cmdline/10-CfgDir.test
+    trunk/test/00-cmdline/12-CfgEmpty.test
+    trunk/test.c
+    trunk/test.h
+    trunk/tmtest.pod
+
+Added Paths:
+-----------
+    trunk/test/03-results/40-TestFailures.test
+Modified: trunk/BUGS
+===================================================================
+--- trunk/BUGS	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/BUGS	2007-01-24 07:45:34 UTC (rev 124)
+@@ -13,8 +13,8 @@
+ Bash3 has removed the ability to set LINENO, so you may see the
+ wrong line number be printed if there's an error.  If you want to
+ see the correct line numbers, use Bash2.  It's an unfortunate
+-regression but since it only affects tests scripts being piped
+-on stdin it won't affect many people.
++regression.  I've worked around it so that it only affects tests
++piped in on stdin.
+ 
+ 
+ The &lt;&lt;-EOL operator strips ALL tabs from the front of each line.
+@@ -53,3 +53,8 @@
+ Why is the unset command totally unrelated to the set command?
+ 
+ Why can I &quot;exec &gt; file&quot; but I can't &quot;exec | prog&quot;?
++	I have to exec &gt; &gt;(prog).  Seems asymmetrical.
++
++Why oh why can't I get the pid of the most recent process substitution?
++	(exec &gt; &gt;(tr a-z A-Z); pid=$!; echo howdy; wait $pid)
++	Except that $! is not set for process substitutions.
+
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/CHANGES	2007-01-24 07:45:34 UTC (rev 124)
+@@ -1,3 +1,4 @@
++- Added -f command-line option to print only the failed tests.
+ - Made REPLACE handle multiple text substitutions; could only handle 1 before.
+ - Got rid of RESULT and all its code.  echo $? from within your test instead.
+ - Got rid of Cutest since it was very non-cute.  Wrote zutest instead.
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/TODO	2007-01-24 07:45:34 UTC (rev 124)
+@@ -1,6 +1,5 @@
+ 0.96:
+-- Add a cmdline option that prints only tests that fail, and prints their
+-  full path.
++- Change exit value.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+   in the testfile with each line prefixed by :.  Then STDOUT.  No need
+   for this delimiter craziness.
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/main.c	2007-01-24 07:45:34 UTC (rev 124)
+@@ -42,7 +42,8 @@
+ enum {
+     outmode_test,
+     outmode_dump,
+-    outmode_diff
++    outmode_diff,
++	outmode_failures_only
+ };
+ 
+ int outmode = outmode_test;
+@@ -395,6 +396,29 @@
+ }
+ 
+ 
++/* Prints the relative path from the original cwd to the current testfile */
++
++static void print_test_path(struct test *test)
++{
++	char result[PATH_MAX];
++
++	int keep = curpush(test-&gt;testfilename);
++	if(keep &lt;= 0) {
++		printf(&quot;print_test_path: path is too long!\n&quot;);
++		return;
++	}
++
++	if(abs2rel(curabsolute(), orig_cwd, result, sizeof(result))) {
++		printf(&quot;%s\n&quot;, result);
++	} else {
++		printf(&quot;print_test_path: abs2rel error: %s relto %s\n&quot;,
++			curabsolute(), orig_cwd);
++	}
++
++	curpop(keep);
++}
++
++
+ /** Runs the named testfile.
+  *
+  * If warn_suffix is true and the ffilename doesn't end in &quot;.test&quot;
+@@ -451,6 +475,7 @@
+     // initialize the test mode
+     switch(outmode) {
+         case outmode_test:
++		case outmode_failures_only:
+             // nothing to do
+             break;
+         case outmode_dump:
+@@ -561,6 +586,11 @@
+             case outmode_test:
+                 test_results(&amp;test, dispname);
+                 break;
++			case outmode_failures_only:
++				if(check_for_failure(&amp;test, dispname)) {
++					print_test_path(&amp;test);
++				}
++				break;
+             case outmode_dump:
+                 dump_results(&amp;test);
+                 break;
+@@ -1017,6 +1047,7 @@
+ 		{&quot;config&quot;, 1, 0, 'c'},
+ 		{&quot;diff&quot;, 0, 0, 'd'},
+ 		{&quot;dump-script&quot;, 0, &amp;dumpscript, 1},
++		{&quot;failures-only&quot;, 0, 0, 'f'},
+ 		{&quot;help&quot;, 0, 0, 'h'},
+ 		{&quot;output&quot;, 0, 0, 'o'},
+ 		{&quot;quiet&quot;, 0, 0, 'q'},
+@@ -1050,6 +1081,10 @@
+                 outmode = outmode_diff;
+                 break;
+ 
++			case 'f':
++				outmode = outmode_failures_only;
++				break;
++
+ 			case 'h':
+ 				usage();
+ 				exit(0);
+
+Modified: trunk/test/00-cmdline/10-CfgDir.test
+===================================================================
+--- trunk/test/00-cmdline/10-CfgDir.test	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/test/00-cmdline/10-CfgDir.test	2007-01-24 07:45:34 UTC (rev 124)
+@@ -1,3 +1,9 @@
++# Test opening a directory as if it were a config file.
++
++# Our tests run with -e by default.  Therefore, if we want to see
++# the test result, if it's nonzero, we need to turn that off.
++set +e
++
+ $tmtest --config=/tmp - &lt;&lt;-EOL
+ 	echo Test!
+ EOL
+
+Modified: trunk/test/00-cmdline/12-CfgEmpty.test
+===================================================================
+--- trunk/test/00-cmdline/12-CfgEmpty.test	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/test/00-cmdline/12-CfgEmpty.test	2007-01-24 07:45:34 UTC (rev 124)
+@@ -1,3 +1,10 @@
++# Test specifying nothing for config
++
++# tmtest runs -e by default, so we need to turn that off if we
++# want to be able to read the result of the command (else the
++# script just exits immediately and the echo never fires).
++set +e
++
+ $tmtest --config= - &lt;&lt;-EOL
+ 	echo Howdy
+ 	STDOUT:
+
+Added: trunk/test/03-results/40-TestFailures.test
+===================================================================
+--- trunk/test/03-results/40-TestFailures.test	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/test/03-results/40-TestFailures.test	2007-01-24 07:45:34 UTC (rev 124)
+@@ -0,0 +1,52 @@
++# ensures that tmtest -f works.
++#
++# We verify that it runs all tests and only prints the ones that fail.
++# We hit it with a disabled test, an aborted test, and 
++
++MKDIR dir
++
++MKFILE fsuccess &quot;$dir/success.test&quot; &lt;&lt;-EOL
++	# ensure this test isn't printed
++	echo HI
++	STDOUT:
++	HI
++EOL
++
++MKFILE ffail &quot;$dir/fail.test&quot; &lt;&lt;-EOL
++	# ensure this test is printed
++	echo HI
++	STDOUT:
++	HO
++EOL
++
++MKFILE fdisabled &quot;$dir/disabled.test&quot; &lt;&lt;-EOL
++	# this test would succeed if it weren't disabled
++	DISABLED
++	echo HI
++	STDOUT:
++	HI
++EOL
++
++# We can't do this because it stops the entire test run.
++#MKFILE fabort &quot;$dir/aborted.test&quot; &lt;&lt;-EOL
++#	# this test would succeed if it didn't abort
++#	ABORT
++#	echo HI
++#	STDOUT:
++#	HI
++#EOL
++
++MKDIR subdir &quot;$dir/subdir&quot;
++
++MKFILE subfail &quot;$subdir/fail.test&quot; &lt;&lt;-EOL
++	# make sure we show the proper path in subdirectories
++	echo HI
++	STDOUT:
++	HO
++EOL
++
++$tmtest -f $dir | REPLACE `basename &quot;$dir&quot;` DIR
++
++STDOUT:
++DIR/fail.test
++DIR/subdir/fail.test
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/test.c	2007-01-24 07:45:34 UTC (rev 124)
+@@ -705,30 +705,24 @@
+ }
+ 
+ 
+-/** Checks the actual results against the expected results.
+- * dispname is the name we should display for the test.
+- */
+-
+-void test_results(struct test *test, const char *dispname)
++static void test_analyze_results(struct test *test, int *stdo, int *stde)
+ {
+     scanstate scanner;
+     char scanbuf[BUFSIZ];
+-	int stdo, stde;	// true if there are differences.
+ 	
++	*stdo = *stde = -1;
++
+ 	if(was_aborted(test-&gt;status)) {
+-		print_reason(test, &quot;ABRT&quot;, &quot;by&quot;);
+ 		test_failures++;
+ 		test-&gt;aborted = 1;
+ 		return;
+ 	}
+ 
+ 	if(was_disabled(test-&gt;status)) {
+-		print_reason(test, &quot;dis &quot;, &quot;by&quot;);
+ 		return;
+ 	}
+ 
+     if(!was_started(test-&gt;status)) {
+-		print_reason(test, &quot;ERR &quot;, &quot;error in&quot;);
+         test_failures++;
+         return;
+     }
+@@ -749,14 +743,45 @@
+         test-&gt;stderr_match = (fd_has_data(test-&gt;errfd) ? match_no : match_yes);
+     }
+ 
+-    stdo = (test-&gt;stdout_match != match_yes);
+-    stde = (test-&gt;stderr_match != match_yes);
++    *stdo = (test-&gt;stdout_match != match_yes);
++    *stde = (test-&gt;stderr_match != match_yes);
+ 
++    if(!*stdo &amp;&amp; !*stde &amp;&amp; !test-&gt;exitsignal) {
++        test_successes++;
++    } else {
++        test_failures++;
++	}
++}
++
++
++/** Checks the actual results against the expected results.
++ * dispname is the name we should display for the test.
++ */
++
++void test_results(struct test *test, const char *dispname)
++{
++	int stdo, stde;	// true if there are differences.
++
++	test_analyze_results(test, &amp;stdo, &amp;stde);
++	
++	if(test-&gt;aborted) {
++		print_reason(test, &quot;ABRT&quot;, &quot;by&quot;);
++		return;
++	}
++
++	if(was_disabled(test-&gt;status)) {
++		print_reason(test, &quot;dis &quot;, &quot;by&quot;);
++		return;
++	}
++
++    if(!was_started(test-&gt;status)) {
++		print_reason(test, &quot;ERR &quot;, &quot;error in&quot;);
++        return;
++    }
++
+     if(!stdo &amp;&amp; !stde &amp;&amp; !test-&gt;exitsignal) {
+-        test_successes++;
+         printf(&quot;ok   %s \n&quot;, convert_testfile_name(dispname));
+     } else {
+-        test_failures++;
+         printf(&quot;FAIL %-25s &quot;, convert_testfile_name(dispname));
+         if(test-&gt;exitsignal) {
+             printf(&quot;terminated by signal %d%s&quot;, test-&gt;exitsignal,
+@@ -779,6 +804,24 @@
+ }
+ 
+ 
++/** Like test_results() except that it returns 1 if the test failed
++ *  and 0 if it was disabled or succeeded.
++ */
++
++int check_for_failure(struct test *test, const char *testpath)
++{
++	int stdo, stde;	// true if there are differences.
++	int oldfailures = test_failures;
++
++	test_analyze_results(test, &amp;stdo, &amp;stde);
++	if(oldfailures+1 == test_failures) {
++		return 1;
++	}
++
++	return 0;
++}
++
++
+ /**
+  * Reads all the data from infd and writes it onto outfd.
+  *
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/test.h	2007-01-24 07:45:34 UTC (rev 124)
+@@ -85,6 +85,7 @@
+ void test_results(struct test *test, const char *dispname);
+ void dump_results(struct test *test);
+ void print_test_summary(struct timeval *start, struct timeval *stop);
++int check_for_failure(struct test *test, const char *testpath);
+ 
+ void test_init(struct test *test);
+ void test_free(struct test *test);
+
+Modified: trunk/tmtest.pod
+===================================================================
+--- trunk/tmtest.pod	2007-01-24 06:57:05 UTC (rev 123)
++++ trunk/tmtest.pod	2007-01-24 07:45:34 UTC (rev 124)
+@@ -8,8 +8,6 @@
+ 
+ =head1 DESCRIPTION
+ 
+-
+-
+ =head1 OPTIONS
+ 
+ =over 8
+@@ -41,6 +39,12 @@
+ into your test deck.  Make sure you know exactly what you
+ changed, right down to the whitespace.
+ 
++=item B&lt;-f&gt; B&lt;--failures-only&gt;
++
++Runs the given tests and prints the paths of the tests that fail.
++If you're struggling with a few failing tests, this will give you
++a concise report of exactly what testfiles need to be investigated.
++
+ =item B&lt;--ignore-extension&gt;
+ 
+ Normally tmtest only runs files with names that end in &quot;.test&quot;.
+@@ -55,10 +59,6 @@
+ 
+ =back
+ 
+-=head1 TESTFILE
+-
+-=over 8
+-
+ =head1 CONFIGURATION
+ 
+ tmtest reads its configuration first from F&lt;/etc/tmtest.conf&gt; and
+@@ -107,23 +107,59 @@
+ could not be run for some reason.  If all tests are successfully run,
+ even if they all fail, tmtest returns 0.
+ 
+-=head1 SUGGESTIONS
++TODO: this is an anachronism.  It should return the number of failing
++tests or 99, whichever is less.  If no tests fail then it returns
++of course 0.
+ 
++=head1 TESTFILE
++
++=over 8
++
++=back
++
++=head1 TEST RESULTS
++
++There are two schools of thought on how testfiles should be written:
++- like a shell script, where you need to manually check after the
++commands that matter if they failed or not.
++
++	command
++	[ $? != 0 ] &amp;&amp; echo got $? from command &amp;&amp; exit $?
++
++- like a makefile, where the first command that returns a nonzero
++exit status causes the whole process to bail out.
++
++	command
++	# no need to check; if it returned nonzero, the script already exited.
++
++tmtest uses the first technique by default; it treats testfiles like
++shell scripts.
++
++To make your testfile bail the instant it encounters an error, add
++the command &quot;set -e&quot; to it.  If any subsequent command returns an
++error, everything will bail out.  Add &quot;set +e&quot; to turn this behavior
++back off.  You may also want to &quot;set -o pipefail&quot; as well.
++
++If your testfiles are trivial, it probably makes sens to use -e to
++save yourself a lot of manual checking.  Otherwise, the default of
+++e is probably the safest, most understandable way to write tests.
++
++=head1 TESTFILE SUGGESTIONS
++
+ Look in the &quot;examples&quot; directory that came with this distribution.
+ You may find some helpful utilities.
+ 
+-If you want to be more pedantic, you might want to &quot;set -e&quot; in your
+-test file or configuration file.  This will make it so the test will
+-stop at the very first command that returns a nonzero exit status.
+-
+ If you can't figure out what your test is doing, you might want
+-to add &quot;set -v&quot; or &quot;set -x&quot; to the top of the testfile.  This will
+-show you line-by-line what is happening.  You can also put them in
++to add &quot;set -x&quot; to the top of the testfile.  This will
++show you line-by-line what is happening (use &quot;set -v&quot; if &quot;set -x&quot;'s
++command-line substitution produces hard-to-read results).
++You can also put them in
+ a config file if you're having configuration issues.
+ 
+ Never create files in /tmp with static or easily predictable file names.
+ This opens you up to symlink attacks.  Instead, use mktemp(1)
+-or tempfile(1).  Also check the examples directory for functions
++or tempfile(1) (tmtest's built-in helpers use mktemp).
++Also check the examples directory for functions
+ to make working with files easier.
+ 
+ 	file=`mktemp -t 02-XXXXXX` || ABORT can't mktemp.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000040.html">[Tmtest-commits] [123] trunk: Make REPLACE accept any number of	substitutions to perform
+</A></li>
+	<LI>Next message: <A HREF="000042.html">[Tmtest-commits] [125] trunk: Remove all exit() calls from all	files except for main.c.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

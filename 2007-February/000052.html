@@ -1,0 +1,282 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [135] trunk: Experimenting with Eclipse...
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B135%5D%20trunk%3A%20Experimenting%20with%20Eclipse...&In-Reply-To=%3C200702271924.l1RJOirp030056%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000051.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [135] trunk: Experimenting with Eclipse...</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B135%5D%20trunk%3A%20Experimenting%20with%20Eclipse...&In-Reply-To=%3C200702271924.l1RJOirp030056%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [135] trunk: Experimenting with Eclipse...">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Tue Feb 27 20:24:44 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000051.html">[Tmtest-commits] [134] trunk: Minor cleanups lying around in an	older tree
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#52">[ date ]</a>
+              <a href="thread.html#52">[ thread ]</a>
+              <a href="subject.html#52">[ subject ]</a>
+              <a href="author.html#52">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 135
+Author:   bronson
+Date:     2007-02-27 20:24:34 +0100 (Tue, 27 Feb 2007)
+
+Log Message:
+-----------
+Experimenting with Eclipse...  add Eclipse project files.
+
+Added Paths:
+-----------
+    trunk/.cdtproject
+    trunk/.project
+    trunk/.settings/
+    trunk/.settings/org.eclipse.cdt.core.prefs
+
+Property Changed:
+----------------
+    trunk/
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:ignore
+   + template.c
+tmtest
+units
+
+
+Added: trunk/.cdtproject
+===================================================================
+--- trunk/.cdtproject	2007-02-17 19:10:58 UTC (rev 134)
++++ trunk/.cdtproject	2007-02-27 19:24:34 UTC (rev 135)
+@@ -0,0 +1,88 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
++&lt;?eclipse-cdt version=&quot;2.0&quot;?&gt;
++
++&lt;cdtproject id=&quot;org.eclipse.cdt.make.core.make&quot;&gt;
++&lt;extension id=&quot;org.eclipse.cdt.core.ELF&quot; point=&quot;org.eclipse.cdt.core.BinaryParser&quot;/&gt;
++&lt;data&gt;
++&lt;item id=&quot;scannerConfiguration&quot;&gt;
++&lt;autodiscovery enabled=&quot;true&quot; problemReportingEnabled=&quot;true&quot; selectedProfileId=&quot;org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile&quot;/&gt;
++&lt;profile id=&quot;org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;false&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;specsFile&quot;&gt;
++&lt;runAction arguments=&quot;-E -P -v -dD ${plugin_state_location}/${specs_file}&quot; command=&quot;gcc&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;profile id=&quot;org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;true&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;makefileGenerator&quot;&gt;
++&lt;runAction arguments=&quot;-f ${project_name}_scd.mk&quot; command=&quot;make&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;profile id=&quot;org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;false&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;specsFile&quot;&gt;
++&lt;runAction arguments=&quot;-E -P -v -dD ${plugin_state_location}/${specs_file}&quot; command=&quot;gcc&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;false&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;profile id=&quot;org.eclipse.cdt.managedbuilder.core.GCCWinManagedMakePerProjectProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;false&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;specsFile&quot;&gt;
++&lt;runAction arguments=&quot;-E -P -v -dD ${plugin_state_location}/${specs_file}&quot; command=&quot;gcc&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;false&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;/item&gt;
++&lt;item id=&quot;org.eclipse.cdt.core.pathentry&quot;&gt;
++&lt;pathentry kind=&quot;src&quot; path=&quot;&quot;/&gt;
++&lt;pathentry kind=&quot;out&quot; path=&quot;&quot;/&gt;
++&lt;pathentry kind=&quot;con&quot; path=&quot;org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO&quot;/&gt;
++&lt;/item&gt;
++&lt;item id=&quot;org.eclipse.cdt.make.core.buildtargets&quot;&gt;
++&lt;buildTargets&gt;
++&lt;target name=&quot;zutest&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments&gt;&lt;/buildArguments&gt;
++&lt;buildTarget&gt;zutest&lt;/buildTarget&gt;
++&lt;stopOnError&gt;false&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;units&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments&gt;&lt;/buildArguments&gt;
++&lt;buildTarget&gt;units&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;run-units&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments&gt;&lt;/buildArguments&gt;
++&lt;buildTarget&gt;run-units&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;test&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments&gt;&lt;/buildArguments&gt;
++&lt;buildTarget&gt;test&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;/buildTargets&gt;
++&lt;/item&gt;
++&lt;/data&gt;
++&lt;/cdtproject&gt;
+
+Added: trunk/.project
+===================================================================
+--- trunk/.project	2007-02-17 19:10:58 UTC (rev 134)
++++ trunk/.project	2007-02-27 19:24:34 UTC (rev 135)
+@@ -0,0 +1,85 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
++&lt;projectDescription&gt;
++	&lt;name&gt;tmtest&lt;/name&gt;
++	&lt;comment&gt;&lt;/comment&gt;
++	&lt;projects&gt;
++	&lt;/projects&gt;
++	&lt;buildSpec&gt;
++		&lt;buildCommand&gt;
++			&lt;name&gt;org.eclipse.cdt.make.core.makeBuilder&lt;/name&gt;
++			&lt;triggers&gt;clean,full,incremental,&lt;/triggers&gt;
++			&lt;arguments&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.build.arguments&lt;/key&gt;
++					&lt;value&gt;&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.core.errorOutputParser&lt;/key&gt;
++					&lt;value&gt;org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.VCErrorParser;&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.enableAutoBuild&lt;/key&gt;
++					&lt;value&gt;false&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.environment&lt;/key&gt;
++					&lt;value&gt;&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.enableFullBuild&lt;/key&gt;
++					&lt;value&gt;true&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.build.target.inc&lt;/key&gt;
++					&lt;value&gt;all&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.enabledIncrementalBuild&lt;/key&gt;
++					&lt;value&gt;true&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.build.location&lt;/key&gt;
++					&lt;value&gt;&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.build.target.clean&lt;/key&gt;
++					&lt;value&gt;clean&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.build.command&lt;/key&gt;
++					&lt;value&gt;make&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.enableCleanBuild&lt;/key&gt;
++					&lt;value&gt;true&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.append_environment&lt;/key&gt;
++					&lt;value&gt;true&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.useDefaultBuildCmd&lt;/key&gt;
++					&lt;value&gt;true&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.build.target.auto&lt;/key&gt;
++					&lt;value&gt;all&lt;/value&gt;
++				&lt;/dictionary&gt;
++				&lt;dictionary&gt;
++					&lt;key&gt;org.eclipse.cdt.make.core.stopOnError&lt;/key&gt;
++					&lt;value&gt;true&lt;/value&gt;
++				&lt;/dictionary&gt;
++			&lt;/arguments&gt;
++		&lt;/buildCommand&gt;
++		&lt;buildCommand&gt;
++			&lt;name&gt;org.eclipse.cdt.make.core.ScannerConfigBuilder&lt;/name&gt;
++			&lt;arguments&gt;
++			&lt;/arguments&gt;
++		&lt;/buildCommand&gt;
++	&lt;/buildSpec&gt;
++	&lt;natures&gt;
++		&lt;nature&gt;org.eclipse.cdt.core.cnature&lt;/nature&gt;
++		&lt;nature&gt;org.eclipse.cdt.make.core.makeNature&lt;/nature&gt;
++		&lt;nature&gt;org.eclipse.cdt.make.core.ScannerConfigNature&lt;/nature&gt;
++	&lt;/natures&gt;
++&lt;/projectDescription&gt;
+
+Added: trunk/.settings/org.eclipse.cdt.core.prefs
+===================================================================
+--- trunk/.settings/org.eclipse.cdt.core.prefs	2007-02-17 19:10:58 UTC (rev 134)
++++ trunk/.settings/org.eclipse.cdt.core.prefs	2007-02-27 19:24:34 UTC (rev 135)
+@@ -0,0 +1,3 @@
++#Thu Feb 15 17:47:47 PST 2007
++eclipse.preferences.version=1
++indexerId=org.eclipse.cdt.core.fastIndexer
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000051.html">[Tmtest-commits] [134] trunk: Minor cleanups lying around in an	older tree
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#52">[ date ]</a>
+              <a href="thread.html#52">[ thread ]</a>
+              <a href="subject.html#52">[ subject ]</a>
+              <a href="author.html#52">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

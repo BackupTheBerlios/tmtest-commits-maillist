@@ -1,0 +1,266 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [98] trunk: Add tests for an empty test with empty stdout or stderr
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B98%5D%20trunk%3A%20Add%20tests%20for%20an%20empty%20test%20with%20empty%20stdout%20or%20stderr&In-Reply-To=%3C200603011457.k21Evu9d024637%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000016.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [98] trunk: Add tests for an empty test with empty stdout or stderr</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B98%5D%20trunk%3A%20Add%20tests%20for%20an%20empty%20test%20with%20empty%20stdout%20or%20stderr&In-Reply-To=%3C200603011457.k21Evu9d024637%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [98] trunk: Add tests for an empty test with empty stdout or stderr">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Wed Mar  1 15:57:56 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000016.html">[Tmtest-commits] [99] trunk: Major changes.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#15">[ date ]</a>
+              <a href="thread.html#15">[ thread ]</a>
+              <a href="subject.html#15">[ subject ]</a>
+              <a href="author.html#15">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 98
+Author:   bronson
+Date:     2006-03-01 15:57:44 +0100 (Wed, 01 Mar 2006)
+
+Log Message:
+-----------
+Add tests for an empty test with empty stdout or stderr clause.
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/TODO
+    trunk/examples/docs/Modify3.test
+
+Added Paths:
+-----------
+    trunk/test/03-results/15-EmptyWithErr.test
+    trunk/test/03-results/15-EmptyWithOut.test
+    trunk/test/03-results/16-EmptyWithErrNoNL.test
+    trunk/test/03-results/16-EmptyWithOutNoNL.test
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-02-28 22:05:17 UTC (rev 97)
++++ trunk/CHANGES	2006-03-01 14:57:44 UTC (rev 98)
+@@ -1,6 +1,6 @@
+ - Release next version.
+ ----
+-- --dump-script now cleans up after itself.
++- --dump-script now cleans up after itself (before we'd leave turds in /tmp).
+ - Now reports in the test results if child was terminated by a signal.
+ - Added the INDENT and REPLACE functions to tmlib.
+ - Bash3 has made it so that the RE can no longer appear on the same line as
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-02-28 22:05:17 UTC (rev 97)
++++ trunk/TODO	2006-03-01 14:57:44 UTC (rev 98)
+@@ -1,20 +1,28 @@
+ 0.94:
+-- An empty test with a STDOUT clause should fail without the -n right?
+-  I mean, there's no newline in the actual output, but there is in the
+-  expected...
+-- write tests for nesting testfiles with --config.
+-        // If the user specifies a config file, we only check directories
+-        // not above the given config file.  i.e. if user specifies
+-        // &quot;tmtest -c /a/b/cc /a/t/u/t.test&quot;, we will look for config files
+-        // in /a/t/tmtest.conf and /a/t/u/tmtest.conf.
++- Print a warning if we notice that an output section doesn't end in
++  a newline, but the testfile hasn't marked that section with a &quot;-n&quot;.
++  See 22-PatchNoNL2.test for more.  Make sure a test for this is in 03 too.
++
++0.96:
++- Get rid of MODIFY clauses.  It's unnecessary complexity.
++  And it's a LOT.  First remove it from the tests, then from the code.
+ - Add the ability to specify test arguments on the command line.
+   I'm picturing something where VAR=val on the command line would be
+   inserted without change into the template.  That way you can use the
+   command line to override default settings in the testfile.
+   - This would allow us to test almost every test to ensure it
+     supports the --config argument (make them DISABLED or something).
++- write tests for nesting testfiles with --config.
++        // If the user specifies a config file, we only check directories
++        // not above the given config file.  i.e. if user specifies
++        // &quot;tmtest -c /a/b/cc /a/t/u/t.test&quot;, we will look for config files
++        // in /a/t/tmtest.conf and /a/t/u/tmtest.conf.
++- get rid of all the exit(10) calls in test.c.  We need a better way to
++  abort the test.
++  should get rid of a whole bunch in main.c as well.
++  this should prevent us from dropping turds in /tmp all the time too.
+ 
+-0.96:
++0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+   Convert to using the async io library.  Don't use temporary files.
+   This would allow us to recognize that the test is disabled before
+@@ -27,12 +35,6 @@
+   the rest of the test script?  And why is it that if you fork, diff freezes?
+   They're related problems I suspect.
+     Is it because I'm forgetting to close all open filehandles before forking?
+-- Tighten up printing a folder name when there are no testfiles in it.
+-  No need for double spacing.
+-- Add the ability to run multiple tests from one testfile.
+-  See tmtest 0.8 for a potential implementation of this.
+-  All we'd need to add is a framework to notify the user that multiple
+-  tests are in progress; bash can take care of the rest.
+ - Shouldn't run every test in a dir if the DISABLED directive is in a config
+   file.
+   Should discover what dir the DISABLED directive came from and refuse
+@@ -40,19 +42,16 @@
+   - Yes, if a config file returns DISABLED, then that folder and all its
+     subfolders are skipped.  Just make the test itself call the DISABLED
+ 	command if you want testing to continue in that subfolder.
+-- Print a warning if we notice that an output section doesn't end in
+-  a newline, but the testfile hasn't marked that section with a &quot;-n&quot;.
+-  See 22-PatchNoNL2.test for more.  Make sure a test for this is in 03 too.
++- Tighten up printing a folder name when there are no testfiles in it.
++  No need for double spacing.
+ 
+-0.98:
+-- get rid of all the exit(10) calls in test.c.  We need a better way to
+-  abort the test.
+-  should get rid of a whole bunch in main.c as well.
+-  this should prevent us from dropping turds in /tmp all the time too.
+-- Get rid of MODIFY clauses.  It's unnecessary complexity.
+-  And it's a LOT.  First remove it from the tests, then from the code.
++1.0!
+ 
+-1.0:
++1.2:
++- Add the ability to run multiple tests from one testfile.
++  See tmtest 0.8 for a potential implementation of this.
++  All we'd need to add is a framework to notify the user that multiple
++  tests are in progress; bash can take care of the rest.
+ 
+ ?:
+ - add gcov support so you can see what sort of coverage your tests provide.
+@@ -63,7 +62,7 @@
+   directory hierarchy.
+ - add the ability to run valgrind over each test and print success/failure
+   of that.  (gives deep valgrind coverage)
+-  - One problem with this will be all the false warnings.
++  - One problem with this will be all the false warnings that valgrind spews.
+ 
+ No longer a problem when we dump pcrs:
+ - allow multiple s/// expressions on a single line.  will probably require
+
+Modified: trunk/examples/docs/Modify3.test
+===================================================================
+--- trunk/examples/docs/Modify3.test	2006-02-28 22:05:17 UTC (rev 97)
++++ trunk/examples/docs/Modify3.test	2006-03-01 14:57:44 UTC (rev 98)
+@@ -2,6 +2,6 @@
+ 
+ date
+ MODIFY:
+-  s/... +... +[0-9][0-9] +[0-9]?[0-9]:[0-9][0-9]:[0-9][0-9] +... +20[0-9][0-9]/date date date/
++  s/... +... +[0-9]?[0-9] +[0-9]?[0-9]:[0-9][0-9]:[0-9][0-9] +... +20[0-9][0-9]/date date date/
+ STDOUT:
+ date date date
+
+Added: trunk/test/03-results/15-EmptyWithErr.test
+===================================================================
+--- trunk/test/03-results/15-EmptyWithErr.test	2006-02-28 22:05:17 UTC (rev 97)
++++ trunk/test/03-results/15-EmptyWithErr.test	2006-03-01 14:57:44 UTC (rev 98)
+@@ -0,0 +1,10 @@
++# A blank test with an empty stderr clause should succeed because
++# the stdout clause doesn't contain anything -- not even a newline.
++
++tmtest -q - &lt;&lt;-EOL
++	STDERR:
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/15-EmptyWithOut.test
+===================================================================
+--- trunk/test/03-results/15-EmptyWithOut.test	2006-02-28 22:05:17 UTC (rev 97)
++++ trunk/test/03-results/15-EmptyWithOut.test	2006-03-01 14:57:44 UTC (rev 98)
+@@ -0,0 +1,10 @@
++# A blank test with an empty stdout clause should succeed because
++# the stdout clause doesn't contain anything -- not even a newline.
++
++tmtest -q - &lt;&lt;-EOL
++	STDOUT:
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/16-EmptyWithErrNoNL.test
+===================================================================
+--- trunk/test/03-results/16-EmptyWithErrNoNL.test	2006-02-28 22:05:17 UTC (rev 97)
++++ trunk/test/03-results/16-EmptyWithErrNoNL.test	2006-03-01 14:57:44 UTC (rev 98)
+@@ -0,0 +1,11 @@
++# A blank test with an empty stderr clause should succeed (see
++# 15-BlankWithErr.test), so adding -n should not change the
++# results at all.
++
++tmtest -q - &lt;&lt;-EOL
++	STDERR: -n
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/16-EmptyWithOutNoNL.test
+===================================================================
+--- trunk/test/03-results/16-EmptyWithOutNoNL.test	2006-02-28 22:05:17 UTC (rev 97)
++++ trunk/test/03-results/16-EmptyWithOutNoNL.test	2006-03-01 14:57:44 UTC (rev 98)
+@@ -0,0 +1,11 @@
++# A blank test with an empty stdout clause should succeed (see
++# 15-BlankWithOut.test), so adding -n should not change the
++# results at all.
++
++tmtest -q - &lt;&lt;-EOL
++	STDOUT: -n
++EOL
++STDOUT:
++ok   (STDIN) 
++
++1 test run, 1 success, 0 failures.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000016.html">[Tmtest-commits] [99] trunk: Major changes.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#15">[ date ]</a>
+              <a href="thread.html#15">[ thread ]</a>
+              <a href="subject.html#15">[ subject ]</a>
+              <a href="author.html#15">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

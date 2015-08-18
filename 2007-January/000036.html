@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [119] trunk: Further eradicate MODIFY from the	source tree and the
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B119%5D%20trunk%3A%20Further%20eradicate%20MODIFY%20from%20the%0A%09source%20tree%20and%20the&In-Reply-To=%3C200701231026.l0NAQPYL016869%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000035.html">
+   <LINK REL="Next"  HREF="000037.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [119] trunk: Further eradicate MODIFY from the	source tree and the</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B119%5D%20trunk%3A%20Further%20eradicate%20MODIFY%20from%20the%0A%09source%20tree%20and%20the&In-Reply-To=%3C200701231026.l0NAQPYL016869%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [119] trunk: Further eradicate MODIFY from the	source tree and the">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Tue Jan 23 11:27:50 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000035.html">[Tmtest-commits] [118] trunk/test/03-results: Fix silly mistakes in	some testfiles.
+</A></li>
+        <LI>Next message: <A HREF="000037.html">[Tmtest-commits] [120] trunk/test/03-results: Remove the RESULT	section from tmtest
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 119
+Author:   bronson
+Date:     2007-01-23 11:26:24 +0100 (Tue, 23 Jan 2007)
+
+Log Message:
+-----------
+Further eradicate MODIFY from the source tree and the documentation.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/test/02-running/50-OpenFDsTest.test
+    trunk/tfscan.c
+    trunk/tfscan.h
+    trunk/tmtest.pod
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-01-23 10:08:23 UTC (rev 118)
++++ trunk/TODO	2007-01-23 10:26:24 UTC (rev 119)
+@@ -134,9 +134,6 @@
+ - Unify the line modifier in compare.c and test.c.  It's hackish now.
+ - Wow, the pcrs error messages truly suck.  Is there any way to improve them?
+   &quot;(pcrs:) Syntax error while parsing command (-11).&quot;
+-- add a CLEAR_EACHLINE or CLEAR_MODIFY option to to turn off all substitutions.
+-  It would be easy to do.  I'm just not convinced that anyone would find it
+-  useful.
+ 
+ ????:
+ - There should be a way to repeatedly run a single test with only tiny
+
+Modified: trunk/test/02-running/50-OpenFDsTest.test
+===================================================================
+--- trunk/test/02-running/50-OpenFDsTest.test	2007-01-23 10:08:23 UTC (rev 118)
++++ trunk/test/02-running/50-OpenFDsTest.test	2007-01-23 10:26:24 UTC (rev 119)
+@@ -22,4 +22,4 @@
+     echo -n &gt;&amp;$i &amp;&amp; echo open: $i
+     done | wc -l
+     STDOUT:
+-    4
++    3
+
+Modified: trunk/tfscan.c
+===================================================================
+--- trunk/tfscan.c	2007-01-23 10:08:23 UTC (rev 118)
++++ trunk/tfscan.c	2007-01-23 10:26:24 UTC (rev 119)
+@@ -21,16 +21,10 @@
+ // 		And a keyword without a NL is still the keyword.
+ // 		But it must always start at the beginning of a new line.
+ // exit clauses with invalid numbers
+-// What happens with a MODIFY larger than BUFSIZ.
+ // DOS/Mac/Unix line endings.
+ // 		What happes when platform doesn't match the testfile?
+ // 	Get rid of rewrite_command_section
+ 
+-// NOTE: because we linebuffer the MODIFY clause, a single MODIFY
+-// may not be larger than the BUFSIZ on your system (usually 8192 bytes).
+-// Technically this is true of RESULT as well but when are you ever going
+-// to run into an 8K result code?
+-
+ #include &quot;tfscan.h&quot;
+ 
+ 
+@@ -56,7 +50,6 @@
+ &quot;STDOUT&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exSTDOUT); return exNEW|exSTDOUT; }
+ &quot;STDERR&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exSTDERR); return exNEW|exSTDERR; }
+ &quot;RESULT&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exRESULT); return exNEW|exRESULT; }
+-&quot;MODIFY&quot; WS* &quot;:&quot; ANYN* &quot;\n&quot;  { START(exMODIFY); return exNEW|exMODIFY; }
+ 
+ ANYN* &quot;\n&quot;                  { return (int)ss-&gt;scanref; }
+ 
+@@ -217,14 +210,6 @@
+ 					return scan_to_end_of_keyword(ss, exRESULT);
+ 				}
+ 				break;
+-			case 'M':
+-				if(YYCURSOR[1]=='O' &amp;&amp; YYCURSOR[2]=='D' &amp;&amp;
+-					YYCURSOR[3]=='I' &amp;&amp; YYCURSOR[4]=='F' &amp;&amp; YYCURSOR[5]=='Y')
+-				{
+-                    YYCURSOR += 6;
+-					return scan_to_end_of_keyword(ss, exMODIFY);
+-				}
+-				break;
+ 			default:
+ 				break;
+ 		}
+
+Modified: trunk/tfscan.h
+===================================================================
+--- trunk/tfscan.h	2007-01-23 10:08:23 UTC (rev 118)
++++ trunk/tfscan.h	2007-01-23 10:26:24 UTC (rev 119)
+@@ -24,7 +24,6 @@
+     exSTDOUT = 64,			///&lt; marks a line in the stdout section.
+     exSTDERR,				///&lt; marks a line in the stderr section.
+     exRESULT,				///&lt; marks a line in the result (exit value) section.
+-    exMODIFY,				///&lt; marks a line in the modify (per-line substitution) section.
+     exRESULT_TOKEN_END,		///&lt; never returned.  this token is always one higher than the highest-numbered section token.
+ 
+     exNEW = 0x100,			///&lt; flag added to the section token that specifies that this is the start of a new section.
+
+Modified: trunk/tmtest.pod
+===================================================================
+--- trunk/tmtest.pod	2007-01-23 10:08:23 UTC (rev 118)
++++ trunk/tmtest.pod	2007-01-23 10:26:24 UTC (rev 119)
+@@ -59,21 +59,6 @@
+ 
+ =over 8
+ 
+-=item MODIFY
+-
+-Specifies a perl-compatible substitution command to be executed
+-on each line of the program's output.  For instance,
+-the following modify clause will replace DATE='2005-10-02' with
+-DATE='DATE DATE'.
+-
+-	MODIFY: s/DATE='.*'/DATE='DATE DATE'/
+-
+-Due to a pcrs limitation, you may only specify one substitution
+-command per MODIFY clause.  (&quot;MODIFY: s/1/one/ s/2/two/&quot; will not
+-work.
+-
+-=back
+-
+ =head1 CONFIGURATION
+ 
+ tmtest reads its configuration first from F&lt;/etc/tmtest.conf&gt; and
+@@ -146,21 +131,19 @@
+ =head1 FAQ
+ 
+ How do I indent my stdout section?  My test prints the word &quot;STDOUT&quot; at
+-the beginning of the line, causing tmtest to choke on the multiple STDOUT
++the beginning of a line, causing tmtest to complain about multiple STDOUT
+ sections.
+ 
+-A: Yes, tmtest is pedantic about finding sections in a file.  This is
+-because it can be easy to get confused about what line applies where.
+-Easiest just to ensure that there is a single section.
++Answer: run your command's output through indent.
+ 
+-But what to do if your test's output would contain a section break?
+-Simply indent every line of your test's output by some number of spaces:
++	mycmd | INDENT
+ 
+-	MODIFY : s/^(.)/   $1/
++If you have multiple commands, you can use parentheses to collect the
++output:
+ 
+-The complex expression is because some versions of pcrs mistakenly
+-add two spaces after tine final newline.  This ensures that the line
+-actually contains a character before indenting it.
++	(	cmd1
++		cmd2
++	) 2&gt;&amp;1 | INDENT
+ 
+ =head1 HISTORY
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000035.html">[Tmtest-commits] [118] trunk/test/03-results: Fix silly mistakes in	some testfiles.
+</A></li>
+	<LI>Next message: <A HREF="000037.html">[Tmtest-commits] [120] trunk/test/03-results: Remove the RESULT	section from tmtest
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

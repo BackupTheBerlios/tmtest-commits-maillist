@@ -1,0 +1,2455 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [107] trunk: Add unit testing, update re2c lib, refactor compare.c.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B107%5D%20trunk%3A%20Add%20unit%20testing%2C%20update%20re2c%20lib%2C%20refactor%20compare.c.&In-Reply-To=%3C200603062156.k26LuLNn004492%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000023.html">
+   <LINK REL="Next"  HREF="000025.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [107] trunk: Add unit testing, update re2c lib, refactor compare.c.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B107%5D%20trunk%3A%20Add%20unit%20testing%2C%20update%20re2c%20lib%2C%20refactor%20compare.c.&In-Reply-To=%3C200603062156.k26LuLNn004492%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [107] trunk: Add unit testing, update re2c lib, refactor compare.c.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Mon Mar  6 22:56:21 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000023.html">[Tmtest-commits] [106] trunk: Eradicate MODIFY.
+</A></li>
+        <LI>Next message: <A HREF="000025.html">[Tmtest-commits] [108] trunk: Simplify the compare API by getting rid of a misfeature.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#24">[ date ]</a>
+              <a href="thread.html#24">[ thread ]</a>
+              <a href="subject.html#24">[ subject ]</a>
+              <a href="author.html#24">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 107
+Author:   bronson
+Date:     2006-03-06 22:56:19 +0100 (Mon, 06 Mar 2006)
+
+Log Message:
+-----------
+Add unit testing, update re2c lib, refactor compare.c.
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/Makefile
+    trunk/TODO
+    trunk/compare.c
+    trunk/compare.h
+    trunk/examples/docs/testfile/Idiom-Indent1.test
+    trunk/main.c
+    trunk/re2c/read-fd.c
+    trunk/re2c/read-fd.h
+    trunk/re2c/read.c
+    trunk/re2c/read.h
+    trunk/re2c/scan.c
+    trunk/re2c/scan.h
+    trunk/test/03-results/02-Nstdout.test
+    trunk/test/03-results/03-Nstdout.test
+    trunk/test/03-results/04-Nstderr.test
+    trunk/test/03-results/04-Nstdout.test
+    trunk/test/03-results/10-NoNLFFail.test
+    trunk/test/03-results/13-MultiNL.test
+    trunk/test/03-results/13-MultiNLErr.test
+    trunk/test.c
+    trunk/test.h
+
+Added Paths:
+-----------
+    trunk/cutest.c
+    trunk/cutest.h
+    trunk/re2c/read-fp.c
+    trunk/re2c/read-fp.h
+    trunk/re2c/read-mem.c
+    trunk/re2c/read-mem.h
+    trunk/re2c/read-rand.c
+    trunk/re2c/read-rand.h
+    trunk/re2c/scan-dyn.c
+    trunk/re2c/scan-dyn.h
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/CHANGES	2006-03-06 21:56:19 UTC (rev 107)
+@@ -1,4 +1,7 @@
+-- Got rid of MODIFY clauses.  Use INDENT, REPLACE, or sed instead.
++- If an output section is marked -n but ends with multiple newlines, we print
++  a warning and fail it automatically.  We used to let this nonsense pass.
++- Added the Cutest unit test framework.  Refactored compare.c.
++- Got rid of MODIFY and all its code.  Use INDENT, REPLACE, or sed instead.
+ 
+ Released 0.94 on 2 Mar 2006
+ - NOTE: Bash3 has made it so that the regex can not appear on the same line as
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/Makefile	2006-03-06 21:56:19 UTC (rev 107)
+@@ -32,20 +32,25 @@
+ CSRC+=curdir.c qscandir.c pathconv.c
+ CHDR+=curdir.h qscandir.h pathconv.h
+ # scanner files
+-CSRC+=re2c/read.c re2c/read-fd.c re2c/scan.c
+-CHDR+=re2c/read.h re2c/read-fd.h re2c/scan.h
++CSRC+=re2c/read.c re2c/read-fd.c re2c/read-mem.c re2c/read-rand.c \
++	re2c/scan.c re2c/scan-dyn.c
++CHDR+=re2c/read.h re2c/read-fd.h re2c/read-mem.h re2c/read-rand.h \
++	re2c/scan.h re2c/scan-dyn.h
+ # program files:
+-CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c
++CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+ CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
++# unit test files
++CSRC+=cutest.c
++CHDR+=cutest.h
+ 
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+ 
+ 
+-tmtest: $(CSRC) $(CHDR) template.c Makefile $(INTERMED)
+-	$(CC) $(COPTS) $(CSRC) -lpcre template.c -o tmtest &quot;-DVERSION=$(VERSION)&quot;
++tmtest: $(CSRC) $(CHDR) $(INTERMED)
++	$(CC) $(COPTS) $(CSRC) -o tmtest -DVERSION=&quot;$(VERSION)&quot;
+ 
+-template.c: template.sh cstrfy Makefile
++template.c: template.sh cstrfy
+ 	./cstrfy -n exec_template &lt; template.sh &gt; template.c
+ 
+ %.c: %.re
+@@ -57,11 +62,8 @@
+ 
+ .PHONY: test
+ test: tmtest
+-	./tmtest test
++	./tmtest --run-tests
+ 
+-run: tmtest
+-	./tmtest
+-
+ install: tmtest
+ 	install -d -m755 $(bindir)
+ 	install tmtest $(bindir)
+@@ -72,7 +74,7 @@
+ ifeq ($(wildcard $(conf_dst)),$(conf_dst))
+ 	# configuration already exists, don't overwrite it.
+ 	@echo &quot;---&gt; Not installing new config file over '$(conf_dst).'&quot;
+-	@echo &quot;---&gt; Please merge changes in 'sample.conf' by hand or run 'make uninstall' first.&quot;
++	@echo &quot;---&gt; Please merge changes in 'sample.conf' by hand.&quot;
+ else
+ 	# global configuration file doesn't exist so install it
+ 	install sample.conf $(conf_dst)
+@@ -93,7 +95,6 @@
+ clean:
+ 	rm -f tmtest template.c tags
+ 
+-# Ensure re2c is installed to regenerate the scanners before making distclean
+ distclean: clean
+ 	rm -f stscan.[co]
+ 
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/TODO	2006-03-06 21:56:19 UTC (rev 107)
+@@ -1,4 +1,5 @@
+ 0.96:
++- Get rid of all scan_is_finished() calls?
+ - Make tmtest only execute config files owned by either the user or root.
+   Print a big fat warning when the config file is skipped.  This prevents
+   a malicious user from putting a config file in /tmp and having it
+@@ -41,6 +42,7 @@
+ - Add some unit tests.  <A HREF="http://kooditakomo.cs.tut.fi/projects/gunit/">http://kooditakomo.cs.tut.fi/projects/gunit/</A>
+   <A HREF="http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages">http://pvanhoof.be/blog/index.php/2006/03/03/tinymail-unit-testing-and-creating-messages</A>     Actually, this looks better: <A HREF="http://cutest.sourceforge.net/">http://cutest.sourceforge.net/</A>
+   Potential units: curdir, path normalization
++- Get rid of -g, add -O2.  Make it easy to set these for compilation.
+ 
+ 0.98:
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+@@ -75,6 +77,8 @@
+   can find.  It prints nothing if a test succeeds, or the fail notice
+   if it fails.  Runs until cancelled with ^C.  Let it run overnight and
+   see if any of your tests have intermittent failures.
++- Reomve as many TODOs as possible.
++- Make zutest take the names of tests to run on stdin?
+ 
+ 1.0!
+ 
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/compare.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -11,131 +11,107 @@
+  * This uses all re2c's mechanisms for creating buffers and loading
+  * them with data, but it's not actually an re2c scanner.
+  *
+- * Here's what you do:
+- * - Create a scanstate attached to one stream and pass it to compare_start.
+- * - Read some data from the other stream and pass it to compare_continue.
+- * - Keep reading until you're out of data.  You can check compare_in_progress
+- *   to see if the match already failed and you can bail out early.
+- * - When you're out of data, call compare_end to obtain the result.
+  */
+ 
+ #include &lt;stdio.h&gt;
+ #include &lt;stdlib.h&gt;
+ #include &lt;string.h&gt;
+ #include &lt;assert.h&gt;
+-
+ #include &quot;compare.h&quot;
+ 
+ 
+-// TODO: these are all 1-bit flags.  No need for malloc and free!
+-// get rid of the output field.
++#define STATE (*(int*)&amp;(ss)-&gt;scanref)
+ 
+-typedef struct {
+-	matchval *output;
+-	const char *pbuf;
+-    int no_trailing_newline;    ///&lt; true if this section isn't supposed to end with a newline
+-    int nl_suppressed;          ///&lt; if no_trailing_newline is true, we need to suppress the newline in the execpted output when matching against the actual (because of the way heredocs work, the expected always ends in a newline).
+-    int warn_no_newline;             ///&lt; true if the section expected a trailing newline (no_trailing_newline == false), but the last buffer seen (presumably the end of the file) didn't end with a newline.
+-} compare_state;
++/**
++ * Sets up the scanstate for a new comparison.
++ *
++ * Here's how you use the comparison code:
++ * - Create a scanstate attached to one stream and pass it to compare_start().
++ * - Read some data from the other stream and pass it to compare_continue().
++ * - Keep reading until you're out of data or compare_continue() returns 1.
++ *     (no harm to keep passing data except that you're just wasting time)
++ * - When you're out of data, call compare_end to obtain the result.
++ */
+ 
+-
+-static int compare_fill(scanstate *ss)
++void compare_attach(scanstate *ss)
+ {
+-    // need to pretend like we're updating the token,
+-    // otherwise the readproc will think we need to keep
+-    // the token and we quickly run out of buffer room.
+-    ss-&gt;token = ss-&gt;cursor;
+-
+-    return (*ss-&gt;read)(ss);
++	// STATE is -1 while ss still has data.  If not -1, then it tells
++	// us how many bytes ago it ran out of data.
++	STATE = cmp_in_progress;
+ }
+ 
+ 
+-static void compare_halt(scanstate *ss, matchval newval)
+-{
+-	compare_state *cmp = (compare_state*)ss-&gt;scanref;
+-    *cmp-&gt;output = newval;
+-}
++// Returns true if and only if the stream has exactly one character
++// in it, a newline.
+ 
+-
+-void compare_attach(scanstate *ss, matchval *mv, int nonl)
++static int has_extra_nl(const char *ptr, size_t len)
+ {
+-	compare_state *cmp = malloc(sizeof(compare_state));
+-	if(cmp == NULL) {
+-		perror(&quot;compare_attach&quot;);
+-		exit(10);
++	if(len == 1 &amp;&amp; ptr[0] == '\n') {
++		return 1;
+ 	}
+-	memset(cmp, 0, sizeof(compare_state));
+ 
+-    *mv = match_inprogress;
+-
+-	cmp-&gt;output = mv;
+-    cmp-&gt;no_trailing_newline = nonl;
+-    cmp-&gt;nl_suppressed = 0;
+-    cmp-&gt;warn_no_newline = 0;
+-    ss-&gt;scanref = cmp;
++	return 0;
+ }
+ 
+ 
+ 
+-void compare_continue(scanstate *ss, const char *ptr, int len)
++/**
++ * Feeds more bytes to the comparison engine.
++ * 
++ * @param ss The scanstate from compare_attach.
++ * @param ptr The start of the data to compare.
++ * @param len The number of bytes to compare, from 0 to MAXINT.
++ *
++ * @returns 0 if we still don't have an answer, 1 if the match
++ * failed.
++ */
++
++int compare_continue(scanstate *ss, const char *ptr, size_t len)
+ {
+-	compare_state *cmp = (compare_state*)ss-&gt;scanref;
++	int prev_had_nl = 0;
+     int n;
+ 
+-    if(*cmp-&gt;output != match_inprogress) {
+-        // we already decided an answer
+-        // so don't waste time comparing more.
+-        return;
++    if(STATE != cmp_in_progress) {
++		if(len &gt; 0) {
++			// if the only difference to this point was a \n, state
++			// is has_extra_nl.  If there's more data, though, then no match.
++			STATE = cmp_no_match;
++		}
++        return 1;
+     }
+ 
+-    assert(len &gt;= 0);
++    while(len &gt; 0) {
++        n = ss-&gt;limit - ss-&gt;cursor;
++        if(!n) {
+ 
+-    if(cmp-&gt;no_trailing_newline) {
+-        // If the incoming buffer ends in a nl, we need to suppress it
+-        // for the comparison.  Note that this won't work well for
+-        // MODIFY clauses but I don't care because MODIFY will never
+-        // work with -n and, anyway, MODIFY is about to disappear.
+-
+-        if(cmp-&gt;nl_suppressed) {
+-            cmp-&gt;nl_suppressed = 0;
+-			if(ss-&gt;cursor &lt; ss-&gt;limit) {
+-				if(ss-&gt;cursor[0] != '\n') {
+-					compare_halt(ss, match_no);
+-					return;
+-				}
+-				ss-&gt;cursor += 1;
+-			} else {
+-				compare_continue(ss, &quot;\n&quot;, 1);
++			// need to remember if the previous (and possibly the last)
++			// buffer ended in a newline so we can set the proper flag.
++			if(ss-&gt;cursor &gt; ss-&gt;bufptr &amp;&amp; ss-&gt;cursor[-1] == '\n') {
++				prev_had_nl = 1;
+ 			}
+-        }
+ 
+-        if(ptr[len-1] == '\n') {
+-            cmp-&gt;nl_suppressed = 1;
+-            len -= 1;
+-        }
+-    }
+-
+-    while(len &gt; 0) {
+-        n = ss-&gt;limit - ss-&gt;cursor;
+-        if(!n) {
+-            n = compare_fill(ss);
++			ss-&gt;token = ss-&gt;cursor;
++            n = (*ss-&gt;read)(ss);
+             ss-&gt;line += n;
+             if(n &lt; 0) {
+                 // there was an error while trying to fill the buffer
+-                // TODO: this should be propagated to the client somehow.
++                // TODO: this should be propagated to the client somehow?
+                 perror(&quot;compare_continue_bytes&quot;);
+                 exit(10);
+             }
+             if(n == 0) {
+-                compare_halt(ss, match_no);
+-                return;
++				// banged into the EOF
++				if(has_extra_nl(ptr,len)) {
++					if(prev_had_nl) {
++						STATE = cmp_ptr_has_more_nls;
++					} else {
++						STATE = cmp_ptr_has_extra_nl;
++					}
++				} else {
++					STATE = cmp_no_match;
++				}
++                return 1;
+             }
+-           
+-            if(n &gt; 0) {
+-                // shouldn't force user to put a -n on empty sections!
+-                // therefore, we'll only issue the warning if we've seen data.
+-                cmp-&gt;warn_no_newline = (ss-&gt;limit[-1] != '\n' &amp;&amp; ss-&gt;limit[-1] != '\r');
+-            }
+         }
+ 
+         if(len &lt; n) {
+@@ -144,38 +120,264 @@
+ 
+         // compare
+         if(memcmp(ptr, ss-&gt;cursor, n) != 0) {
+-            compare_halt(ss, match_no);
+-            return;
++			STATE = cmp_no_match;
++			return 1;
+         }
++
+         ptr += n;
+         ss-&gt;cursor += n;
+         len -= n;
+     }
++
++	return 0;
+ }
+ 
+ 
+-void compare_end(scanstate *ss, int *warn_nl)
++/**
++ * Returns true if the streams are both out of data and have matched
++ * byte-for-byte up to this point, otherwise returns false.
++ */
++
++compare_result compare_check(scanstate *ss, const char *ptr, size_t len)
+ {
+-	compare_state *cmp = (compare_state*)ss-&gt;scanref;
++	int ptr_empty = (ptr == NULL || len == 0);
++	int ss_empty = scan_is_finished(ss);
+ 
+-    // Tell the caller to emit a warning if the expected section was marked
+-    // as having a trailing newline but the actual section didn't have it.
+-    if(warn_nl &amp;&amp; !cmp-&gt;no_trailing_newline) {
+-        *warn_nl = cmp-&gt;warn_no_newline;
+-    }
+ 
+-    if(*cmp-&gt;output == match_inprogress) {
+-        assert(ss-&gt;cursor &lt;= ss-&gt;limit);
++	if(STATE != cmp_in_progress) {
++		return STATE;
++	}
+ 
+-        *cmp-&gt;output = match_no;
+-        if(scan_finished(ss)) {
+-            // if we're totally out of data and we still don't know
+-            // if they match, then they do match.
+-            *cmp-&gt;output = match_yes;
+-        }
+-    }
++	if(ptr_empty &amp;&amp; ss_empty) {
++		// both streams are out of data
++		return cmp_full_match;
++	}
+ 
+-	free(cmp);
+-    ss-&gt;scanref = NULL;
++	if(ptr_empty &amp;&amp; !ss_empty) {
++		return cmp_ss_has_more_data;
++	}
++
++	return cmp_no_match;
+ }
+ 
++
++/**
++ * This is a little complex...  It checks the newline status of the
++ * streams.  If one stream had exactly one more newline at this point
++ * than the other, it returns a custom value.  Otherwise, if the streams
++ * are byte-for-byte identical, it returns cmp_full_match,
++ * otherwise compare_no_match.
++ *
++ * If you call this routine when neither stream is at EOF then it
++ * always returns compare_no_match because it can't be sure that
++ * either stream will match.  The lesson?  Only call this function
++ * when one of the streams is out of data.
++ *
++ * @param ss the comparison scanner set up by compare_attach().
++ * @param ptr The final data from the stream.  If NULL, treated as EOF
++ * 	(though typically a 0 len indicates EOF).
++ * @param len the amount of data in ptr.  0 indicates EOF.
++ *
++ * @returns the appropriate value from compare_result.
++ */
++
++compare_result compare_check_newlines(scanstate *ss, const char *ptr, size_t len)
++{
++	int ptr_empty = (ptr == NULL || len == 0);
++	int ss_empty = scan_is_finished(ss);
++
++	if(STATE != cmp_in_progress) {
++		return STATE;
++	}
++
++	if(ptr_empty &amp;&amp; ss_empty) {
++		// both streams are out of data
++		return cmp_full_match;
++	}
++
++	if(!ptr_empty &amp;&amp; ss_empty &amp;&amp; has_extra_nl(ptr, len)) {
++		return cmp_ptr_has_extra_nl;
++	}
++
++	if(!ss_empty&amp;&amp;ptr_empty&amp;&amp;has_extra_nl(ss-&gt;cursor,ss-&gt;limit-ss-&gt;cursor)) {
++		return cmp_ss_has_extra_nl;
++	}
++
++	if(ptr_empty &amp;&amp; !ss_empty) {
++		return cmp_ss_has_more_data;
++	}
++
++	return cmp_no_match;
++}
++
++
++#include &quot;cutest.h&quot;
++#include &quot;re2c/read-mem.h&quot;
++#include &quot;re2c/read-rand.h&quot;
++#include &lt;stdlib.h&gt;
++
++static void test_empty(cutest *ct)
++{
++	scanstate ssrec, *ss=&ssrec;
++
++	readmem_init_str(ss, &quot;&quot;);
++	compare_attach(ss);
++	AssertEq(compare_check(ss,0,0), cmp_full_match);
++
++	readmem_init_str(ss, &quot;&quot;);
++	compare_attach(ss);
++	compare_continue(ss, &quot;&quot;, 0);
++	AssertEq(compare_check(ss,0,0), cmp_full_match);
++}
++
++
++static void test_standard(cutest *ct)
++{
++	scanstate ssrec, *ss=&ssrec;
++
++	readmem_init_str(ss, &quot;123&quot;);
++	compare_attach(ss);
++	compare_continue(ss, &quot;12&quot;, 2);
++	compare_continue(ss, &quot;3&quot;, 1);
++	AssertEq(compare_check(ss,0,0), cmp_full_match);
++}
++
++
++static void test_large(cutest *ct)
++{
++	char buf[BUFSIZ];
++	scanstate ssrec, *ss=&ssrec;
++	unsigned int seed = 47;
++	int num, i;
++
++	scanstate_init(ss, buf, BUFSIZ);
++	readrand_attach(ss, seed);
++	compare_attach(ss);
++	for(i=0; i&lt;10; i++) {
++		num = rand_r(&amp;seed);
++		compare_continue(ss, (char*)&amp;num, sizeof(num));
++	}
++
++	// compare_check will never return cmp_full_match because
++	// the random reader will never run out of data.
++	AssertEq(compare_check(ss,0,0), cmp_ss_has_more_data);
++}
++
++
++static void test_strings(scanstate *ss, const char *s1, const char *s2)
++{
++	readmem_init(ss, s1, strlen(s1));
++	compare_attach(ss);
++	compare_continue(ss, s2, strlen(s2));
++}
++
++
++static compare_result check_newlines(const char *s1, const char *s2)
++{
++	scanstate ssrec, *ss=&ssrec;
++	test_strings(ss, s1, s2);
++	return compare_check_newlines(ss, NULL, 0);
++}
++
++
++static void test_newlines(cutest *ct)
++{
++	AssertEq(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n&quot;  ), cmp_full_match);
++	AssertEq(check_newlines(&quot;Unix&quot;,     &quot;Unix\n&quot;  ), cmp_ptr_has_extra_nl);
++	AssertEq(check_newlines(&quot;Unix\n&quot;,   &quot;Unix&quot;    ), cmp_ss_has_extra_nl);
++	AssertEq(check_newlines(&quot;Unix&quot;,     &quot;Unix&quot;    ), cmp_full_match);
++
++	AssertEq(check_newlines(&quot;Unix\n\n&quot;, &quot;Unix\n&quot;  ), cmp_ss_has_extra_nl);
++	AssertEq(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n\n&quot;), cmp_ptr_has_extra_nl);
++
++	// empty buffers (except for newlines)
++	AssertEq(check_newlines(&quot;\n&quot;,   &quot;&quot;     ), cmp_ss_has_extra_nl);
++	AssertEq(check_newlines(&quot;&quot;,     &quot;\n&quot;   ), cmp_ptr_has_extra_nl);
++	AssertEq(check_newlines(&quot;\n\n&quot;, &quot;&quot;     ), cmp_ss_has_more_data);
++	AssertEq(check_newlines(&quot;&quot;,     &quot;\n\n&quot; ), cmp_no_match);
++}
++
++static void test_inc(cutest *ct)
++{
++	// Tries to ensure that packetization won't mess us up.
++
++	scanstate ssrec, *ss=&ssrec;
++
++	readmem_init_str(ss, &quot;12&quot;);
++	compare_attach(ss);
++	compare_continue(ss, &quot;1&quot;, 1);
++	compare_continue(ss, &quot;2&quot;, 1);
++	compare_continue(ss, &quot;\n&quot;, 1);
++	AssertEq(compare_check(ss,0,0), cmp_ptr_has_extra_nl);
++
++	readmem_init_str(ss, &quot;123&quot;);
++	compare_attach(ss);
++	compare_continue(ss, &quot;1&quot;, 1);
++	compare_continue(ss, &quot;2&quot;, 1);
++	compare_continue(ss, &quot;\n&quot;, 1);
++	AssertEq(compare_check(ss,0,0), cmp_no_match);
++
++	readmem_init_str(ss, &quot;&quot;);
++	compare_attach(ss);
++	AssertEq(compare_check(ss,&quot;\n&quot;,1), cmp_no_match);
++}
++
++
++static void test_inc_newlines(cutest *ct)
++{
++	// Tries to ensure packetization won't mess up the newline checking.
++
++	scanstate ssrec, *ss=&ssrec;
++
++	readmem_init_str(ss, &quot;123&quot;);
++	compare_attach(ss);
++	compare_continue(ss, &quot;1&quot;, 1);
++	compare_continue(ss, &quot;2&quot;, 1);
++	compare_continue(ss, &quot;3&quot;, 1);
++	compare_continue(ss, &quot;\n&quot;, 1);
++	AssertEq(compare_check_newlines(ss,0,0), cmp_ptr_has_extra_nl);
++
++	readmem_init_str(ss, &quot;123\n&quot;);
++	compare_attach(ss);
++	compare_continue(ss, &quot;1&quot;, 1);
++	compare_continue(ss, &quot;2&quot;, 1);
++	compare_continue(ss, &quot;3&quot;, 1);
++	AssertEq(compare_check_newlines(ss,0,0), cmp_ss_has_extra_nl);
++
++	readmem_init_str(ss, &quot;&quot;);
++	compare_attach(ss);
++	AssertEq(compare_check_newlines(ss,&quot;\n&quot;,1), cmp_ptr_has_extra_nl);
++
++	readmem_init_str(ss, &quot;&quot;);
++	compare_attach(ss);
++	compare_continue(ss, &quot;\n&quot;, 1);
++	AssertEq(compare_check_newlines(ss,0,0), cmp_ptr_has_extra_nl);
++
++	readmem_init_str(ss, &quot;\n&quot;);
++	compare_attach(ss);
++	AssertEq(compare_check_newlines(ss,0,0), cmp_ss_has_extra_nl);
++}
++
++
++/*
++static void test_tiny_buffer(cutest *ct)
++{
++	// need to ensure that we can pass a ptr bigger than buf.
++}
++*/
++
++
++cusuite* compare_suite()
++{
++	cusuite* suite = CuSuiteNew();
++
++	suite_add(suite, test_empty);
++	suite_add(suite, test_standard);
++	suite_add(suite, test_large);
++	suite_add(suite, test_newlines);
++	suite_add(suite, test_inc);
++	suite_add(suite, test_inc_newlines);
++
++	return suite;
++}
++
+
+Modified: trunk/compare.h
+===================================================================
+--- trunk/compare.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/compare.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -2,40 +2,29 @@
+  * Scott Bronson
+  * 31 Dec 2004
+  *
+- * File comparison prototypes.
+- *
+  * See compare.c for license.
+  */
+ 
+ #include &quot;re2c/scan.h&quot;
+ 
+ 
+-
+ /**
+- * a tristate that tells whether something
+- *    - matches
+- *    - doesn't match
+- *    - hasn't been checked yet.
++ * Unless you get a return value of cmp_full_match, the streams
++ * were not exactly equal.
+  */
+ 
+ typedef enum {
+-    match_inprogress = -2,
+-    match_unknown = -1,
+-    match_no = 0,
+-    match_yes = 1,
+-} matchval;
++	cmp_in_progress = -1,	///&lt; internal state; will never be returned.
++	cmp_full_match = 0,		///&lt; data doesn't match at all
++	cmp_no_match,			///&lt; data matches exactly
++	cmp_ptr_has_extra_nl,	///&lt; the scanner has an extra newline
++	cmp_ptr_has_more_nls,	///&lt; ok, this is a problem...  the app needs to know if the ss ended in a newline so it can suppress the -n warning.  So, cmp_ss_has_extra_nl means that ss didn't end in a nl, ptr did, but other than that they were identical.  cm_ptr_has_more_nls means that ss did end in a nl, ptr did too, and ptr and ss were exactly the same except ptr has one more newline.  In summary: both of these mean that ptr has one more nl than ss.  It's just whether ss ended with a newline (cmp_ptr_has_more_nls) or not (cmp_ptr_has_extra_nl).
++	cmp_ss_has_extra_nl,	///&lt; the data passed to continue has ex. CR
++	cmp_ss_has_more_data	///&lt; ptr and ss matched up to now
++} compare_result;
+ 
+ 
+-
+-
+-/** Returns zero if the compare has stopped (i.e. the files differed),
+- *  one if we're still unsure.
+- */
+-
+-#define compare_in_progress(ss) ((ss)-&gt;scanref)
+-
+-
+-void compare_attach(scanstate *ss, matchval *mv, int nonl);
+-void compare_continue(scanstate *ss, const char *ptr, int len);
+-void compare_end(scanstate *cmp, int *warn_nl);
+-
++void compare_attach(scanstate *ss);
++int compare_continue(scanstate *ss, const char *ptr, size_t len);
++compare_result compare_check(scanstate *ss, const char *ptr, size_t len);
++compare_result compare_check_newlines(scanstate *ss, const char *ptr, size_t len);
+
+Added: trunk/cutest.c
+===================================================================
+--- trunk/cutest.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/cutest.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,353 @@
++/* 	<A HREF="http://cutest.sf.net">http://cutest.sf.net</A>
++
++NOTE
++
++The license is based on the zlib/libpng license. For more details see
++<A HREF="http://www.opensource.org/licenses/zlib-license.html.">http://www.opensource.org/licenses/zlib-license.html.</A> The intent of the
++license is to: 
++
++- keep the license as simple as possible
++- encourage the use of CuTest in both free and commercial applications
++  and libraries
++- keep the source code together 
++- give credit to the CuTest contributors for their work
++
++If you ship CuTest in source form with your source distribution, the
++following license document must be included with it in unaltered form.
++If you find CuTest useful we would like to hear about it. 
++
++LICENSE
++
++Copyright (c) 2003 Asim Jalis
++
++This software is provided 'as-is', without any express or implied
++warranty. In no event will the authors be held liable for any damages
++arising from the use of this software.
++
++Permission is granted to anyone to use this software for any purpose,
++including commercial applications, and to alter it and redistribute it
++freely, subject to the following restrictions:
++
++1. The origin of this software must not be misrepresented; you must not
++claim that you wrote the original software. If you use this software in
++a product, an acknowledgment in the product documentation would be
++appreciated but is not required.
++
++2. Altered source versions must be plainly marked as such, and must not
++be misrepresented as being the original software.
++
++3. This notice may not be removed or altered from any source
++distribution.
++
++*/
++
++
++#include &lt;assert.h&gt;
++#include &lt;setjmp.h&gt;
++#include &lt;stdlib.h&gt;
++#include &lt;stdio.h&gt;
++#include &lt;string.h&gt;
++#include &lt;math.h&gt;
++
++#include &quot;cutest.h&quot;
++
++/*-------------------------------------------------------------------------*
++ * CuStr
++ *-------------------------------------------------------------------------*/
++
++char* CuStrAlloc(int size)
++{
++	char* newStr = (char*) malloc( sizeof(char) * (size) );
++	return newStr;
++}
++
++char* CuStrCopy(const char* old)
++{
++	int len = strlen(old);
++	char* newStr = CuStrAlloc(len + 1);
++	strcpy(newStr, old);
++	return newStr;
++}
++
++/*-------------------------------------------------------------------------*
++ * CuString
++ *-------------------------------------------------------------------------*/
++
++void CuStringInit(CuString* str)
++{
++	str-&gt;length = 0;
++	str-&gt;size = STRING_MAX;
++	str-&gt;buffer = (char*) malloc(sizeof(char) * str-&gt;size);
++	str-&gt;buffer[0] = '\0';
++}
++
++CuString* CuStringNew(void)
++{
++	CuString* str = (CuString*) malloc(sizeof(CuString));
++	str-&gt;length = 0;
++	str-&gt;size = STRING_MAX;
++	str-&gt;buffer = (char*) malloc(sizeof(char) * str-&gt;size);
++	str-&gt;buffer[0] = '\0';
++	return str;
++}
++
++void CuStringResize(CuString* str, int newSize)
++{
++	str-&gt;buffer = (char*) realloc(str-&gt;buffer, sizeof(char) * newSize);
++	str-&gt;size = newSize;
++}
++
++void CuStringAppend(CuString* str, const char* text)
++{
++	int length;
++
++	if (text == NULL) {
++		text = &quot;NULL&quot;;
++	}
++
++	length = strlen(text);
++	if (str-&gt;length + length + 1 &gt;= str-&gt;size)
++		CuStringResize(str, str-&gt;length + length + 1 + STRING_INC);
++	str-&gt;length += length;
++	strcat(str-&gt;buffer, text);
++}
++
++void CuStringAppendChar(CuString* str, char ch)
++{
++	char text[2];
++	text[0] = ch;
++	text[1] = '\0';
++	CuStringAppend(str, text);
++}
++
++void CuStringAppendFormat(CuString* str, const char* format, ...)
++{
++	va_list argp;
++	char buf[HUGE_STRING_LEN];
++	va_start(argp, format);
++	vsprintf(buf, format, argp);
++	va_end(argp);
++	CuStringAppend(str, buf);
++}
++
++void CuStringInsert(CuString* str, const char* text, int pos)
++{
++	int length = strlen(text);
++	if (pos &gt; str-&gt;length)
++		pos = str-&gt;length;
++	if (str-&gt;length + length + 1 &gt;= str-&gt;size)
++		CuStringResize(str, str-&gt;length + length + 1 + STRING_INC);
++	memmove(str-&gt;buffer + pos + length, str-&gt;buffer + pos, (str-&gt;length - pos) + 1);
++	str-&gt;length += length;
++	memcpy(str-&gt;buffer + pos, text, length);
++}
++
++/*-------------------------------------------------------------------------*
++ * CuTest
++ *-------------------------------------------------------------------------*/
++
++void CuTestInit(CuTest* t, const char* name, TestFunction function)
++{
++	t-&gt;name = CuStrCopy(name);
++	t-&gt;failed = 0;
++	t-&gt;ran = 0;
++	t-&gt;message = NULL;
++	t-&gt;function = function;
++	t-&gt;jumpBuf = NULL;
++}
++
++CuTest* CuTestNew(const char* name, TestFunction function)
++{
++	CuTest* tc = CU_ALLOC(CuTest);
++	CuTestInit(tc, name, function);
++	return tc;
++}
++
++void CuTestRun(CuTest* tc)
++{
++	jmp_buf buf;
++	tc-&gt;jumpBuf = &buf;
++	if (setjmp(buf) == 0)
++	{
++		tc-&gt;ran = 1;
++		(tc-&gt;function)(tc);
++	}
++	tc-&gt;jumpBuf = 0;
++}
++
++static void CuFailInternal(CuTest* tc, const char* file, int line, CuString* string)
++{
++	char buf[HUGE_STRING_LEN];
++
++	sprintf(buf, &quot;%s:%d: &quot;, file, line);
++	CuStringInsert(string, buf, 0);
++
++	tc-&gt;failed = 1;
++	tc-&gt;message = string-&gt;buffer;
++	if (tc-&gt;jumpBuf != 0) longjmp(*(tc-&gt;jumpBuf), 0);
++}
++
++void CuFail_Line(CuTest* tc, const char* file, int line, const char* message2, const char* message)
++{
++	CuString string;
++
++	CuStringInit(&amp;string);
++	if (message2 != NULL) 
++	{
++		CuStringAppend(&amp;string, message2);
++		CuStringAppend(&amp;string, &quot;: &quot;);
++	}
++	CuStringAppend(&amp;string, message);
++	CuFailInternal(tc, file, line, &amp;string);
++}
++
++void CuAssert_Line(CuTest* tc, const char* file, int line, const char* message, int condition)
++{
++	if (condition) return;
++	CuFail_Line(tc, file, line, NULL, message);
++}
++
++void CuAssertStrEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
++	const char* expected, const char* actual)
++{
++	CuString string;
++	if ((expected == NULL &amp;&amp; actual == NULL) ||
++	    (expected != NULL &amp;&amp; actual != NULL &amp;&amp;
++	     strcmp(expected, actual) == 0))
++	{
++		return;
++	}
++
++	CuStringInit(&amp;string);
++	if (message != NULL) 
++	{
++		CuStringAppend(&amp;string, message);
++		CuStringAppend(&amp;string, &quot;: &quot;);
++	}
++	CuStringAppend(&amp;string, &quot;expected &lt;&quot;);
++	CuStringAppend(&amp;string, expected);
++	CuStringAppend(&amp;string, &quot;&gt; but was &lt;&quot;);
++	CuStringAppend(&amp;string, actual);
++	CuStringAppend(&amp;string, &quot;&gt;&quot;);
++	CuFailInternal(tc, file, line, &amp;string);
++}
++
++void CuAssertIntEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
++	int expected, int actual)
++{
++	char buf[STRING_MAX];
++	if (expected == actual) return;
++	sprintf(buf, &quot;expected &lt;%d&gt; but was &lt;%d&gt;&quot;, expected, actual);
++	CuFail_Line(tc, file, line, message, buf);
++}
++
++void CuAssertDblEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
++	double expected, double actual, double delta)
++{
++	char buf[STRING_MAX];
++	if (fabs(expected - actual) &lt;= delta) return;
++	sprintf(buf, &quot;expected &lt;%lf&gt; but was &lt;%lf&gt;&quot;, expected, actual);
++	CuFail_Line(tc, file, line, message, buf);
++}
++
++void CuAssertPtrEquals_LineMsg(CuTest* tc, const char* file, int line, const char* message, 
++	void* expected, void* actual)
++{
++	char buf[STRING_MAX];
++	if (expected == actual) return;
++	sprintf(buf, &quot;expected pointer &lt;0x%p&gt; but was &lt;0x%p&gt;&quot;, expected, actual);
++	CuFail_Line(tc, file, line, message, buf);
++}
++
++
++/*-------------------------------------------------------------------------*
++ * CuSuite
++ *-------------------------------------------------------------------------*/
++
++void CuSuiteInit(CuSuite* testSuite)
++{
++	testSuite-&gt;count = 0;
++	testSuite-&gt;failCount = 0;
++}
++
++CuSuite* CuSuiteNew(void)
++{
++	CuSuite* testSuite = CU_ALLOC(CuSuite);
++	CuSuiteInit(testSuite);
++	return testSuite;
++}
++
++void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase)
++{
++	assert(testSuite-&gt;count &lt; MAX_TEST_CASES);
++	testSuite-&gt;list[testSuite-&gt;count] = testCase;
++	testSuite-&gt;count++;
++}
++
++void CuSuiteAddSuite(CuSuite* testSuite, CuSuite* testSuite2)
++{
++	int i;
++	for (i = 0 ; i &lt; testSuite2-&gt;count ; ++i)
++	{
++		CuTest* testCase = testSuite2-&gt;list[i];
++		CuSuiteAdd(testSuite, testCase);
++	}
++}
++
++void CuSuiteRun(CuSuite* testSuite)
++{
++	int i;
++	for (i = 0 ; i &lt; testSuite-&gt;count ; ++i)
++	{
++		CuTest* testCase = testSuite-&gt;list[i];
++		CuTestRun(testCase);
++		if (testCase-&gt;failed) { testSuite-&gt;failCount += 1; }
++	}
++}
++
++void CuSuiteSummary(CuSuite* testSuite, CuString* summary)
++{
++	int i;
++	for (i = 0 ; i &lt; testSuite-&gt;count ; ++i)
++	{
++		CuTest* testCase = testSuite-&gt;list[i];
++		CuStringAppend(summary, testCase-&gt;failed ? &quot;F&quot; : &quot;.&quot;);
++	}
++	CuStringAppend(summary, &quot;\n\n&quot;);
++}
++
++void CuSuiteDetails(CuSuite* testSuite, CuString* details)
++{
++	int i;
++	int failCount = 0;
++
++	if (testSuite-&gt;failCount == 0)
++	{
++		int passCount = testSuite-&gt;count - testSuite-&gt;failCount;
++		const char* testWord = passCount == 1 ? &quot;test&quot; : &quot;tests&quot;;
++		CuStringAppendFormat(details, &quot;OK (%d %s)\n&quot;, passCount, testWord);
++	}
++	else
++	{
++		if (testSuite-&gt;failCount == 1)
++			CuStringAppend(details, &quot;There was 1 failure:\n&quot;);
++		else
++			CuStringAppendFormat(details, &quot;There were %d failures:\n&quot;, testSuite-&gt;failCount);
++
++		for (i = 0 ; i &lt; testSuite-&gt;count ; ++i)
++		{
++			CuTest* testCase = testSuite-&gt;list[i];
++			if (testCase-&gt;failed)
++			{
++				failCount++;
++				CuStringAppendFormat(details, &quot;%d) %s: %s\n&quot;,
++					failCount, testCase-&gt;name, testCase-&gt;message);
++			}
++		}
++		CuStringAppend(details, &quot;\n!!!FAILURES!!!\n&quot;);
++
++		CuStringAppendFormat(details, &quot;Runs: %d &quot;,   testSuite-&gt;count);
++		CuStringAppendFormat(details, &quot;Passes: %d &quot;, testSuite-&gt;count - testSuite-&gt;failCount);
++		CuStringAppendFormat(details, &quot;Fails: %d\n&quot;,  testSuite-&gt;failCount);
++	}
++}
+
+Added: trunk/cutest.h
+===================================================================
+--- trunk/cutest.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/cutest.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,124 @@
++#ifndef CU_TEST_H
++#define CU_TEST_H
++
++#include &lt;setjmp.h&gt;
++#include &lt;stdarg.h&gt;
++
++/* CuString */
++
++char* CuStrAlloc(int size);
++char* CuStrCopy(const char* old);
++
++#define CU_ALLOC(TYPE)		((TYPE*) malloc(sizeof(TYPE)))
++
++#define HUGE_STRING_LEN	8192
++#define STRING_MAX		256
++#define STRING_INC		256
++
++typedef struct
++{
++	int length;
++	int size;
++	char* buffer;
++} CuString;
++
++void CuStringInit(CuString* str);
++CuString* CuStringNew(void);
++void CuStringRead(CuString* str, const char* path);
++void CuStringAppend(CuString* str, const char* text);
++void CuStringAppendChar(CuString* str, char ch);
++void CuStringAppendFormat(CuString* str, const char* format, ...);
++void CuStringInsert(CuString* str, const char* text, int pos);
++void CuStringResize(CuString* str, int newSize);
++
++/* CuTest */
++
++typedef struct CuTest CuTest;
++
++typedef void (*TestFunction)(CuTest *);
++
++struct CuTest
++{
++	const char* name;
++	TestFunction function;
++	int failed;
++	int ran;
++	const char* message;
++	jmp_buf *jumpBuf;
++};
++
++void CuTestInit(CuTest* t, const char* name, TestFunction function);
++CuTest* CuTestNew(const char* name, TestFunction function);
++void CuTestRun(CuTest* tc);
++
++/* Internal versions of assert functions -- use the public versions */
++void CuFail_Line(CuTest* tc, const char* file, int line, const char* message2, const char* message);
++void CuAssert_Line(CuTest* tc, const char* file, int line, const char* message, int condition);
++void CuAssertStrEquals_LineMsg(CuTest* tc, 
++	const char* file, int line, const char* message, 
++	const char* expected, const char* actual);
++void CuAssertIntEquals_LineMsg(CuTest* tc, 
++	const char* file, int line, const char* message, 
++	int expected, int actual);
++void CuAssertDblEquals_LineMsg(CuTest* tc, 
++	const char* file, int line, const char* message, 
++	double expected, double actual, double delta);
++void CuAssertPtrEquals_LineMsg(CuTest* tc, 
++	const char* file, int line, const char* message, 
++	void* expected, void* actual);
++
++/* public assert functions */
++
++#define CuFail(tc, ms)                        CuFail_Line(  (tc), __FILE__, __LINE__, NULL, (ms))
++#define CuAssert(tc, ms, cond)                CuAssert_Line((tc), __FILE__, __LINE__, (ms), (cond))
++#define CuAssertTrue(tc, cond)                CuAssert_Line((tc), __FILE__, __LINE__, &quot;assert failed&quot;, (cond))
++
++#define CuAssertStrEquals(tc,ex,ac)           CuAssertStrEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac))
++#define CuAssertStrEquals_Msg(tc,ms,ex,ac)    CuAssertStrEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac))
++#define CuAssertIntEquals(tc,ex,ac)           CuAssertIntEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac))
++#define CuAssertIntEquals_Msg(tc,ms,ex,ac)    CuAssertIntEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac))
++#define CuAssertDblEquals(tc,ex,ac,dl)        CuAssertDblEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac),(dl))
++#define CuAssertDblEquals_Msg(tc,ms,ex,ac,dl) CuAssertDblEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac),(dl))
++#define CuAssertPtrEquals(tc,ex,ac)           CuAssertPtrEquals_LineMsg((tc),__FILE__,__LINE__,NULL,(ex),(ac))
++#define CuAssertPtrEquals_Msg(tc,ms,ex,ac)    CuAssertPtrEquals_LineMsg((tc),__FILE__,__LINE__,(ms),(ex),(ac))
++
++#define CuAssertPtrNotNull(tc,p)        CuAssert_Line((tc),__FILE__,__LINE__,&quot;null pointer unexpected&quot;,(p != NULL))
++#define CuAssertPtrNotNullMsg(tc,msg,p) CuAssert_Line((tc),__FILE__,__LINE__,(msg),(p != NULL))
++
++/* CuSuite */
++
++#define MAX_TEST_CASES	1024
++
++#define SUITE_ADD_TEST(SUITE,TEST)	CuSuiteAdd(SUITE, CuTestNew(#TEST, TEST))
++
++typedef struct
++{
++	int count;
++	CuTest* list[MAX_TEST_CASES];
++	int failCount;
++
++} CuSuite;
++
++
++void CuSuiteInit(CuSuite* testSuite);
++CuSuite* CuSuiteNew(void);
++void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase);
++void CuSuiteAddSuite(CuSuite* testSuite, CuSuite* testSuite2);
++void CuSuiteRun(CuSuite* testSuite);
++void CuSuiteSummary(CuSuite* testSuite, CuString* summary);
++void CuSuiteDetails(CuSuite* testSuite, CuString* details);
++
++
++#define cusuite CuSuite
++#define cutest CuTest
++#define suite_add(s,t) SUITE_ADD_TEST(s,t)
++#define Assert(cond) CuAssert(ct, #cond, cond)
++
++#define AssertEq(c1,c2) Assert(c1 == c2)
++#define AssertNe(c1,c2) Assert(c1 != c2)
++#define AssertGt(c1,c2) Assert(c1 &gt; c2)
++#define AssertGe(c1,c2) Assert(c1 &gt;= c2)
++#define AssertLt(c1,c2) Assert(c1 &lt; c2)
++#define AssertLe(c1,c2) Assert(c1 &lt;= c2)
++
++#endif /* CU_TEST_H */
+
+Modified: trunk/examples/docs/testfile/Idiom-Indent1.test
+===================================================================
+--- trunk/examples/docs/testfile/Idiom-Indent1.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/examples/docs/testfile/Idiom-Indent1.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -1,4 +1,4 @@
+-DISABLED: neads streaming tmtest?
++DISABLED: needs streaming tmtest?
+ 
+ echo test output &gt; &gt;(INDENT)
+ 
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/main.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -46,6 +46,7 @@
+ int allfiles = 0;
+ int dumpscript = 0;
+ int quiet = 0;
++int run_unit_tests = 0;
+ const char *orig_cwd;		// tmtest runs with the cwd pointed to /tmp
+ char *config_file;	// absolute path to the user-specified config file
+ 					// null if user didn't specify a config file.
+@@ -1010,6 +1011,7 @@
+ 		{&quot;help&quot;, 0, 0, 'h'},
+ 		{&quot;output&quot;, 0, 0, 'o'},
+ 		{&quot;quiet&quot;, 0, 0, 'q'},
++		{&quot;run-tests&quot;, 0, 0, 'U'},
+ 		{&quot;version&quot;, 0, 0, 'V'},
+ 		{0, 0, 0, 0},
+ 	};
+@@ -1051,6 +1053,10 @@
+ 				quiet++;
+ 				break;
+ 
++			case 'U':
++				run_unit_tests++;
++				break;
++
+ 			case 'V':
+ 				printf(&quot;tmtest version %s\n&quot;, stringify(VERSION));
+ 				exit(0);
+@@ -1166,11 +1172,35 @@
+ }
+ 
+ 
++#include &quot;cutest.h&quot;
++
++static int cumain(int argc, char **argv)
++{
++	extern cusuite* compare_suite();
++
++	CuString *output = CuStringNew();
++
++	CuSuite *suite = CuSuiteNew();
++	CuSuiteAddSuite(suite, compare_suite());
++
++	CuSuiteRun(suite);
++	CuSuiteSummary(suite, output);
++	CuSuiteDetails(suite, output);
++	printf(&quot;%s\n&quot;, output-&gt;buffer);
++
++	return 0;
++}
++
++
+ int main(int argc, char **argv)
+ {
+ 	orig_cwd = dup_cwd();
+ 	process_args(argc, argv);
+ 
++	if(run_unit_tests) {
++		return cumain(argc, argv);
++	}
++
+     start_tests();
+     if(optind &lt; argc) {
+ 		process_argv(argv+optind);
+
+Modified: trunk/re2c/read-fd.c
+===================================================================
+--- trunk/re2c/read-fd.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-fd.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -3,14 +3,24 @@
+  * 28 Dec 2004
+  */
+ 
++#include &lt;sys/types.h&gt;
++#include &lt;sys/stat.h&gt;
++#include &lt;fcntl.h&gt;
+ #include &lt;unistd.h&gt;
+ #include &lt;errno.h&gt;
+ #include &lt;assert.h&gt;
+ 
+ #include &quot;read-fd.h&quot;
++#include &quot;scan-dyn.h&quot;
+ 
+ 
+-static int readfd_read(scanstate *ss)
++/**
++ * The internal function that performs the read.  You never call
++ * it directly.  Instead, it is called automatically by the scanner
++ * whenever it needs more data.
++ */
++
++static ssize_t readfd_read(scanstate *ss)
+ {
+     int n, avail;
+ 
+@@ -53,3 +63,45 @@
+     return ss;
+ }
+ 
++
++/* Opens the file and creates a new scanner to scan it.
++ * This is just a convenience routine.  You can create a scanner
++ * yourself and attach to it using readfd_attach().
++ *
++ * If you do use this routine, you should call readfd_close() to close
++ * the file and deallocate the scanner.
++ *
++ * Bufsiz tells how big in bytes the scan buffer will be.  No single
++ * token may be larger than bufsiz.
++ */
++
++scanstate* readfd_open(const char *path, size_t bufsiz)
++{
++    scanstate *ss;
++    int fd;
++
++    fd = open(path, O_RDONLY);
++    if(fd &lt; 0) {
++        return NULL;
++    }
++
++    ss = dynscan_create(bufsiz);
++    if(!ss) {
++        close(fd);
++        return NULL;
++    }
++
++    return readfd_attach(ss, fd);
++}
++
++
++/**
++ * Closes the file and deallocates the memory allocated by readfd_open().
++ */
++
++void readfd_close(scanstate *ss)
++{
++    close((int)ss-&gt;readref);
++    dynscan_free(ss);
++}
++
+
+Modified: trunk/re2c/read-fd.h
+===================================================================
+--- trunk/re2c/read-fd.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-fd.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -12,3 +12,8 @@
+ 
+ scanstate* readfd_attach(scanstate *ss, int fd);
+ 
++
++// convenience functions:
++scanstate* readfd_open(const char *path, size_t bufsiz);
++void readfd_close(scanstate *ss);
++
+
+Added: trunk/re2c/read-fp.c
+===================================================================
+--- trunk/re2c/read-fp.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-fp.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,93 @@
++/* read-fp.c
++ * Scott Bronson
++ * 28 Dec 2004
++ */
++
++#include &lt;stdio.h&gt;
++
++#include &quot;scan-dyn.h&quot;
++#include &quot;read-fp.h&quot;
++
++
++static ssize_t readfp_read(scanstate *ss)
++{
++    ssize_t n, avail;
++
++    avail = read_shiftbuf(ss);
++    n = fread((void*)ss-&gt;limit, avail, 1, ss-&gt;readref);
++    ss-&gt;limit += n;
++
++    if(n &lt;= 0) {
++        if(feof(ss-&gt;readref)) {
++            // too few bytes to complete the current token.
++            ss-&gt;at_eof = 1;
++            return 0;
++        }
++        if(ferror(ss-&gt;readref)) {
++            // error while reading stream.
++            // too bad stdlib doesn't allow us to
++            // determine what the error is.
++            ss-&gt;at_eof = 2;
++            return -1;
++        }
++       
++        assert(!&quot;Not eof or error. I have no idea what happened!&quot;);
++        return -3;
++    }
++
++    return n;
++}
++
++
++scanstate* readfp_attach(scanstate *ss, FILE *fp)
++{
++    if(!ss || !fp) {
++        return 0;
++    }
++
++    ss-&gt;readref = fp;
++    ss-&gt;read = readfp_read;
++    return ss;
++}
++
++
++/** Creates a scanstate object that can read from the given file.
++ * Returns NULL and prints to STDERR if an error ocurrs.
++ * Ensure that you call readfp_close() when you're finished.
++ * Uses the given buffer size, or BUFSIZ if bufsiz is 0.
++ * Ensure that the buffer size will fit into a signed
++ * int on the current machine architecture.
++ */
++
++scanstate* readfp_open(const char *path, int bufsiz)
++{
++    scanstate *ss;
++    FILE *fp;
++
++    // open the file
++    fp = fopen(path, &quot;r&quot;);
++    if(!fp) {
++        return NULL;
++    }
++
++    // create the dynamic scanstate
++    ss = dynscan_create(bufsiz);
++    if(!ss) {
++        fclose(fp);
++        return NULL;
++    }
++
++    return readfp_attach(ss, fp);
++}
++
++
++/** Releases the resources allocated by readfp_open()
++ */
++
++void readfp_close(scanstate *ss)
++{
++    fclose(ss-&gt;readref);
++    dynscan_free(ss);
++}
++
++
+
+Added: trunk/re2c/read-fp.h
+===================================================================
+--- trunk/re2c/read-fp.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-fp.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,17 @@
++/* read-fp.h
++ * Scott Bronson
++ * 28 Dec 2004
++ *
++ * This allows you to feed an re2c scanner directly from a
++ * std C fileptr.
++ */
++
++
++#include &lt;stdio.h&gt;
++#include &quot;read.h&quot;
++
++
++scanstate* readfp_attach(scanstate *ss, FILE *fp);
++scanstate* readfp_open(const char *filename, size_t bufsiz);
++void readfp_close(scanstate *ss);
++
+
+Added: trunk/re2c/read-mem.c
+===================================================================
+--- trunk/re2c/read-mem.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-mem.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,55 @@
++/* re2c.c
++ * Scott Bronson
++ * 28 Dec 2004
++ *
++ * Shows how to scan from an in-memory buffer.  We ignore the buffer
++ * and scan directly out of the string.  The read proc
++ * just returns eof when the scanner hits the end of the string.
++ */
++
++#include &lt;stdlib.h&gt;
++#include &lt;string.h&gt;
++#include &lt;assert.h&gt;
++
++#include &quot;read-mem.h&quot;
++
++
++/** Returns EOF because we're out of data.
++ */
++
++static ssize_t readmem_read(scanstate *ss)
++{
++    return 0;
++}
++
++
++/** Initializes the given scanstate to read from the given string.
++ */
++
++scanstate* readmem_init(scanstate *ss, const char *data, size_t len)
++{
++    scanstate_init(ss, data, len);
++    ss-&gt;limit = ss-&gt;bufptr + ss-&gt;bufsiz;
++    ss-&gt;read = readmem_read;
++    return ss;
++}
++
++
++/** Attaches the scanner to the given string.  Use this
++ * if you've already malloc'd a scanstate.  It calls scanstate_init
++ * so it will blow everything already in the scanstate away.
++ *
++ * TODO: this is unlike all other attach routines, none of whom
++ * blow away the scanstate.  CHANGE THIS.
++ */
++
++scanstate* readmem_attach(scanstate *ss, const char *data, size_t len)
++{
++    // ensure we don't stomp on a pre-existing buffer
++    if(ss-&gt;bufsiz) {
++        return NULL;
++    }
++
++    return readmem_init(ss, data, len);
++}
++
+
+Added: trunk/re2c/read-mem.h
+===================================================================
+--- trunk/re2c/read-mem.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-mem.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,16 @@
++/* re2c-mem.c
++ * Scott Bronson
++ * 30 Dec 2004
++ *
++ * Allows you to feed an re2c scanner from a memory block.
++ */
++
++#include &quot;read.h&quot;
++
++scanstate* readmem_init(scanstate *ss, const char *data, size_t len);
++scanstate* readmem_attach(scanstate *ss, const char *data, size_t len);
++
++// convenience functions:
++#define readmem_init_str(ss,str) readmem_init(ss,str,strlen(str))
++#define readmem_init_strconst(ss,str) readmem_init(ss,str,sizeof(str)-1)
++
+
+Added: trunk/re2c/read-rand.c
+===================================================================
+--- trunk/re2c/read-rand.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-rand.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,51 @@
++/* read-rand.c
++ * Scott Bronson
++ * 6 Mar 2006
++ */
++
++#include &lt;stdlib.h&gt;
++#include &lt;string.h&gt;
++
++#include &quot;read-rand.h&quot;
++
++
++/**
++ * The internal function that performs the read.  You never call
++ * it directly.  Instead, it is called automatically by the scanner
++ * whenever it needs more data.
++ *
++ * This reader will never hit EOF.  It just keeps supplying data
++ * from rand_r(3).
++ */
++
++static ssize_t readrand_read(scanstate *ss)
++{
++    int avail = read_shiftbuf(ss);
++	int orig = avail;
++	int num;
++
++	while(avail &gt;= sizeof(int)) {
++		// There appears to be some sort of cast bug in GCC4...?
++		// Anyhow, the memcpy works, casting pointers didn't.
++		num = rand_r((unsigned int*)&amp;ss-&gt;readref);
++		memcpy((char*)ss-&gt;limit, &amp;num, sizeof(int));
++		ss-&gt;limit += sizeof(int);
++		avail -= sizeof(int);
++	}
++
++    return orig-avail;
++}
++
++
++/**
++ * Attaches the seed to the existing scanstate object.
++ * Cannot possibly fail.
++ */
++
++scanstate* readrand_attach(scanstate *ss, int seed)
++{
++    *(unsigned int*)&amp;ss-&gt;readref = seed;
++    ss-&gt;read = readrand_read;
++    return ss;
++}
++
+
+Added: trunk/re2c/read-rand.h
+===================================================================
+--- trunk/re2c/read-rand.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read-rand.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,13 @@
++/* read-rand.h
++ * Scott Bronson
++ * 6 Mar 2006
++ *
++ * This allows you to feed an re2c scanner with random numbers.
++ */
++
++
++#include &quot;read.h&quot;
++
++
++scanstate* readrand_attach(scanstate *ss, int seed);
++
+
+Modified: trunk/re2c/read.c
+===================================================================
+--- trunk/re2c/read.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -38,10 +38,10 @@
+ // The bytes that need to be shifted are those between the token
+ // and the limit.
+ 
+-int read_shiftbuf(scanstate *ss)
++ssize_t read_shiftbuf(scanstate *ss)
+ {
+     const char *min;
+-    int cnt;
++    ssize_t cnt;
+ 
+     min = ss-&gt;token;
+     if(ss-&gt;marker &amp;&amp; ss-&gt;marker &lt; min) {
+@@ -51,7 +51,7 @@
+     // this tells how many bytes need to be shifted.
+     cnt = ss-&gt;limit - min;
+     if(cnt) {
+-        int delta = min - ss-&gt;bufptr;
++        ssize_t delta = min - ss-&gt;bufptr;
+         memmove((void*)ss-&gt;bufptr, min, cnt);
+         ss-&gt;cursor -= delta;
+         ss-&gt;token -= delta;
+
+Modified: trunk/re2c/read.h
+===================================================================
+--- trunk/re2c/read.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/read.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -11,12 +11,9 @@
+ #ifndef R2READ_H
+ #define R2READ_H
+ 
+-#include &lt;assert.h&gt;
+-
+ #include &quot;scan.h&quot;
+ 
++ssize_t read_shiftbuf(scanstate *ss);
+ 
+-int read_shiftbuf(scanstate *ss);
+-
+ #endif
+ 
+
+Added: trunk/re2c/scan-dyn.c
+===================================================================
+--- trunk/re2c/scan-dyn.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/scan-dyn.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,69 @@
++/* scan-dyn.c
++ * Scott Bronson
++ * 28 Dec 2004
++ *
++ * Routines to dynamically allocate and free scanners and their buffers.
++ * The scanner will be initialized, but you still need to attach
++ * it to a particular type of reader.
++ */
++
++#include &lt;stdlib.h&gt;
++#include &lt;string.h&gt;
++#include &lt;assert.h&gt;
++
++#include &quot;scan-dyn.h&quot;
++
++/** Allocate a scanstate data structure and its associated buffer.
++ * Ensure the buffer is large enough to hold the longest token.
++ * Pass 0 for bufsiz if you don't want to allocate a buffer
++ * (i.e. you're scanning from a contiguous memory block).
++ * Ensure you call dynamicscan_free() when you're done with the scanner.
++ */
++
++/** Dynamically allocates a new scanstate data structure
++ *
++ * Allocates a buffer of the given size for the scanner using malloc.
++ * Note that the size is an int: the number of bytes in the buffer
++ * must fit into a signed integer on the current architecture.
++ * Returns the new scanstate or NULL if there was a memory allocation problem.
++ *
++ * Remember to call dynamicscan_free() when you're done scanning.
++ */
++
++scanstate* dynscan_create(size_t bufsiz)
++{
++    scanstate *ss;
++    char *bufptr;
++    
++    ss = malloc(sizeof(scanstate));
++    if(!ss) {
++        return NULL;
++    }
++
++    if(bufsiz) {
++        bufptr = malloc(bufsiz);
++        if(!bufptr) {
++            free(ss);
++            return NULL;
++        }
++    } else {
++        bufptr = 0;
++    }
++
++    scanstate_init(ss, bufptr, bufsiz);
++    return ss;
++}
++
++
++/** Frees a scanstate allocated by dynamicscan_create().
++ */
++
++void dynscan_free(scanstate *ss)
++{
++    if(ss-&gt;bufptr) {
++        free((void*)ss-&gt;bufptr);
++    }
++
++    free(ss);
++}
++
+
+Added: trunk/re2c/scan-dyn.h
+===================================================================
+--- trunk/re2c/scan-dyn.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/scan-dyn.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -0,0 +1,15 @@
++/* scan-dyn.h
++ * Scott Bronson
++ * 30 Dec 2004
++ *
++ * Creates a scanner entirely located on the heap.  You must make
++ * sure to eventually call dynscan_free for every scanner created
++ * with dynscan_create.
++ */
++
++#include &quot;scan.h&quot;
++
++
++scanstate* dynscan_create(size_t bufsiz);
++void dynscan_free(scanstate *ss);
++
+
+Modified: trunk/re2c/scan.c
+===================================================================
+--- trunk/re2c/scan.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/scan.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -12,7 +12,7 @@
+  * Note that you must attach it to a reader after calling this routine.
+  */
+ 
+-void scanstate_init(scanstate *ss, const char *bufptr, int bufsiz)
++void scanstate_init(scanstate *ss, const char *bufptr, size_t bufsiz)
+ {
+     ss-&gt;cursor = bufptr;
+     ss-&gt;limit = bufptr;
+@@ -36,12 +36,13 @@
+  * Doesn't modify:
+  * - the reader or the readref.
+  * - the scanner or the scanref.
++ * - the userproc or userref.
+  * - the buffer or buffer size
+  *
+  * But sets everything else to the default values.
+- * You may still need to reattach to the reader if it needs to
+- * reset some part of its internal state.  This is true of the
+- * scanner too.
++ *
++ * If you want to reset the reader and scanner, you probalby want
++ * to detach and reattach them.  The userproc is entirely up to you.
+  */
+ 
+ void scanstate_reset(scanstate *ss)
+
+Modified: trunk/re2c/scan.h
+===================================================================
+--- trunk/re2c/scan.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/re2c/scan.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -4,6 +4,9 @@
+  *
+  * This part of support code to make writing re2c scanners much easier.
+  *
++ * TODO: add dispose procs.  Normally these will just be null but
++ * if they're set, they will ensure that all resources are collected.
++ *
+  * TODO: probably want to split the re2c-specific code from the general
+  * code.  This file is overall very useful, but it's got a few limitations
+  * imposed by re2c that should probably be placed in its own layer.
+@@ -11,6 +14,10 @@
+  * limitations.
+  */
+ 
++// to pull in the definition for size_t
++#include &lt;sys/types.h&gt;
++
++
+ /** @file scan.h
+  *
+  * This is the central file for the readers.  They provide data
+@@ -82,7 +89,7 @@
+  */
+ 
+ #define YYFILL(n)   do { \
+-		int r = (*ss-&gt;read)(ss); \
++		ssize_t r = (*ss-&gt;read)(ss); \
+ 		if(r &lt; 0) return r; \
+ 		if((ss)-&gt;cursor &gt;= (ss)-&gt;limit) return 0; \
+ 	} while(0);
+@@ -135,7 +142,7 @@
+  * up as much as it possibly can.
+  */
+ 
+-typedef int (*readproc)(struct scanstate *ss);
++typedef ssize_t (*readproc)(struct scanstate *ss);
+ 
+ 
+ /** Prototype of scanner function
+@@ -179,7 +186,7 @@
+     int at_eof;         ///&lt; You almost certainly don't want to be using this unless you're writing a readproc.  Use scan_finished() instead.  This field gets set when the readproc realizes it has hit eof.  by convention 1 means eof, 2 means yes, at_eof is true, but because of an unrecoverable read error (todo: this should be formalized?  TODO: audit code to see if this is indeed the case).
+ 
+     const char *bufptr; ///&lt; The buffer currently in use
+-    int bufsiz;         ///&lt; The maximum number of bytes that the buffer can hold
++    size_t bufsiz;         ///&lt; The maximum number of bytes that the buffer can hold
+ 
+     void *readref;      ///&lt; Data specific to the reader (i.e. for readfp_attach() it's a FILE*).
+     readproc read;      ///&lt; The routine the scanner calls when the buffer needs to be reread.
+@@ -193,7 +200,7 @@
+ typedef struct scanstate scanstate;
+ 
+ 
+-void scanstate_init(scanstate *ss, const char *bufptr, int bufsiz);
++void scanstate_init(scanstate *ss, const char *bufptr, size_t bufsiz);
+ void scanstate_reset(scanstate *ss);
+ 
+ 
+@@ -206,9 +213,17 @@
+  * If there's no data in the buffer but we're not at eof, then we need
+  * to execute a read to see if there's more data available.  If so, we're
+  * not finished.  Otherwise, we're all done.
++ *
++ * Potential problem: this routine might call read, and if read returns
++ * an error token, you'll miss it.  So, only call this routine when
++ * you're sure you're at EOF anyway.  To find out if you're at EOF
++ * without missing the errors, just call scan_token() and see if it
++ * returns 0.
++ *
++ * TODO: should this routine be removed entirely?
+  */
+ 
+-#define scan_finished(ss) \
++#define scan_is_finished(ss) \
+     (((ss)-&gt;cursor &lt; (ss)-&gt;limit) ? 0 : \
+ 		 ((ss)-&gt;at_eof || ((*(ss)-&gt;read)(ss) &lt;= 0)) \
+     )
+@@ -217,7 +232,6 @@
+ /** Fetches the next token in the stream from the scanner.
+  */
+ 
+-#define scan_token(ss) ((*((ss)-&gt;state))(ss))
+ #define scan_next_token(ss) ((*((ss)-&gt;state))(ss))
+ 
+ 
+@@ -288,7 +302,10 @@
+ #define scan_pushback(ss) ((ss)-&gt;cursor = (ss)-&gt;token)
+ 
+ 
+-/** Sets the current line number in the scanner to the given value.
++/**
++ * Sets the current line number in the scanner to the given value.
++ * I think most people will just manipulate ss-&gt;line directly.
++ * TODO: get rid of this macro?
+  */
+ 
+ #define scan_set_line(ss,n) (ss-&gt;line=(n));
+@@ -301,8 +318,9 @@
+ 
+ 
+ /**
+- * Prepares the scanner to scan a new token.
+- * This should be called at the beginning of every scanproc.
++ * Scanners only!  Prepares the scanner to scan a new token.
++ * This should be called at the beginning of every scanproc
++ * and nowhere else.
+  */
+ 
+ #define scanner_enter(ss) ((ss)-&gt;token = (ss)-&gt;cursor)
+
+Modified: trunk/test/03-results/02-Nstdout.test
+===================================================================
+--- trunk/test/03-results/02-Nstdout.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test/03-results/02-Nstdout.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -6,11 +6,11 @@
+ 
+ tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+-	STDOUT :
++	STDOUT:
+ 	howdy
+ EOL
+-STDOUT : 
++STDOUT: 
+ FAIL (STDIN)                   O..  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT : 0
++RESULT: 0
+
+Modified: trunk/test/03-results/03-Nstdout.test
+===================================================================
+--- trunk/test/03-results/03-Nstdout.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test/03-results/03-Nstdout.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -7,11 +7,11 @@
+ tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 
+-	STDOUT :
++	STDOUT:
+ 	Howdy 
+ EOL
+-STDOUT : 
++STDOUT: 
+ FAIL (STDIN)                   O..  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT : 0
++RESULT: 0
+
+Modified: trunk/test/03-results/04-Nstderr.test
+===================================================================
+--- trunk/test/03-results/04-Nstderr.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test/03-results/04-Nstderr.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -10,6 +10,8 @@
+ 	Howdy
+ 
+ EOL
++
++
+ STDOUT:
+ FAIL (STDIN)                   .E.  stderr differed
+ 
+
+Modified: trunk/test/03-results/04-Nstdout.test
+===================================================================
+--- trunk/test/03-results/04-Nstdout.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test/03-results/04-Nstdout.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -7,12 +7,12 @@
+ tmtest -q - &lt;&lt;-EOL
+ 	echo Howdy
+ 
+-	STDOUT :
++	STDOUT:
+ 	Howdy
+ 
+ EOL
+-STDOUT : 
++STDOUT: 
+ FAIL (STDIN)                   O..  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT : 0
++RESULT: 0
+
+Modified: trunk/test/03-results/10-NoNLFFail.test
+===================================================================
+--- trunk/test/03-results/10-NoNLFFail.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test/03-results/10-NoNLFFail.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -9,6 +9,9 @@
+ 
+ EOL
+ STDOUT : 
+-ok   (STDIN) 
++FAIL (STDIN)                   O..  stdout differed
+ 
+-1 test run, 1 success, 0 failures.
++1 test run, 0 successes, 1 failure.
++STDERR:
++WARNING: STDOUT is marked -n but it ends with multiple newlines!
++    Please remove all but one newline from (STDIN) around line 4.
+
+Modified: trunk/test/03-results/13-MultiNL.test
+===================================================================
+--- trunk/test/03-results/13-MultiNL.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test/03-results/13-MultiNL.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -9,6 +9,9 @@
+ 
+ EOL
+ STDOUT: 
+-ok   (STDIN) 
++FAIL (STDIN)                   O..  stdout differed
+ 
+-1 test run, 1 success, 0 failures.
++1 test run, 0 successes, 1 failure.
++STDERR:
++WARNING: STDOUT is marked -n but it ends with multiple newlines!
++    Please remove all but one newline from (STDIN) around line 4.
+
+Modified: trunk/test/03-results/13-MultiNLErr.test
+===================================================================
+--- trunk/test/03-results/13-MultiNLErr.test	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test/03-results/13-MultiNLErr.test	2006-03-06 21:56:19 UTC (rev 107)
+@@ -9,6 +9,9 @@
+ 
+ EOL
+ STDOUT: 
+-ok   (STDIN) 
++FAIL (STDIN)                   .E.  stderr differed
+ 
+-1 test run, 1 success, 0 failures.
++1 test run, 0 successes, 1 failure.
++STDERR:
++WARNING: STDERR is marked -n but it ends with multiple newlines!
++    Please remove all but one newline from (STDIN) around line 4.
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test.c	2006-03-06 21:56:19 UTC (rev 107)
+@@ -16,6 +16,7 @@
+ #include &lt;unistd.h&gt;
+ #include &lt;errno.h&gt;
+ #include &lt;dirent.h&gt;
++#include &lt;assert.h&gt;
+ 
+ #include &quot;re2c/read-fd.h&quot;
+ 
+@@ -158,7 +159,7 @@
+     // it means that we attempted to start the test.  If not,
+     // then the test bailed early.
+     do {
+-        tok = scan_token(&amp;ss);
++        tok = scan_next_token(&amp;ss);
+ 
+ 		// look for errors...
+         if(tok &lt; 0) {
+@@ -234,7 +235,7 @@
+ 				fprintf(stderr, &quot;Unknown token (%d) on line %d of the status file: '%.*s'\n&quot;,
+ 						tok, ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
+ 		}
+-    } while(!scan_finished(&amp;ss));
++    } while(!scan_is_finished(&amp;ss));
+ 
+ 	if(lastfile_good) {
+ 		test-&gt;last_file_processed = strdup(lastfile);
+@@ -289,7 +290,7 @@
+ 
+     do {
+         oldline = test-&gt;testfile.line;
+-        int tokno = scan_token(&amp;test-&gt;testfile);
++        int tokno = scan_next_token(&amp;test-&gt;testfile);
+         if(tokno &lt; 0) {
+             fprintf(stderr, &quot;Error %d pulling status tokens: %s\n&quot;, 
+                     tokno, strerror(errno));
+@@ -323,7 +324,7 @@
+             // print the unmodified data to the command script.
+             fwrite(token_start(&amp;test-&gt;testfile), token_length(&amp;test-&gt;testfile), 1, fp);
+         }
+-    } while(!scan_finished(&amp;test-&gt;testfile));
++    } while(!scan_is_finished(&amp;test-&gt;testfile));
+ 
+     rewrite_command_section(test, 0, NULL, 0);
+ }
+@@ -335,11 +336,9 @@
+  * it up.
+  */
+ 
+-void compare_section_start(scanstate *cmpscan, int fd, matchval *mv,
+-		const char *filename, const char *sectionname, int nonl)
++void compare_section_start(scanstate *cmpscan, int fd,
++		const char *filename, const char *sectionname)
+ {
+-    assert(!compare_in_progress(cmpscan));
+-
+     // rewind the file
+     if(lseek(fd, 0, SEEK_SET) &lt; 0) {
+         fprintf(stderr, &quot;read_file lseek for status file: %s\n&quot;, strerror(errno));
+@@ -348,7 +347,7 @@
+ 
+     scanstate_reset(cmpscan);
+     readfd_attach(cmpscan, fd);
+-	compare_attach(cmpscan, mv, nonl);
++	compare_attach(cmpscan);
+ 
+     // we may want to check the token to see if there are any
+     // special requests (like detabbing).
+@@ -502,6 +501,13 @@
+ }
+ 
+ 
++// store the state we need directly in the cmpscan structure.
++#define cmpscan_state             (*(int*)&amp;(cmpscan)-&gt;userref)
++#define cmpscan_suppress_newline  (*(int*)&amp;(cmpscan)-&gt;userproc)
++	///&lt; 0 for normal processing, 1 if a newline should be suppressed
++	///  from the expected output (so it can match actual).
++
++
+ /**
+  * Called when we're at the start of a STDOUT or STDERR section.
+  * Sets the cmpscanner up to compare the section.
+@@ -509,7 +515,7 @@
+  */
+ 
+ int start_output_section(struct test *test, const char *tok,
+-        int toklen, scanstate *cmpscan, int fd, matchval *val,
++        int toklen, scanstate *cmpscan, int fd, enum matchval val,
+         const char *secname)
+ {
+     int suppress_trailing_newline = 0;
+@@ -519,7 +525,7 @@
+             start_output_section_argproc, 
+             (void*)&amp;suppress_trailing_newline);
+ 
+-    if(*val != match_unknown) {
++    if(val != match_unknown) {
+         // we've already obtained a value for this section!
+         fprintf(stderr, &quot;%s line %d Error: duplicate %s &quot;
+                 &quot;section.  Ignored.\n&quot;, get_testfile_name(test),
+@@ -527,9 +533,13 @@
+         return 0;
+     }
+ 
+-    compare_section_start(cmpscan, fd, val,
+-        get_testfile_name(test), secname, suppress_trailing_newline);
++	scanstate_reset(cmpscan);
++    compare_section_start(cmpscan, fd,
++        get_testfile_name(test), secname);
+ 
++	// store the newline flag in the cmpscan structure
++	cmpscan_suppress_newline = suppress_trailing_newline;
++
+     return 1;
+ }
+ 
+@@ -551,17 +561,60 @@
+ /**
+  * Finishes comparing a section.
+  * see start_output_section().
++ *
++ * When should we warn?
++ * - If the actual stdout didn't end with a \n but the exptected stdout
++ *   said it would.  Actual is ss, expected is ptr.  So that means
++ *   compare_ptr_has_extra_nl is true AND suppress_trailing_newline
++ *   is false.
++ *
++ * Holy cats.  The -n option has made this routine really complex!
+  */
+ 
+-void end_output_section(struct test *test, scanstate *cmpscan,
++enum matchval end_output_section(struct test *test, scanstate *cmpscan,
+         const char *name)
+ {
+-    int warn_nl = 0;
++	compare_result cmp = compare_check_newlines(cmpscan,0,0);
++	int suppress_trailing_newline = cmpscan_suppress_newline;
+ 
+-    compare_end(cmpscan, &amp;warn_nl);
+-    if(warn_nl) {
+-		warn_section_newline(test, name);
+-    }
++	if(cmp == cmp_ptr_has_extra_nl) {
++		// actual is missing a single newline as compared to expected.
++
++		if(!suppress_trailing_newline) {
++			// user hasn't marked section needing suppression so warn.
++			warn_section_newline(test, name);
++			return match_no;
++		}
++
++		// it's met all the requirements.  We have a match.
++		return match_yes;
++	}
++
++	if(cmp == cmp_ptr_has_more_nls &amp;&amp; suppress_trailing_newline) {
++		fprintf(stderr,
++			&quot;WARNING: %s is marked -n but it ends with multiple newlines!\n&quot;
++			&quot;    Please remove all but one newline from %s around line %d.\n&quot;,
++			name, get_testfile_name(test), test-&gt;testfile.line);
++		return match_no;
++	}
++
++	if(cmp == cmp_full_match) {
++		if(suppress_trailing_newline) {
++			if(cmpscan-&gt;line == 0) {
++				// don't want to print the warning if it's an empty section
++				// because, while it's weird, it's technically correct.
++				return match_yes;
++			}
++
++			// section was marked -n but a newline was present.  No match.
++			return match_no;
++		}
++
++		// full match in a normal section (not marked -n)
++		return match_yes;
++	}
++
++	return match_no;
+ }
+ 
+ 
+@@ -572,15 +625,11 @@
+  * The refcon needs to be an allocated scanner.  It need not be
+  * attached to anything -- this routine will take care of attaching
+  * and detaching it as needed.
+- *
+  */
+ 
+ void parse_section_compare(struct test *test, int sec,
+         const char *datap, int len, void *refcon)
+ {
+-    #define get_cur_state(ss)    ((int)(ss)-&gt;userref)
+-    #define set_cur_state(ss,x)  ((ss)-&gt;userref=(void*)(x))
+-
+     // cmpscan is the scanner used to perform the diff.
+     scanstate *cmpscan = refcon;
+ 
+@@ -589,41 +638,41 @@
+ 
+     // make sure we're not fed an illegal token.
+     assert(is_section_token(newsec) || sec == 0);
++
+     // make sure we're not starting from an illegal state.
+-    assert(is_section_token(get_cur_state(cmpscan)) ||
+-            get_cur_state(cmpscan) == 0);
++    assert(is_section_token(cmpscan_state) || cmpscan_state == 0);
+ 
+     if(EX_ISNEW(sec) || sec == 0) {
+         // ensure previoius section is finished
+-        switch(get_cur_state(cmpscan)) {
++        switch(cmpscan_state) {
+             case exSTDOUT:
+-                end_output_section(test, cmpscan, &quot;STDOUT&quot;);
+-                break;
++			  test-&gt;stdout_match = end_output_section(test, cmpscan, &quot;STDOUT&quot;);
++              break;
+             case exSTDERR:
+-                end_output_section(test, cmpscan, &quot;STDERR&quot;);
+-                break;
++			  test-&gt;stderr_match = end_output_section(test, cmpscan, &quot;STDERR&quot;);
++              break;
+             default:
+                 ;
+         }
+ 
+         // then fire up the new section
+-        set_cur_state(cmpscan, newsec);
++        cmpscan_state = newsec;
+         switch(newsec) {
+             case 0:
+                 // don't start a new section if eof.
+                 break;
+             case exSTDOUT:
+                 if(!start_output_section(test, datap, len, cmpscan,
+-                        test-&gt;outfd, &amp;test-&gt;stdout_match, &quot;STDOUT&quot;))
+-                {
+-                    set_cur_state(cmpscan, 0);
++                        test-&gt;outfd, test-&gt;stdout_match, &quot;STDOUT&quot;)) {
++					// ignore the rest of this section
++                    cmpscan_state = 0;
+                 }
+                 break;
+             case exSTDERR:
+                 if(!start_output_section(test, datap, len, cmpscan,
+-                        test-&gt;errfd, &amp;test-&gt;stderr_match, &quot;STDERR&quot;))
+-                {
+-                    set_cur_state(cmpscan, 0);
++                        test-&gt;errfd, test-&gt;stderr_match, &quot;STDERR&quot;)) {
++					// ignore the rest of this section
++                    cmpscan_state = 0;
+                 }
+                 break;
+             case exRESULT:
+@@ -632,15 +681,15 @@
+         }
+     } else {
+         // we're continuing an already started section.
+-        assert(get_cur_state(cmpscan) == newsec || get_cur_state(cmpscan) == 0);
++        assert(cmpscan_state == newsec || cmpscan_state == 0);
+ 
+-        switch(get_cur_state(cmpscan)) {
++        switch(cmpscan_state) {
+             case 0:
+                 // do nothing
+                 break;
+             case exSTDOUT:
+             case exSTDERR:
+-                compare_continue(cmpscan, datap, len);
++				compare_continue(cmpscan, datap, len);
+                 break;
+             case exRESULT:
+ 				if(contains_nws(datap, len)) {
+@@ -674,12 +723,12 @@
+     // if the testfile is already at its eof, it means that
+     // it didn't have any sections.  therefore, we'll assume
+     // defaults for all values.  we're done.
+-    if(scan_finished(scanner)) {
++    if(scan_is_finished(scanner)) {
+         return;
+     }
+     
+     do {
+-        int tokno = scan_token(scanner);
++        int tokno = scan_next_token(scanner);
+         if(tokno &lt; 0) {
+             fprintf(stderr, &quot;Error %d pulling status tokens: %s\n&quot;, 
+                     tokno, strerror(errno));
+@@ -691,7 +740,7 @@
+         (*parseproc)(test, tokno, token_start(scanner),
+                 token_length(scanner), refcon);
+ 
+-    } while(!scan_finished(scanner));
++    } while(!scan_is_finished(scanner));
+ 
+     // give the parser an eof token so it can finalize things.
+     (*parseproc)(test, 0, NULL, 0, refcon);
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2006-03-05 22:52:02 UTC (rev 106)
++++ trunk/test.h	2006-03-06 21:56:19 UTC (rev 107)
+@@ -9,6 +9,21 @@
+ #include &quot;compare.h&quot;
+ 
+ 
++/**
++ * a tristate that tells whether something
++ *    - matches
++ *    - doesn't match
++ *    - hasn't been checked yet.
++ */
++
++enum matchval {
++    match_inprogress = -2,
++    match_unknown = -1,
++    match_no = 0,
++    match_yes = 1,
++};
++
++
+ typedef enum {
+ 	test_pending=0,			///&lt; still processing config files
+ 	config_was_aborted,		///&lt; some config file called ABORT
+@@ -61,9 +76,9 @@
+ 
+ 	int expected_exitno;	///&lt; the test's expected exit value.  this is only valid when stderr_match != match_unknown.
+ 
+-    matchval exitno_match;	///&lt; tells whether the expected and actual exit values match.
+-    matchval stdout_match;	///&lt; tells whether the expected and actual stdout matches.
+-    matchval stderr_match;	///&lt; tells whether the expected and actual stderr matches.
++    enum matchval exitno_match;	///&lt; tells whether the expected and actual exit values match.
++    enum matchval stdout_match;	///&lt; tells whether the expected and actual stdout matches.
++    enum matchval stderr_match;	///&lt; tells whether the expected and actual stderr matches.
+ };
+ 
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000023.html">[Tmtest-commits] [106] trunk: Eradicate MODIFY.
+</A></li>
+	<LI>Next message: <A HREF="000025.html">[Tmtest-commits] [108] trunk: Simplify the compare API by getting rid of a misfeature.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#24">[ date ]</a>
+              <a href="thread.html#24">[ thread ]</a>
+              <a href="subject.html#24">[ subject ]</a>
+              <a href="author.html#24">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

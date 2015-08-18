@@ -1,0 +1,2798 @@
+From tmtest-commits at lists.berlios.de  Wed Feb 14 20:39:12 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Wed, 14 Feb 2007 20:39:12 +0100
+Subject: [Tmtest-commits] [130] trunk/Makefile: CDE requires an "all" target
+	in the makefile.
+Message-ID: <200702141939.l1EJdCEo030153@sheep.berlios.de>
+
+Revision: 130
+Author:   bronson
+Date:     2007-02-14 20:39:11 +0100 (Wed, 14 Feb 2007)
+
+Log Message:
+-----------
+CDE requires an "all" target in the makefile.
+
+Modified Paths:
+--------------
+    trunk/Makefile
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-01-25 03:14:50 UTC (rev 129)
++++ trunk/Makefile	2007-02-14 19:39:11 UTC (rev 130)
+@@ -46,6 +46,7 @@
+ # It makes it rather hard to debug when Make deletes the intermediate files.
+ INTERMED=stscan.c
+ 
++all: tmtest
+ 
+ tmtest: $(CSRC) $(CHDR) $(INTERMED)
+ 	$(CC) $(COPTS) $(CSRC) -o tmtest -DVERSION="$(VERSION)" -DZUTEST
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Thu Feb 15 00:15:17 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Thu, 15 Feb 2007 00:15:17 +0100
+Subject: [Tmtest-commits] [131] trunk/Makefile: Eclipse wants an "all"
+	target in the Makefile.
+Message-ID: <200702142315.l1ENFHQG017814@sheep.berlios.de>
+
+Revision: 131
+Author:   bronson
+Date:     2007-02-15 00:15:13 +0100 (Thu, 15 Feb 2007)
+
+Log Message:
+-----------
+Eclipse wants an "all" target in the Makefile.
+
+Modified Paths:
+--------------
+    trunk/Makefile
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-02-14 19:39:11 UTC (rev 130)
++++ trunk/Makefile	2007-02-14 23:15:13 UTC (rev 131)
+@@ -29,8 +29,8 @@
+ COPTS=-g -Wall -Werror
+ 
+ # utilities:
+-CSRC+=curdir.c qscandir.c pathconv.c
+-CHDR+=curdir.h qscandir.h pathconv.h
++CSRC+=qscandir.c pathconv.c pathstack.c
++CHDR+=qscandir.h pathconv.h pathstack.h
+ # scanner files
+ CSRC+=re2c/read.c re2c/read-fd.c re2c/read-mem.c re2c/read-rand.c \
+ 	re2c/scan.c re2c/scan-dyn.c
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Fri Feb 16 07:21:33 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Fri, 16 Feb 2007 07:21:33 +0100
+Subject: [Tmtest-commits] [132] trunk/zutest.h: Make the 2-arg 1-op macros
+	look less Forth-like.
+Message-ID: <200702160621.l1G6LX22029598@sheep.berlios.de>
+
+Revision: 132
+Author:   bronson
+Date:     2007-02-16 07:21:16 +0100 (Fri, 16 Feb 2007)
+
+Log Message:
+-----------
+Make the 2-arg 1-op macros look less Forth-like.
+
+Modified Paths:
+--------------
+    trunk/zutest.h
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-02-14 23:15:13 UTC (rev 131)
++++ trunk/zutest.h	2007-02-16 06:21:16 UTC (rev 132)
+@@ -58,12 +58,12 @@
+ 		if(!(x)) { Fail(__VA_ARGS__); } } while(0)
+ 
+ // integers, longs, chars...
+-#define AssertEq(x,y) AssertOp(x,y,==)
+-#define AssertNe(x,y) AssertOp(x,y,!=)
+-#define AssertGt(x,y) AssertOp(x,y,>)
+-#define AssertGe(x,y) AssertOp(x,y,>=)
+-#define AssertLt(x,y) AssertOp(x,y,<)
+-#define AssertLe(x,y) AssertOp(x,y,<=)
++#define AssertEq(x,y) AssertOp(x,==,y)
++#define AssertNe(x,y) AssertOp(x,!=,y)
++#define AssertGt(x,y) AssertOp(x,>,y)
++#define AssertGe(x,y) AssertOp(x,>=,y)
++#define AssertLt(x,y) AssertOp(x,<,y)
++#define AssertLe(x,y) AssertOp(x,<=,y)
+ 
+ #define AssertZero(x) AssertOpToZero(x,==)
+ #define AssertNonzero(x) AssertOpToZero(x,!=)
+@@ -74,12 +74,12 @@
+ #define AssertNonPositive(x) AssertOpToZero(x,<=);
+ 
+ // Also integers but failure values are printed in hex rather than decimal.
+-#define AssertEqHex(x,y) AssertHexOp(x,y,==)
+-#define AssertNeHex(x,y) AssertHexOp(x,y,!=)
+-#define AssertGtHex(x,y) AssertHexOp(x,y,>)
+-#define AssertGeHex(x,y) AssertHexOp(x,y,>=)
+-#define AssertLtHex(x,y) AssertHexOp(x,y,<)
+-#define AssertLeHex(x,y) AssertHexOp(x,y,<=)
++#define AssertEqHex(x,y) AssertHexOp(x,==,y)
++#define AssertNeHex(x,y) AssertHexOp(x,!=,y)
++#define AssertGtHex(x,y) AssertHexOp(x,>,y)
++#define AssertGeHex(x,y) AssertHexOp(x,>=,y)
++#define AssertLtHex(x,y) AssertHexOp(x,<,y)
++#define AssertLeHex(x,y) AssertHexOp(x,<=,y)
+ 
+ #define AssertZeroHex(x) AssertHexOpToZero(x,==)
+ #define AssertNonzeroHex(x) AssertHexOpToZero(x,!=)
+@@ -98,36 +98,36 @@
+ 
+ #define AssertPtrNull(p) AssertNull(p)
+ #define AssertPtrNonNull(p) AssertNonNull(p)
+-#define AssertPtrEq(x,y) AssertPtrOp(x,y,==)
+-#define AssertPtrNe(x,y) AssertPtrOp(x,y,!=)
+-#define AssertPtrGt(x,y) AssertPtrOp(x,y,>)
+-#define AssertPtrGe(x,y) AssertPtrOp(x,y,>=)
+-#define AssertPtrLt(x,y) AssertPtrOp(x,y,<)
+-#define AssertPtrLe(x,y) AssertPtrOp(x,y,<=)
++#define AssertPtrEq(x,y) AssertPtrOp(x,==,y)
++#define AssertPtrNe(x,y) AssertPtrOp(x,!=,y)
++#define AssertPtrGt(x,y) AssertPtrOp(x,>,y)
++#define AssertPtrGe(x,y) AssertPtrOp(x,>=,y)
++#define AssertPtrLt(x,y) AssertPtrOp(x,<,y)
++#define AssertPtrLe(x,y) AssertPtrOp(x,<=,y)
+ 
+ // These work with floats and doubles
+ // (everything is handled internally as double)
+-#define AssertFloatEq(x,y) AssertFloatOp(x,y,==)
+-#define AssertFloatNe(x,y) AssertFloatOp(x,y,!=)
+-#define AssertFloatGt(x,y) AssertFloatOp(x,y,>)
+-#define AssertFloatGe(x,y) AssertFloatOp(x,y,>=)
+-#define AssertFloatLt(x,y) AssertFloatOp(x,y,<)
+-#define AssertFloatLe(x,y) AssertFloatOp(x,y,<=)
++#define AssertFloatEq(x,y) AssertFloatOp(x,==,y)
++#define AssertFloatNe(x,y) AssertFloatOp(x,!=,y)
++#define AssertFloatGt(x,y) AssertFloatOp(x,>,y)
++#define AssertFloatGe(x,y) AssertFloatOp(x,>=,y)
++#define AssertFloatLt(x,y) AssertFloatOp(x,<,y)
++#define AssertFloatLe(x,y) AssertFloatOp(x,<=,y)
+ // supply Doubles so people don't worry about precision when they see Float
+-#define AssertDoubleEq(x,y) AssertFloatOp(x,y,==)
+-#define AssertDoubleNe(x,y) AssertFloatOp(x,y,!=)
+-#define AssertDoubleGt(x,y) AssertFloatOp(x,y,>)
+-#define AssertDoubleGe(x,y) AssertFloatOp(x,y,>=)
+-#define AssertDoubleLt(x,y) AssertFloatOp(x,y,<)
+-#define AssertDoubleLe(x,y) AssertFloatOp(x,y,<=)
++#define AssertDoubleEq(x,y) AssertFloatOp(x,==,y)
++#define AssertDoubleNe(x,y) AssertFloatOp(x,!=,y)
++#define AssertDoubleGt(x,y) AssertFloatOp(x,>,y)
++#define AssertDoubleGe(x,y) AssertFloatOp(x,>=,y)
++#define AssertDoubleLt(x,y) AssertFloatOp(x,<,y)
++#define AssertDoubleLe(x,y) AssertFloatOp(x,<=,y)
+ 
+ // Strings (uses strcmp)...
+-#define AssertStrEq(x,y) AssertStrOp(x,y,eq,==)
+-#define AssertStrNe(x,y) AssertStrOp(x,y,ne,!=)
+-#define AssertStrGt(x,y) AssertStrOp(x,y,gt,>)
+-#define AssertStrGe(x,y) AssertStrOp(x,y,ge,>=)
+-#define AssertStrLt(x,y) AssertStrOp(x,y,lt,<)
+-#define AssertStrLe(x,y) AssertStrOp(x,y,le,<=)
++#define AssertStrEq(x,y) AssertStrOp(x,eq,==,y)
++#define AssertStrNe(x,y) AssertStrOp(x,ne,!=,y)
++#define AssertStrGt(x,y) AssertStrOp(x,gt,>,y)
++#define AssertStrGe(x,y) AssertStrOp(x,ge,>=,y)
++#define AssertStrLt(x,y) AssertStrOp(x,lt,<,y)
++#define AssertStrLe(x,y) AssertStrOp(x,le,<=,y)
+ 
+ // ensures a string is non-null but zero-length
+ #define AssertStrEmpty(p) do { zutest_assertions++; \
+@@ -146,7 +146,7 @@
+ // helper macros, not intended to be called directly.
+ //
+ 
+-#define AssertExpType(x,y,op,type,fmt) \
++#define AssertExpType(x,op,y,type,fmt) \
+ 	AssertFmt((type)x op (type)y, #x" "#op" "#y ZUTBECAUSE \
+ 	#x"=="fmt" and "#y"=="fmt"!", (type)x,(type)y)
+ // The failure "x==0 failed because x==1 and 0==0" s too wordy so we'll
+@@ -154,13 +154,13 @@
+ #define AssertExpToZero(x,op,type,fmt) \
+ 	AssertFmt((type)x op 0,#x" "#op" 0" ZUTBECAUSE #x"=="fmt"!", (type)x)
+ 
+-#define AssertOp(x,y,op) AssertExpType(x,y,op,long,"%ld")
+-#define AssertHexOp(x,y,op) AssertExpType(x,y,op,long,"0x%lX")
++#define AssertOp(x,op,y) AssertExpType(x,op,y,long,"%ld")
++#define AssertHexOp(x,op,y) AssertExpType(x,op,y,long,"0x%lX")
+ #define AssertOpToZero(x,op) AssertExpToZero(x,op,long,"%ld")
+ #define AssertHexOpToZero(x,op) AssertExpToZero(x,op,long,"0x%lX")
+-#define AssertPtrOp(x,y,op) AssertExpType(x,y,op,unsigned long,"0x%lX")
+-#define AssertFloatOp(x,y,op) AssertExpType(x,y,op,double,"%lf")
+-#define AssertStrOp(x,y,opn,op) AssertFmt(strcmp(x,y) op 0, \
++#define AssertPtrOp(x,op,y) AssertExpType(x,op,y,unsigned long,"0x%lX")
++#define AssertFloatOp(x,op,y) AssertExpType(x,op,y,double,"%lf")
++#define AssertStrOp(x,opn,op,y) AssertFmt(strcmp(x,y) op 0, \
+ 	#x" "#opn" "#y ZUTBECAUSE #x" is \"%s\" and "#y" is \"%s\"!",x,y)
+ 
+ 
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Sat Feb 17 14:47:15 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sat, 17 Feb 2007 14:47:15 +0100
+Subject: [Tmtest-commits] [133] trunk: Totally replaced the path handling
+	code.
+Message-ID: <200702171347.l1HDlFZ3027861@sheep.berlios.de>
+
+Revision: 133
+Author:   bronson
+Date:     2007-02-17 14:46:25 +0100 (Sat, 17 Feb 2007)
+
+Log Message:
+-----------
+Totally replaced the path handling code.  Excised the globals,
+cleaned up a lot of the logic.  Any time I change the path
+handling code it's serious pain.
+
+Also changed zutest test dispatch from table-based to function-based.
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/Makefile
+    trunk/TODO
+    trunk/compare.c
+    trunk/main.c
+    trunk/pathconv.c
+    trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/test/02-running/03-Unit-Tests.test
+    trunk/test.h
+    trunk/units.c
+    trunk/units.h
+    trunk/vars.c
+    trunk/zutest.c
+    trunk/zutest.h
+
+Added Paths:
+-----------
+    trunk/pathstack.c
+    trunk/pathstack.h
+
+Removed Paths:
+-------------
+    trunk/curdir.c
+    trunk/curdir.h
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/CHANGES	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,3 +1,4 @@
++- Rewrote the path handling code and gave it some unit tests.
+ - Added -f command-line option to print only the failed tests.
+ - Made REPLACE handle multiple text substitutions; could only handle 1 before.
+ - Got rid of RESULT and all its code.  echo $? from within your test instead.
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/Makefile	2007-02-17 13:46:25 UTC (rev 133)
+@@ -28,14 +28,13 @@
+ 
+ COPTS=-g -Wall -Werror
+ 
++# scanner files
++SCANC=re2c/read.c re2c/read-fd.c re2c/read-mem.c re2c/read-rand.c re2c/scan.c re2c/scan-dyn.c
++SCANH=re2c/read.h re2c/read-fd.h re2c/read-mem.h re2c/read-rand.h re2c/scan.h re2c/scan-dyn.h
++	
+ # utilities:
+ CSRC+=qscandir.c pathconv.c pathstack.c
+ CHDR+=qscandir.h pathconv.h pathstack.h
+-# scanner files
+-CSRC+=re2c/read.c re2c/read-fd.c re2c/read-mem.c re2c/read-rand.c \
+-	re2c/scan.c re2c/scan-dyn.c
+-CHDR+=re2c/read.h re2c/read-fd.h re2c/read-mem.h re2c/read-rand.h \
+-	re2c/scan.h re2c/scan-dyn.h
+ # program files:
+ CSRC+=vars.c test.c compare.c rusage.c tfscan.c stscan.o main.c template.c
+ CHDR+=vars.h test.h compare.h rusage.h tfscan.h stscan.h
+@@ -48,8 +47,8 @@
+ 
+ all: tmtest
+ 
+-tmtest: $(CSRC) $(CHDR) $(INTERMED)
+-	$(CC) $(COPTS) $(CSRC) -o tmtest -DVERSION="$(VERSION)" -DZUTEST
++tmtest: $(CSRC) $(SCANH) $(SCANC) $(CHDR) $(INTERMED)
++	$(CC) $(COPTS) $(CSRC) $(SCANC) -o tmtest -DVERSION="$(VERSION)"
+ 
+ template.c: template.sh cstrfy
+ 	./cstrfy -n exec_template < template.sh > template.c
+@@ -65,10 +64,18 @@
+ test: tmtest
+ 	./tmtest --run-unit-tests
+ 	tmtest test
++	
++# Sometimes the app won't compile but we still want to run the unit tests...
++units: compare.c pathstack.c units.c units.h zutest.c zutest.h $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall compare.c pathstack.c pathconv.c units.c zutest.c $(SCANC) -o units -DUNITS_MAIN
+ 
+-unit: tmtest
+-	./tmtest --run-unit-tests
++run-units: units
++	./units
+ 
++# todo -- when global variables are worked out, just compile everything
++#units: $(CSRC) $(CHDR) $(SCANH) $(SCANC) Makefile
++#	$(CC) $(COPTS) $(CSRC) $(SCANC) -o units -DUNITS_MAIN
++
+ install: tmtest
+ 	install -d -m755 $(bindir)
+ 	install tmtest $(bindir)
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/TODO	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,4 +1,6 @@
+ 0.96:
++- Put the zutest macro inside the tests (zutest { ... }) instead of outside.
++- Remove the allfiles and quiet options.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+   in the testfile with each line prefixed by :.  Then STDOUT.  No need
+   for this delimiter craziness.
+
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/compare.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -186,7 +186,7 @@
+ }
+ 
+ 
+-#include "zutest.h"
++#include "units.h"
+ #include "re2c/read-mem.h"
+ #include "re2c/read-rand.h"
+ #include <stdlib.h>
+@@ -358,13 +358,13 @@
+ }
+ */
+ 
+-zutest_proc compare_tests[] = {
+-	test_empty,
+-	test_standard,
+-	test_large,
+-	test_newlines,
+-	test_inc,
+-	test_inc_newlines,
+-	NULL
++void compare_tests()
++{
++	zutest( test_empty() );
++	zutest( test_standard() );
++	zutest( test_large() );
++	zutest( test_newlines() );
++	zutest( test_inc() );
++	zutest( test_inc_newlines() );
+ };
+ 
+
+Deleted: trunk/curdir.c
+===================================================================
+--- trunk/curdir.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/curdir.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,157 +0,0 @@
+-/* curdir.c
+- * 29 Jan 2005
+- * Copyright (C) 2005 Scott Bronson
+- *
+- * This file is distrubuted under the MIT License
+- * See http://en.wikipedia.org/wiki/MIT_License for more.
+- *
+- * Some simple path handling routines
+- *
+- * Unfortunately this file got hacked to shreds when tmtest was
+- * made to run with /tmp as the constant cwd.  It's pretty
+- * incomprehensible and in dire dire DIRE need of a rewrite.
+- *
+- * There's also now a pretty serious impedance mismatch...
+- * The caller must handle all occurrences of "//" "/.", ".."
+- * etc. in the partial path before passing it here.  But
+- * that's stupid because properly handling those requires
+- * converting the parital to an absolute path before normalizing.
+- * This library should normalize the path after catting, then
+- * return the number of normalized directories added.  This is
+- * pretty decidedly nontrivial, of course, because if I push
+- * "..", a directory gets removed from the path, then I push
+- * "dir", then I pop twice, I need to return to the original
+- * directory.
+- *
+- * So for now, alas, it's hacked in main.c.
+- *
+- * What this file should have been:
+- *
+- * A completely flexible path lib.  You can init the path with an
+- * arbitrary string or from the cwd.  You can push an arbitrary
+- * path onto the end (including "..") and it will return a pointer
+- * to an "undo" struct.  Then, when you want to pop the pushed
+- * path, you pass the undo struct, and everything is reverted to
+- * the way it was before.  You can push an arbitrary number of
+- * times.  Push/pop must always be nested of course.  And, of
+- * course, you must be able to save and restore the state of the
+- * curdir.  Finally, it should not use globals so multiple threads
+- * etc. can all maintain their own curdirs.
+- *
+- * If we had a module that could do this, main.c could be
+- * *drastically* cleaned up.  Sigh.
+- */
+-
+-#include <stdio.h>
+-#include <string.h>
+-#include <dirent.h>
+-#include <unistd.h>
+-#include <assert.h>
+-
+-#include "curdir.h"
+-
+-
+-static char curdir[CURDIR_SIZE];
+-static char *curpart;
+-
+-
+-int curinit(const char *path)
+-{
+-	if(path) {
+-		if(strlen(path)+1 > sizeof(curdir)) {
+-			return -1;
+-		}
+-		strcpy(curdir, path);
+-		curpart = NULL;	// don't use partials when inited from a path
+-	} else {
+-		if(!getcwd(curdir, sizeof(curdir))) {
+-			return -1;
+-		}
+-		curpart = curdir + strlen(curdir) + 1;
+-		*curpart = '\0';
+-	}
+-
+-	return 0;
+-}
+-
+-
+-/**
+- * @returns the number of directories you just pushed.
+- * You'll need to pass this value to curpop if you want to pop
+- * the same number of directories when you're done.
+- */
+-
+-int curpush(const char *dir)
+-{
+-	int clen = strlen(curdir);
+-	int dlen = strlen(dir);
+-	int keep = 1;
+-	const char *cp;
+-
+-	assert(dir);
+-	assert(dir[0]);
+-	assert(dir[0] != '/');
+-
+-	// count the number of '/' characters in dir
+-	for(cp=dir; (cp=strchr(cp,'/'))!=0; cp++) {
+-		keep++;
+-	}
+-
+-	if(clen + dlen + 2 > sizeof(curdir)) {
+-		return -1;
+-	}
+-
+-	strcat(curdir, "/");
+-	strcat(curdir, dir);
+-
+-	return keep;
+-}
+-
+-
+-void curpop(int keep)
+-{
+-	assert(keep>0);
+-
+-	while(keep) {
+-		char *cp = strrchr(curdir, '/');
+-		assert(curpart <= cp+1);
+-		if(!cp) {
+-			// we've run out of slashes.
+-			assert(!"out of slashes -- that's bad.");
+-			return;
+-		}
+-
+-		cp[0] = '\0';	// get rid of the slash.
+-		cp[1] = '\0';	// blank out curpart or any other ptrs to this dir.
+-		keep -= 1;
+-	}
+-}
+-
+-
+-void cursave(struct cursave *save)
+-{
+-	strcpy(save->buf, curdir);
+-	save->part = curpart;
+-}
+-
+-
+-void currestore(struct cursave *save)
+-{
+-	strcpy(curdir, save->buf);
+-	curpart = save->part;
+-}
+-
+-
+-const char *curabsolute()
+-{
+-	return curdir;
+-}
+-
+-
+-const char *currelative()
+-{
+-	return curpart ? curpart : curdir;
+-}
+-
+-
+-
+
+Deleted: trunk/curdir.h
+===================================================================
+--- trunk/curdir.h	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/curdir.h	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,25 +0,0 @@
+-/* curdir.h
+- * 29 Jan 2005
+- * Copyright (C) 2005 Scott Bronson
+- * 
+- * Some simple path handling routines.
+- * See curdir.c for license.
+- */
+-
+-
+-#define CURDIR_SIZE PATH_MAX
+-
+-
+-struct cursave {
+-	char buf[CURDIR_SIZE];
+-	char *part;
+-};
+-
+-int curinit(const char *path);
+-int curpush(const char *dir);
+-void curpop(int keep);
+-void cursave(struct cursave *save);
+-void currestore(struct cursave *save);
+-const char *curabsolute();
+-const char *currelative();
+-
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/main.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -27,11 +27,11 @@
+ #include "re2c/read-fd.h"
+ 
+ #include "test.h"
+-#include "curdir.h"
+ #include "qscandir.h"
+ #include "vars.h"
+ #include "tfscan.h"
+ #include "pathconv.h"
++#include "pathstack.h"
+ #include "units.h"
+ 
+ 
+@@ -47,16 +47,13 @@
+ };
+ 
+ int outmode = outmode_test;
+-int allfiles = 0;
+-int dumpscript = 0;
++int allfiles = 0;			// run a testfile even if it begins with a dash
++int dumpscript = 0;			// print the script instead of running it
+ int quiet = 0;
+ const char *orig_cwd;		// tmtest runs with the cwd pointed to /tmp
+ char *config_file;	// absolute path to the user-specified config file
+ 					// null if user didn't specify a config file.
+ 
+-int arg_was_absolute;	// this is an absolutely awful hack.  it's true
+-		// if the current path is absolute, false if it's relative.
+-
+ #define TESTDIR "/tmp/tmtest-XXXXXX"
+ char g_testdir[sizeof(TESTDIR)];
+ 
+@@ -304,8 +301,10 @@
+     int pipes[2];
+     int child;
+ 	const char *filename = NULL;
++	char buf[PATH_MAX];
++	struct pathstack stack;
+ 
+-    assert(test->testfilename);
++	assert(test->testfilename);
+ 	// if the test is coming from stdin, we need to copy it to a
+ 	// real file before we can diff against it.
+     if(is_dash(test->testfilename)) {
+@@ -314,13 +313,14 @@
+ 		// then, read the test from this file instead of stdin.
+ 		filename = test->diffname;
+ 		assert(filename);
++		assert(filename[0]);
+     }
+-
++		
+     if(pipe(pipes) < 0) {
+         perror("creating diff pipe");
+         exit(runtime_error);
+     }
+-
++    
+     child = fork();
+     if(child < 0) {
+         perror("forking diff");
+@@ -333,30 +333,25 @@
+         }
+         close(pipes[0]);
+         close(pipes[1]);
+-
+-		if(!filename) {
+-			// figure out the filename that diff will use
+-			if(test->testfilename[0] == '/') {
++        
++        if (!filename) {
++			// need to figure out the filename to pass to diff
++        	if (test->testfilename[0] == '/') {
++        		// if the path is absolute, we can just use it straight away.
+ 				filename = test->testfilename;
+ 			} else {
+-				// since we don't have an absolute path, we need to
+-				// cd to the original wd and run the diff with
+-				// a relative path.  it takes a bit of computation...
+-				curpush(test->testfilename);
+-				filename = strdup(currelative());
+-				if(!filename) {
+-					perror("strdup in start_diff");
+-					exit(runtime_error);
+-				}
+-				curpop(1);
+-				if(0 != chdir(curabsolute())) {
+-					fprintf(stderr, "Could not chdir 1 to %s: %s\n",
+-							curabsolute(), strerror(errno));
+-					exit(runtime_error);
+-				}
++				pathstack_init(&stack, buf, sizeof(buf), test->testfiledir);
++				pathstack_push(&stack, test->testfilename, NULL);
++				filename = pathstack_absolute(&stack);
+ 			}
+ 		}
+ 
++		if(0 != chdir(test->testfiledir)) {
++			fprintf(stderr, "Could not chdir 1 to %s: %s\n",
++					test->testfiledir, strerror(errno));
++			exit(runtime_error);
++		}
++
+         execl(DIFFPROG, DIFFPROG, "-u", filename, "-", (char*)NULL);
+         perror("executing " DIFFPROG " for test");
+         exit(runtime_error);
+@@ -396,26 +391,60 @@
+ }
+ 
+ 
++/* Combines testfiledir and testfilename into a single absolute path for the testfile.
++ * The caller must supply a buffer to fill with the result. */
++
++static void assemble_absolute_testpath(struct test *test, char *buf, int bufsiz)
++{
++	buf[0] = '\0';
++	strncat(buf, test->testfiledir, bufsiz-1);
++	strncat(buf, "/", bufsiz-1);
++	strncat(buf, test->testfilename, bufsiz-1);
++}
++
++
+ /* Prints the relative path from the original cwd to the current testfile */
+ 
+ static void print_test_path(struct test *test)
+ {
+ 	char result[PATH_MAX];
++	char testfile[PATH_MAX];
++	
++	assemble_absolute_testpath(test, testfile, sizeof(testfile));
+ 
+-	int keep = curpush(test->testfilename);
+-	if(keep <= 0) {
+-		printf("print_test_path: path is too long!\n");
+-		return;
+-	}
+-
+-	if(abs2rel(curabsolute(), orig_cwd, result, sizeof(result))) {
++	if(abs2rel(testfile, orig_cwd, result, sizeof(result))) {
+ 		printf("%s\n", result);
+ 	} else {
+-		printf("print_test_path: abs2rel error: %s relto %s\n",
+-			curabsolute(), orig_cwd);
++		printf("print_test_path: abs2rel error: %s relto %s\n", testfile, orig_cwd);
+ 	}
++}
+ 
+-	curpop(keep);
++static int open_test_file(struct test *test)
++{
++	char buf[PATH_MAX];
++	int fd;
++	
++	// If the filename is a dash then we just use stdin.
++	if(is_dash(test->testfilename)) {
++        return STDIN_FILENO;
++    }
++    
++	if(test->testfilename[0] == '/') {
++	    // If the filename is absolute, we use it directly.
++	    strncpy(buf, test->testfilename, sizeof(buf));
++	    buf[sizeof(buf)-1] = 0;
++	} else {
++		// Otherwise we need to make an absolute path
++		assemble_absolute_testpath(test, buf, sizeof(buf));
++	}
++	
++	fd = open(buf, O_RDONLY);
++    if(fd < 0) {
++        fprintf(stderr, "Could not open %s: %s\n", buf, strerror(errno));
++        exit(runtime_error);
++    }
++    
++    return fd;
+ }
+ 
+ 
+@@ -438,7 +467,7 @@
+  * @returns 1 if we should keep testing, 0 if we should stop now.
+  */
+ 
+-static int run_test(const char *name, const char *dispname, int warn_suffix)
++static int run_test(const char *path, const char *name, const char *dispname, int warn_suffix)
+ {
+     struct test test;
+     char buf[BUFSIZ];   // scan buffer for the testfile
+@@ -475,6 +504,7 @@
+ 	}
+ 
+     test.testfilename = name;
++    test.testfiledir = path;
+     test.outfd = g_outfd;
+     test.errfd = g_errfd;
+     test.statusfd = g_statusfd;
+@@ -537,26 +567,8 @@
+ 			exit(runtime_error);
+ 		}
+         readfd_attach(&test.testfile, test.diff_fd);
+-	} else if(is_dash(name)) {
+-        readfd_attach(&test.testfile, STDIN_FILENO);
+-    } else {
+-		if(name[0] == '/') {
+-			fd = open(name, O_RDONLY);
+-		} else {
+-			int keep = curpush(name);
+-			if(keep <= 0) {
+-				fprintf(stderr, "Path is too long.");
+-				exit(runtime_error);
+-			}
+-			fd = open(curabsolute(), O_RDONLY);
+-			curpop(keep);
+-		}
+-        if(fd < 0) {
+-            fprintf(stderr, "Could not open %s: %s\n",
+-                    curabsolute(), strerror(errno));
+-            exit(runtime_error);
+-        }
+-        readfd_attach(&test.testfile, fd);
++	} else {
++        readfd_attach(&test.testfile, open_test_file(&test));
+     }
+     tfscan_attach(&test.testfile);
+ 
+@@ -625,44 +637,6 @@
+ }
+ 
+ 
+-/** This routine filters out any dirents that begin with '.'.
+- *  We don't want to process any hidden files or special directories.
+- */
+-
+-static int select_nodots(const struct dirent *d)
+-{
+-    return d->d_name[0] != '.';
+-}
+-
+-
+-/**
+- * Sucks the dirname from an absolute file path and calls curinit with it.
+- */
+-
+-static void init_absolute_filepath(const char *path)
+-{
+-	const char *cp;
+-	int loc;
+-	char buf[PATH_MAX];
+-	
+-	cp = strrchr(path, '/');
+-	if(cp == NULL) {
+-		fprintf(stderr, "Illegal absolute path '%s'\n", path);
+-		exit(runtime_error);
+-	}
+-
+-	strncpy(buf, path, sizeof(buf));
+-
+-	loc = cp - path;
+-	if(sizeof(buf)-1 < loc) {
+-		loc = sizeof(buf)-1;
+-	}
+-
+-	buf[loc] = '\0';
+-	curinit(buf);
+-}
+-
+-
+ /** Processes a directory specified using an absolute or deep
+  * path.  We need to save and restore curpath to do this.
+  *
+@@ -672,93 +646,70 @@
+  * @returns 1 if we should continue testing, 0 if we should abort.
+  */
+ 
+-static int process_absolute_file(const char *path, int warn_suffix)
++static int process_absolute_file(const char *abspath, const char *origpath, int warn_suffix)
+ {
+-	struct cursave save;
+-	int keepontruckin;
+-
+-	cursave(&save);
+-	init_absolute_filepath(path);
+-
+-	keepontruckin = run_test(strrchr(path,'/')+1, path, warn_suffix);
+-
+-	currestore(&save);
+-	return keepontruckin;
+-}
+-
+-
+-static void init_path(const char *base, const char *path)
+-{
+ 	char buf[PATH_MAX];
++	struct pathstack stack;
++	char *file, *dir;
+ 
+-	strncpy(buf, curabsolute(), PATH_MAX);
+-	strncat(buf, "/", PATH_MAX);
+-	strncat(buf, path, PATH_MAX);
+-	buf[PATH_MAX-1] = '\0';
+-
+-	normalize_absolute_path(buf);
+-
+-	curinit(buf);
++	pathstack_init(&stack, buf, sizeof(buf), abspath);
++	pathstack_normalize(&stack);
++	
++	dir = pathstack_absolute(&stack);
++	file = strrchr(dir, '/');
++	if(!file) {
++		fprintf(stderr, "Path wasn't absolute in process_absolute file!?  %s\n", abspath);
++		return 0;
++	}
++	
++	*file++ = '\0';		// separate the path and the filename
++	// If the file was in the root directory, ensure we don't blow away
++	// the leading slash.
++	if(dir[0] == '\0') {
++		dir = "/";
++	}
++	
++	return run_test(dir, file, origpath, warn_suffix);
+ }
+ 
+ 
++// forward declaration for recursion
++int process_dir(struct pathstack *ps, int print_absolute);
+ 
+-/**
+- * This is actually a hassle.  The user may have specified
+- * "../.." which means we need to normalize an absolute path
+- * and use that.
+- */
+ 
+-static int process_deep_file(const char *path, int warn_suffix)
++static int process_absolute_dir(const char *abspath, const char *origpath, int print_absolute)
+ {
+-	struct cursave save;
+-	int keepontruckin;
++	char buf[PATH_MAX];
++	struct pathstack stack;
+ 
+-	cursave(&save);
+-	init_path(orig_cwd, path);
+-	curpop(1);	// get rid of the filename
+-
+-	keepontruckin = run_test(strrchr(path,'/')+1, path, warn_suffix);
+-
+-	currestore(&save);
+-	return keepontruckin;
+-}
+-
+-
+-// forward declaration for recursion
+-int process_dir();
+-
+-static int process_absolute_dir(const char *path)
+-{
+-	struct cursave save;
+-	int keepontruckin;
+-
+-	cursave(&save);
+-	curinit(path);
+-
+-	// we are certain the fullpath has already been normalized.
+-	// no need to do it again.
+-
+ 	if(outmode == outmode_test) {
+-		printf("\nProcessing %s\n", path);
++		if(print_absolute) {
++			printf("\nProcessing %s\n", abspath);
++		} else {
++			printf("\nProcessing ./%s\n", origpath);
++		}
+ 	}
+-	keepontruckin = process_dir();
+-
+-	currestore(&save);
+-
+-	return keepontruckin;
++	
++	pathstack_init(&stack, buf, sizeof(buf), abspath);
++	pathstack_normalize(&stack);
++	return process_dir(&stack, print_absolute);
+ }
+ 
+ 
+-static void print_relative_dir()
++static void print_relative_dir(struct pathstack *ps, int print_absolute)
+ {
+ 	char buf[PATH_MAX];
++	
++	// Don't print anything unless we're actually testing.
++    if(outmode != outmode_test) {
++    	return;
++    }
+ 
+-	if(arg_was_absolute) {
+-		printf("\nProcessing %s\n", curabsolute());
++	if(print_absolute) {
++		printf("\nProcessing %s\n", pathstack_absolute(ps));
+ 	} else {
+-		if(!abs2rel(curabsolute(), orig_cwd, buf, PATH_MAX)) {
+-			printf("Path couldn't be converted \"\%s\"\n", curabsolute());
++		if(!abs2rel(pathstack_absolute(ps), orig_cwd, buf, PATH_MAX)) {
++			printf("Path couldn't be converted \"\%s\"\n", pathstack_absolute(ps));
+ 			exit(runtime_error);
+ 		}
+ 		printf("\nProcessing ./%s\n", buf);
+@@ -766,49 +717,25 @@
+ }
+ 
+ 
+-/**
+- * This routine used to be a simple "push the dir onto curpath,
+- * run, and pop" affair.  Now, with ".." being fairly nontrivial,
+- * we just need to save and restore.  Arg.  But at least this
+- * works.
+- *
+- * The relative path can't be normalied because it might be
+- * simply "..".  Therefore, it's one above whatever the cwd
+- * is.  Gotta figure that out at runtime.
+- */
+-
+-static int process_relative_dir(const char *path)
+-{
+-	struct cursave save;
+-	int keepontruckin;
+-
+-	cursave(&save);
+-	init_path(curabsolute(), path);
+-
+-	if(outmode == outmode_test) {
+-		print_relative_dir();
+-	}
+-	keepontruckin = process_dir();
+-
+-	currestore(&save);
+-
+-	return keepontruckin;
+-}
+-
+-
+ /** Process all entries in a directory.
+  *
+- * @param is_topmost True if we are not recursing.  This allows us to
+- * tell whether we should display pathnames absolute or relative
+- * (if the user specified them relative on the command line, we
+- * show them relative, and vice versa).
++ * @param ps The pathstack to use.  It comes pre-set-up with whatever
++ * basedir we should be running from (where the ents are found).
++ * This will be used during processing but is guaranteed to be
++ * returned in exactly the same state as it was passed in.
++ * @param ents The list of entries to process.
++ * @param print_absolute tells if you want the user-visible path to
++ * be printed absolute or relative.  -1 means that you don't know,
++ * and process_ents should decide on its own for each ent (if the
++ * ent is absolute then all paths will be absolute).
+  */
+ 
+-static int process_ents(char **ents, int is_topmost)
++static int process_ents(struct pathstack *ps, char **ents, int print_absolute)
+ {
+ 	struct stat st;
++	struct pathstate save;
+     mode_t *modes;
+-    int i, n;
++    int i, n, ret;
+ 	int keepontruckin;
+ 
+     for(n=0; ents[n]; n++)
+@@ -820,18 +747,17 @@
+         exit(runtime_error);
+     }
+     
+-    // first collect the stat info for each entry
++    // first collect the stat info for each entry and perform a quick sanity check
+     for(i=0; i<n; i++) {
+         if(!is_dash(ents[i])) {
+ 			const char *cp = ents[i];
+-			int keep = 0;
+ 			if(ents[i][0] != '/') {
+-				keep = curpush(ents[i]);
+-				if(keep <= 0) {
+-					fprintf(stderr, "Path is too long.");
++				ret = pathstack_push(ps, ents[i], &save);
++				if(ret != 0) {
++					fprintf(stderr, "Paths are too long:\n   %s\n   %s\n", pathstack_absolute(ps), ents[i]);
+ 					exit(runtime_error);
+ 				}
+-				cp = curabsolute();
++				cp = pathstack_absolute(ps);
+ 			}
+ 			// Need to be careful to test that file does exist.
+ 			// Bash opens it, not us, so the error message might
+@@ -839,21 +765,29 @@
+ 			if(!verify_readable(cp,&st,0)) {
+                 exit(runtime_error);
+             }
+-			if(ents[i][0] != '/') curpop(keep);
++			if(ents[i][0] != '/') {
++				pathstack_pop(ps, &save);
++			}
+             modes[i] = st.st_mode;
+         }
+     }
+-
++    
+     // process all files in dir
+     for(i=0; i<n; i++) {
+         if(is_dash(ents[i]) || S_ISREG(modes[i])) {
+ 			if(ents[i][0] == '/') {
+ 				// we know the path has already been fully normalized.
+-				keepontruckin = process_absolute_file(ents[i], is_topmost);
+-			} else if(strchr(ents[i], '/')) {
+-				keepontruckin = process_deep_file(ents[i], is_topmost);
++				assert(print_absolute == -1);	// it should be impossible to get here if we've already recursed
++				keepontruckin = process_absolute_file(ents[i], ents[i], 1);
+ 			} else {
+-				keepontruckin = run_test(ents[i], ents[i], is_topmost);
++				if(strchr(ents[i], '.') || strchr(ents[i], '/')) {
++					// if there are potential non-normals in the path, we need to normalize it.
++					ret = pathstack_push(ps, ents[i], &save);
++					keepontruckin = process_absolute_file(pathstack_absolute(ps), ents[i], print_absolute == -1);
++					pathstack_pop(ps, &save);
++				} else {
++					keepontruckin = run_test(pathstack_absolute(ps), ents[i], ents[i], print_absolute == -1);
++				}
+ 			}
+ 			if(!keepontruckin) {
+ 				goto abort;
+@@ -866,16 +800,23 @@
+     for(i=0; i<n; i++) {
+         if(is_dash(ents[i]) || modes[i] == 0) continue;
+         if(S_ISDIR(modes[i])) {
+-			if(is_topmost) {
+-				// this is an unfortunate hack.  we display the path the same
+-				// way the user specified (absolute or relative) so we need
+-				// to remember which one it is.
+-				arg_was_absolute = (ents[i][0] == '/');
+-			}
+ 			if(ents[i][0] == '/') {
+-				keepontruckin = process_absolute_dir(ents[i]);
++				assert(print_absolute == -1);	// it should be impossible to get here if we've already recursed
++				keepontruckin = process_absolute_dir(ents[i], ents[i], 1);
+ 			} else {
+-				keepontruckin = process_relative_dir(ents[i]);
++				if(print_absolute == -1) print_absolute = 0;
++				if(strchr(ents[i], '.') || strchr(ents[i], '/')) {
++					// if there are potential non-normals in the path, we need to normalize it.
++					ret = pathstack_push(ps, ents[i], &save);
++					keepontruckin = process_absolute_dir(pathstack_absolute(ps), ents[i], print_absolute);
++					pathstack_pop(ps, &save);
++				} else {
++					// Otherwise, we just push the path and chug.
++					ret = pathstack_push(ps, ents[i], &save);
++					print_relative_dir(ps, print_absolute);
++					keepontruckin = process_dir(ps, print_absolute);
++					pathstack_pop(ps, &save);
++				}
+ 			}
+ 			if(!keepontruckin) {
+ 				goto abort;
+@@ -889,22 +830,31 @@
+ }
+ 
+ 
++/** This routine filters out any dirents that begin with '.'.
++ *  We don't want to process any hidden files or special directories.
++ */
++
++static int select_nodots(const struct dirent *d)
++{
++    return d->d_name[0] != '.';
++}
++
++
+ /** Runs all tests in the current directory and all its subdirectories.
+  */
+ 
+-int process_dir()
++int process_dir(struct pathstack *ps, int print_absolute)
+ {
+     char **ents;
+-    int i;
+-	int keepontruckin;
++    int i, keepontruckin;
+ 
+-    ents = qscandir(curabsolute(), select_nodots, qdirentcoll);
++    ents = qscandir(pathstack_absolute(ps), select_nodots, qdirentcoll);
+     if(!ents) {
+         // qscandir has already printed the error message
+         exit(runtime_error);
+     }
+ 
+-    keepontruckin = process_ents(ents, 0);
++    keepontruckin = process_ents(ps, ents, print_absolute);
+ 
+     for(i=0; ents[i]; i++) {
+         free(ents[i]);
+@@ -976,11 +926,6 @@
+     g_statusfd = open_file(g_statusname, STATUSNAME, O_APPEND);
+ 	assert(strlen(g_statusname) == sizeof(g_statusname)-1);
+ 
+-	if(curinit(NULL) != 0) {
+-		fprintf(stderr, "Could not get the cwd: %s\n", strerror(errno));
+-		exit(initialization_error);
+-	}
+-
+ 	// tmtest always runs with the CWD pointed to the temporary directory
+ 	cp = getenv("TMPDIR");
+ 	if(!cp) cp = "/tmp";
+@@ -1106,11 +1051,11 @@
+ 				break;
+ 
+ 			case 'U':
+-				run_unit_tests(all_unit_tests);
++				run_unit_tests(run_all_unit_tests);
+ 				exit(0);
+ 
+ 			case 257:
+-				run_unit_tests_showing_failures(all_unit_tests);
++				run_unit_tests_showing_failures(run_all_unit_tests);
+ 				exit(0);
+ 
+ 			case 'V':
+@@ -1133,7 +1078,8 @@
+ }
+ 
+ 
+-/*
++/* normalize_path
++ * 
+  * I wish I could use canonicalize_path(3), but that routine resolves
+  * symbolic links and provides no way to turn that behavior off.
+  * How stupid!  This isn't as much of a hack as it looks because
+@@ -1142,9 +1088,11 @@
+  * @param original: the path to be normalized
+  * @param outpath: the normalized path.  this may or may not be the same
+  *     as original.
++ * 
++ * TODO: how about hitting this routine with some unit tests?
+  */
+ 
+-static void normalize_path(char *original, char **outpath)
++static void normalize_path(struct pathstack *ps, char *original, char **outpath)
+ {
+     char buf[PATH_MAX];
+     char normalized[PATH_MAX];
+@@ -1157,7 +1105,7 @@
+ 		strcpy(normalized, original);
+ 		normalize_absolute_path(normalized);
+     } else {
+-        strncpy(buf, curabsolute(), PATH_MAX);
++        strncpy(buf, pathstack_absolute(ps), PATH_MAX);
+ 		strncat(buf, "/", PATH_MAX);
+ 		strncat(buf, original, PATH_MAX);
+ 		buf[PATH_MAX-1] = '\0';
+@@ -1166,7 +1114,7 @@
+ 		// convert it back to a relative path so it prints the
+ 		// way the user intends.  We need to beware later on
+ 		// to trim .. from the leading path.
+-		if(!abs2rel(buf, curabsolute(), normalized, PATH_MAX)) {
++		if(!abs2rel(buf, pathstack_absolute(ps), normalized, PATH_MAX)) {
+             fprintf(stderr, "Could not reabsize %s: %s\n",
+ 				original, strerror(errno));
+ 			exit(runtime_error);
+@@ -1195,18 +1143,20 @@
+  * and modify that.
+  */
+ 
+-static void process_argv(char **argv)
++static void process_argv(struct pathstack *ps, char **argv)
+ {
+ 	char **ents;
+-	int i, n;
++	int i, n, oldlen;
+ 
+     for(n=0; argv[n]; n++) { }
+ 
+ 	ents = malloc((n+1)*sizeof(*ents));
+ 	ents[n] = NULL;
+-
+-	for(i=0; i<n; i++) { normalize_path(argv[i], &ents[i]); }
+-	process_ents(ents, 1);
++	
++	for(i=0; i<n; i++) { normalize_path(ps, argv[i], &ents[i]); }
++	oldlen = ps->curlen;
++	process_ents(ps, ents, -1);
++	assert(oldlen == ps->curlen);	// process_ents needs to not modify the pathstack.
+ 	for(i=0; i<n; i++) { normalize_free(argv[i], ents[i]); }
+ 
+ 	free(ents);
+@@ -1232,17 +1182,22 @@
+ 
+ int main(int argc, char **argv)
+ {
++	char buf[PATH_MAX];
++	struct pathstack pathstack;
++	
+ 	orig_cwd = dup_cwd();
+ 	process_args(argc, argv);
+ 
++	pathstack_init(&pathstack, buf, sizeof(buf), orig_cwd);
++
+     start_tests();
+     if(optind < argc) {
+-		process_argv(argv+optind);
++		process_argv(&pathstack, argv+optind);
+     } else {
+         if(outmode == outmode_test) {
+             printf("\nProcessing .\n");
+         }
+-        process_dir();
++        process_dir(&pathstack, 0);
+     }
+     stop_tests();
+ 
+
+Modified: trunk/pathconv.c
+===================================================================
+--- trunk/pathconv.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/pathconv.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -32,12 +32,7 @@
+  *	r)		!= NULL: relative path
+  *			== NULL: error
+  */
+-char *
+-abs2rel(path, base, result, size)
+-	const char *path;
+-	const char *base;
+-	char *result;
+-	const size_t size;
++char* abs2rel(const char *path, const char *base, char *result, const size_t size)
+ {
+ 	const char *pp, *bp, *branch;
+ 	/*
+@@ -108,7 +103,7 @@
+ }
+ 
+ 
+-// Copyright (c) 2006 Scott Bronson
++// The following code is Copyright (c) 2006 Scott Bronson
+ // The following code can be distributed under the LGPL as above
+ // or, at your option, the much simpler MIT license.
+ 
+@@ -120,7 +115,8 @@
+  * to walk two pointers through the string copying bits from the
+  * src to the dst so I don't spend so much time moving the same
+  * bytes over and over.  Alas, I'm out of time so I'm going to
+- * resort to this loathesome coding style for less chance of bugs.
++ * resort to this loathesome memmove coding style so I can spend
++ * less time debugging.
+  *
+  * @returns 1 if this was a relative path and therefore the function
+  * did nothing.  Otherwise returns 0.
+
+Added: trunk/pathstack.c
+===================================================================
+--- trunk/pathstack.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/pathstack.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -0,0 +1,328 @@
++/* pathstack.c
++ * 14 Feb 2007
++ * Copyright (C) 2007 Scott Bronson
++ *
++ * This file is distrubuted under the MIT License
++ * See http://en.wikipedia.org/wiki/MIT_License for more.
++ *
++ * Some simple path handling routines
++ * 
++ * A pathstack is just like a regular stack, except you push and pull
++ * path fragments.  The only slightly strange concept is the pathstack_state
++ * used to "rewind" a push.
++ */
++
++
++#include <assert.h>
++#include <string.h>
++#include <limits.h>
++#include "pathstack.h"
++#include "pathconv.h"
++
++
++/** pathstack_init
++ *
++ * Initializes a pathstack for use.  You must supply a buffer and an
++ * optional string to initialize it with.  The buffer must be able to
++ * hold at least a single character (for the null terminator).
++ * 
++ * We never allocate any memory so there's no need for a pathstack_free.
++ */
++
++void pathstack_init(struct pathstack *ps, char *buf,
++                    int bufsiz, const char *str)
++{
++    assert(ps);
++    assert(bufsiz > 1);	  // bufsiz must hold "/" and the null terminator.
++
++    ps->buf = buf;
++    ps->maxlen = bufsiz - 1;
++    if(str) {
++    	assert(str[0] == '/');	// ensure it's an absolute path
++        ps->curlen = strlen(str);
++        if(ps->curlen > ps->maxlen) {
++            ps->curlen = ps->maxlen;
++        }
++        strncpy(ps->buf, str, ps->curlen);
++    } else {
++        ps->curlen = 1;
++        ps->buf[0] = '/';
++    }
++    ps->buf[ps->curlen] = '\0';
++}
++
++
++/** pathstack_push
++ * 
++ * Adds the given relative path onto the end of the absolute path.
++ * 
++ * If the relative path won't fit, we'll push as much as possible and return -1.
++ * It's illegal for the relative path to be NULL or empty.
++ * 
++ * If the existing path doesn't end with a '/' and the new path doesn't begin
++ * with one, a slash will be automatically added to separate the two paths.
++ * 
++ * @param state is optional but, if supplied, specifies a place to hold state.
++ * The state can then be passed to pathstack_pop() to return the pathstack to
++ * its state before pushing.
++ * 
++ * @return 0 if everything went OK, -1 if the result had to be truncated.
++ * It's perfectly safe to ignore the return value.
++ */
++
++int pathstack_push(struct pathstack *ps, const char *newpath,
++                   struct pathstate *state)
++{
++    int pathlen = strlen(newpath);
++
++    assert(ps);
++    assert(newpath);
++
++    // First, save the state if requested
++    if (state) {
++        state->oldlen = ps->curlen;
++    }
++
++    // if there's no room for even a single character, bail.
++    if(ps->curlen == ps->maxlen) {
++        return -1;
++    }
++    // if the new string is empty then we don't change a thing
++    if(newpath[0] == '\0') {
++    	return 0;
++    }
++
++    // ensure the two paths are separated by '/'
++    if(ps->buf[ps->curlen-1] != '/' && newpath[0] != '/') {
++        ps->buf[ps->curlen] = '/';
++        ps->curlen += 1;
++    }
++
++	// and copy the new string
++    if(ps->curlen + pathlen > ps->maxlen) {
++    	pathlen = ps->maxlen - ps->curlen;
++    }
++    memcpy(ps->buf+ps->curlen, newpath, pathlen);
++    ps->curlen += pathlen;
++    ps->buf[ps->curlen] = '\0';
++    
++    return 0;
++}
++
++
++/** pathstack_pop
++ * 
++ * Removes the most recent addition from the pathstack.
++ * 
++ * Returns -1 if the state was invalid.
++ * 
++ * If you don't supply a state, this function is a no-op.
++ * (originally it was going to remove the topmost path item)
++ */
++
++
++int pathstack_pop(struct pathstack *ps, struct pathstate *state)
++{
++	if(state) {
++		if(state->oldlen > ps->curlen) {
++			// we can't enlarge the string using state; we'd expose invalid data.
++			return -1;
++		}
++		ps->curlen = state->oldlen;
++		state->oldlen = INT_MAX;	// ensure this state can never be used again
++	} else {
++		// popping without supplying state is currently a no-op...
++		// implement this later if needed.
++	}
++	
++    ps->buf[ps->curlen] = '\0';
++    return 0;
++}
++
++
++/** pathstack_normalize
++ *
++ * Normalizes the path stored in the pathstack.
++ * NOTE: Never ever call pathstack_push, normalize the stack, and then
++ * call pathstack_pop!!  Normalizing will potentially change the path,
++ * invalidating the offsets stored in the pathstate structs.
++ * 
++ * TODO: add some unit tests for this!
++ */
++ 
++void pathstack_normalize(struct pathstack *ps)
++{
++	normalize_absolute_path(ps->buf);
++    ps->curlen = strlen(ps->buf);
++}
++
++
++// unit testing
++
++#ifndef NOUNITS
++#include "units.h"
++
++// We don't try popping without state since we don't care about that case.
++
++static void test_pathstack()
++{
++	int ret;
++	char buf[23];
++	struct pathstack stack, *ps = &stack;
++	struct pathstate save1, save2, save3;
++	const char *origstr = "/tryit";
++	
++	int bufsiz = sizeof(buf) - 1;	// we pretend the buffer is 1 char smaller than it really is
++	buf[sizeof(buf)-1] = 127;		// so we can add a sentinel to see if it overflowed.
++		// therefore, buffer can hold 23 characters, bufsiz is only 22, and the entire buffer
++		// can hold a maximum of 21 characters including the leading '/'.
++	
++	// init the pathstack
++	pathstack_init(ps, buf, bufsiz, origstr);
++	AssertEqual(ps->curlen, strlen(origstr));
++	AssertEqual(ps->maxlen, bufsiz-1);
++	AssertStrEqual(ps->buf, origstr);
++	
++	
++	// push an actual string
++	ret = pathstack_push(ps, "/next", &save1);
++	AssertZero(ret);
++	AssertEqual(save1.oldlen, strlen(origstr));
++	AssertEqual(ps->maxlen, bufsiz-1);
++	AssertStrEqual(ps->buf, "/tryit/next");
++	
++	// and pop it
++	ret = pathstack_pop(ps, &save1);
++	AssertZero(ret);
++	AssertEqual(ps->curlen, strlen(origstr));
++	AssertEqual(ps->maxlen, bufsiz-1);
++	AssertStrEqual(ps->buf, origstr);
++	
++	
++	// push an empty string
++	ret = pathstack_push(ps, "", &save1);
++	AssertZero(ret);
++	AssertEqual(ps->curlen, strlen(origstr));
++	AssertEqual(ps->maxlen, bufsiz-1);
++	AssertStrEqual(ps->buf, origstr);
++	
++	// and pop it.
++	ret = pathstack_pop(ps, &save1);
++	AssertZero(ret);
++	AssertEqual(ps->curlen, strlen(origstr));
++	AssertEqual(ps->maxlen, bufsiz-1);
++	AssertStrEqual(ps->buf, origstr);
++	
++	
++	// push a series of strings, hit the end of the buffer
++	ret = pathstack_push(ps, "next/", &save1);
++	AssertZero(ret);
++	ret = pathstack_push(ps, "n", &save2);
++	AssertZero(ret);
++	ret = pathstack_push(ps, "123456789", &save3);
++	AssertZero(ret);
++	
++	//                       123456789012345678901ns  (n: null terminator, s: sentinel)
++	AssertStrEqual(ps->buf, "/tryit/next/n/1234567");
++	AssertEqual(ps->curlen, ps->maxlen);
++	AssertEqual(ps->maxlen, bufsiz-1);
++	
++	// and pop it
++	ret = pathstack_pop(ps, &save3);
++	AssertZero(ret);
++	ret = pathstack_pop(ps, &save2);
++	AssertZero(ret);
++	
++	// Ensure that an out-of-order pop gets ignored
++	ret = pathstack_pop(ps, &save3);
++	AssertEqual(ret, -1);
++	AssertStrEqual(ps->buf, "/tryit/next/");
++	
++	ret = pathstack_pop(ps, &save1);
++	AssertZero(ret);
++	
++	AssertEqual(ps->curlen, strlen(origstr));
++	AssertEqual(ps->maxlen, bufsiz-1);
++	AssertStrEqual(ps->buf, origstr);
++	
++	// ensure we can push without saving state without bus erroring
++	ret = pathstack_push(ps, "123", NULL);
++	// (can't really think of anything to test... the fact that we
++	// reached this line at all means the test succeeded).
++	
++	// And finally, check the sentinel
++	AssertEqual(buf[sizeof(buf)-1], 127);
++}
++
++
++static void test_small_pathstack()
++{
++	struct pathstack stack, *ps = &stack;
++	char buf[6];
++	
++	// Ensures that we won't overflow while initing.
++	// There are probably some other small path ops we should verify.
++	
++	// Pathstacks always need to start with '/'
++	pathstack_init(ps, buf, sizeof(buf), "/23456789");
++	AssertStrEqual(ps->buf, "/2345");	// 5 characters plus the null byte
++	AssertEqual(ps->curlen, ps->maxlen);
++}
++
++
++#define AssertStackEmpty(ps) do {				\
++		AssertEqual((ps)->curlen, 1); 			\
++		AssertEqual((ps)->maxlen, 1); 			\
++		AssertStrEqual((ps)->buf, "/");			\
++	} while(0)
++	
++
++static void test_empty_pathstack()
++{
++	// pathstacks can't actually be empty anymore...  They always
++	// contain at least a leading "/".
++	
++	int ret;
++	char buf[2];
++	struct pathstack stack, *ps = &stack;
++	struct pathstate save;
++	
++	// is there a way to test that passing a bufsiz of 0 will
++	// cause the assert to trigger?
++	
++	// init the pathstack
++	pathstack_init(ps, buf, sizeof(buf), NULL);
++	AssertStackEmpty(ps);
++	
++	// push an actual string
++	ret = pathstack_push(ps, "/next", &save);
++	AssertEqual(ret, -1);
++	AssertEqual(save.oldlen, 1);
++	AssertStackEmpty(ps);
++	
++	// and pop it
++	ret = pathstack_pop(ps, &save);
++	AssertZero(ret);
++	AssertStackEmpty(ps);
++	
++	// push an empty string.  It's illegal to push an empty string onto a pathstack.
++	ret = pathstack_push(ps, "", &save);
++	AssertEqual(ret, -1);
++	AssertEqual(save.oldlen, 1);
++	AssertStackEmpty(ps);
++	
++	// and pop it.
++	ret = pathstack_pop(ps, &save);
++	AssertZero(ret);
++	AssertStackEmpty(ps);
++}
++
++
++void pathstack_tests()
++{
++	zutest( test_pathstack() );
++	zutest( test_small_pathstack() );
++	zutest( test_empty_pathstack() );
++}
++
++#endif
+
+Added: trunk/pathstack.h
+===================================================================
+--- trunk/pathstack.h	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/pathstack.h	2007-02-17 13:46:25 UTC (rev 133)
+@@ -0,0 +1,32 @@
++/* pathstack.h
++ * 14 Feb 2007
++ * Copyright (C) 2007 Scott Bronson
++ * 
++ * Some simple path handling routines.
++ * See pathstack.c for license.
++ */
++
++struct pathstack {
++    char *buf;
++    int curlen;
++    int maxlen;	///< size of buffer - 1 (for null byte)
++};
++
++struct pathstate {
++	int oldlen;
++};
++
++
++void pathstack_init(struct pathstack *path, char *buf,
++                   int bufsiz, const char * str);
++
++// There is no need to ever delete a pathstack because
++// it's 100% client-allocated.
++
++int pathstack_push(struct pathstack *ps, const char *newpath,
++                   struct pathstate *state);
++int pathstack_pop(struct pathstack *ps, struct pathstate *state);
++
++void pathstack_normalize(struct pathstack *ps);
++
++#define pathstack_absolute(ps) ((ps)->buf)
+
+Modified: trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2007-02-17 13:46:25 UTC (rev 133)
+@@ -23,7 +23,6 @@
+ 	echo "$config"
+ EOL
+ 
+-
+ $tmtest --dump-script "$di/.." | REPLACE "$do" /tmp/DIR | FIX_SCRIPT
+ 
+ 
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-02-17 13:46:25 UTC (rev 133)
+@@ -10,77 +10,77 @@
+ # This doesn't work either
+ # $tmtest --show-unit-fails > >(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g) 2>&1
+ 
+-$tmtest --show-unit-fails 2>&1 | sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g
++$tmtest --show-unit-fails 2>&1 | sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | sed s/zutest.c:[0-9]\*:/zutest.c:NNN:/
+ 
+ STDOUT:
+-zutest.c:197: In test_assert_int, assert a == b failed. a==4 and b==3!
+-zutest.c:198: In test_assert_int, assert a != c failed. a==4 and c==4!
+-zutest.c:199: In test_assert_int, assert a > c failed. a==4 and c==4!
+-zutest.c:200: In test_assert_int, assert b > c failed. b==3 and c==4!
+-zutest.c:201: In test_assert_int, assert b >= a failed. b==3 and a==4!
+-zutest.c:202: In test_assert_int, assert c < a failed. c==4 and a==4!
+-zutest.c:203: In test_assert_int, assert c < b failed. c==4 and b==3!
+-zutest.c:204: In test_assert_int, assert a <= b failed. a==4 and b==3!
+-zutest.c:207: In test_assert_int, assert a == 0 failed. a==4!
+-zutest.c:209: In test_assert_int, assert z != 0 failed. z==0!
+-zutest.c:212: In test_assert_int, assert z > 0 failed. z==0!
+-zutest.c:213: In test_assert_int, assert n > 0 failed. n==-1!
+-zutest.c:217: In test_assert_int, assert a <= 0 failed. a==4!
+-zutest.c:220: In test_assert_int, assert z < 0 failed. z==0!
+-zutest.c:221: In test_assert_int, assert a < 0 failed. a==4!
+-zutest.c:225: In test_assert_int, assert n >= 0 failed. n==-1!
+-zutest.c:242: In test_assert_hex, assert a == b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
+-zutest.c:243: In test_assert_hex, assert a != c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
+-zutest.c:244: In test_assert_hex, assert a > c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
+-zutest.c:245: In test_assert_hex, assert b > c failed. b==0xHEXDIGIT and c==0xHEXDIGIT!
+-zutest.c:246: In test_assert_hex, assert b >= a failed. b==0xHEXDIGIT and a==0xHEXDIGIT!
+-zutest.c:247: In test_assert_hex, assert c < a failed. c==0xHEXDIGIT and a==0xHEXDIGIT!
+-zutest.c:248: In test_assert_hex, assert c < b failed. c==0xHEXDIGIT and b==0xHEXDIGIT!
+-zutest.c:249: In test_assert_hex, assert a <= b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
+-zutest.c:252: In test_assert_hex, assert a == 0 failed. a==0xHEXDIGIT!
+-zutest.c:254: In test_assert_hex, assert z != 0 failed. z==0xHEXDIGIT!
+-zutest.c:257: In test_assert_hex, assert z > 0 failed. z==0xHEXDIGIT!
+-zutest.c:258: In test_assert_hex, assert n > 0 failed. n==0xHEXDIGIT!
+-zutest.c:262: In test_assert_hex, assert a <= 0 failed. a==0xHEXDIGIT!
+-zutest.c:265: In test_assert_hex, assert z < 0 failed. z==0xHEXDIGIT!
+-zutest.c:266: In test_assert_hex, assert a < 0 failed. a==0xHEXDIGIT!
+-zutest.c:270: In test_assert_hex, assert n >= 0 failed. n==0xHEXDIGIT!
+-zutest.c:285: In test_assert_ptr, assert n != NULL failed. n==0xHEXDIGIT!
+-zutest.c:286: In test_assert_ptr, assert ap == NULL failed. ap==0xHEXDIGIT!
+-zutest.c:297: In test_assert_ptr, assert ap == bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
+-zutest.c:298: In test_assert_ptr, assert ap != cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
+-zutest.c:299: In test_assert_ptr, assert ap > cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
+-zutest.c:300: In test_assert_ptr, assert bp > cp failed. bp==0xHEXDIGIT and cp==0xHEXDIGIT!
+-zutest.c:301: In test_assert_ptr, assert bp >= ap failed. bp==0xHEXDIGIT and ap==0xHEXDIGIT!
+-zutest.c:302: In test_assert_ptr, assert cp < ap failed. cp==0xHEXDIGIT and ap==0xHEXDIGIT!
+-zutest.c:303: In test_assert_ptr, assert cp < bp failed. cp==0xHEXDIGIT and bp==0xHEXDIGIT!
+-zutest.c:304: In test_assert_ptr, assert ap <= bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
+-zutest.c:321: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
+-zutest.c:322: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
+-zutest.c:323: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
+-zutest.c:324: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
+-zutest.c:325: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
+-zutest.c:326: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
+-zutest.c:327: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
+-zutest.c:328: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
+-zutest.c:339: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
+-zutest.c:340: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
+-zutest.c:341: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
+-zutest.c:342: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
+-zutest.c:343: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
+-zutest.c:344: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
+-zutest.c:345: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
+-zutest.c:346: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
+-zutest.c:367: In test_assert_strings, assert a eq b failed. a is "Bogozity" and b is "Arclamp"!
+-zutest.c:368: In test_assert_strings, assert a ne c failed. a is "Bogozity" and c is "Bogozity"!
+-zutest.c:369: In test_assert_strings, assert a gt c failed. a is "Bogozity" and c is "Bogozity"!
+-zutest.c:370: In test_assert_strings, assert b gt c failed. b is "Arclamp" and c is "Bogozity"!
+-zutest.c:371: In test_assert_strings, assert b ge a failed. b is "Arclamp" and a is "Bogozity"!
+-zutest.c:372: In test_assert_strings, assert c lt a failed. c is "Bogozity" and a is "Bogozity"!
+-zutest.c:373: In test_assert_strings, assert c lt b failed. c is "Bogozity" and b is "Arclamp"!
+-zutest.c:374: In test_assert_strings, assert a le b failed. a is "Bogozity" and b is "Arclamp"!
+-zutest.c:377: In test_assert_strings, assert a is empty failed. a is: Bogozity
+-zutest.c:378: In test_assert_strings, assert n is empty failed. n is NULL!
+-zutest.c:381: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
+-zutest.c:382: In test_assert_strings, assert n is nonempty failed. n is NULL!
+-All OK.  11 tests run, 11 successes (195 assertions).
++zutest.c:NNN: In test_assert_int, assert a == b failed. a==4 and b==3!
++zutest.c:NNN: In test_assert_int, assert a != c failed. a==4 and c==4!
++zutest.c:NNN: In test_assert_int, assert a > c failed. a==4 and c==4!
++zutest.c:NNN: In test_assert_int, assert b > c failed. b==3 and c==4!
++zutest.c:NNN: In test_assert_int, assert b >= a failed. b==3 and a==4!
++zutest.c:NNN: In test_assert_int, assert c < a failed. c==4 and a==4!
++zutest.c:NNN: In test_assert_int, assert c < b failed. c==4 and b==3!
++zutest.c:NNN: In test_assert_int, assert a <= b failed. a==4 and b==3!
++zutest.c:NNN: In test_assert_int, assert a == 0 failed. a==4!
++zutest.c:NNN: In test_assert_int, assert z != 0 failed. z==0!
++zutest.c:NNN: In test_assert_int, assert z > 0 failed. z==0!
++zutest.c:NNN: In test_assert_int, assert n > 0 failed. n==-1!
++zutest.c:NNN: In test_assert_int, assert a <= 0 failed. a==4!
++zutest.c:NNN: In test_assert_int, assert z < 0 failed. z==0!
++zutest.c:NNN: In test_assert_int, assert a < 0 failed. a==4!
++zutest.c:NNN: In test_assert_int, assert n >= 0 failed. n==-1!
++zutest.c:NNN: In test_assert_hex, assert a == b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert a != c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert a > c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert b > c failed. b==0xHEXDIGIT and c==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert b >= a failed. b==0xHEXDIGIT and a==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert c < a failed. c==0xHEXDIGIT and a==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert c < b failed. c==0xHEXDIGIT and b==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert a <= b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert a == 0 failed. a==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert z != 0 failed. z==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert z > 0 failed. z==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert n > 0 failed. n==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert a <= 0 failed. a==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert z < 0 failed. z==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert a < 0 failed. a==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_hex, assert n >= 0 failed. n==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert n != NULL failed. n==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert ap == NULL failed. ap==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert ap == bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert ap != cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert ap > cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert bp > cp failed. bp==0xHEXDIGIT and cp==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert bp >= ap failed. bp==0xHEXDIGIT and ap==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert cp < ap failed. cp==0xHEXDIGIT and ap==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert cp < bp failed. cp==0xHEXDIGIT and bp==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_ptr, assert ap <= bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
++zutest.c:NNN: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
++zutest.c:NNN: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
++zutest.c:NNN: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
++zutest.c:NNN: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
++zutest.c:NNN: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
++zutest.c:NNN: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
++zutest.c:NNN: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
++zutest.c:NNN: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
++zutest.c:NNN: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
++zutest.c:NNN: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
++zutest.c:NNN: In test_assert_float, assert a > c failed. a==0.000400 and c==0.000400!
++zutest.c:NNN: In test_assert_float, assert b > c failed. b==0.000300 and c==0.000400!
++zutest.c:NNN: In test_assert_float, assert b >= a failed. b==0.000300 and a==0.000400!
++zutest.c:NNN: In test_assert_float, assert c < a failed. c==0.000400 and a==0.000400!
++zutest.c:NNN: In test_assert_float, assert c < b failed. c==0.000400 and b==0.000300!
++zutest.c:NNN: In test_assert_float, assert a <= b failed. a==0.000400 and b==0.000300!
++zutest.c:NNN: In test_assert_strings, assert a eq b failed. a is "Bogozity" and b is "Arclamp"!
++zutest.c:NNN: In test_assert_strings, assert a ne c failed. a is "Bogozity" and c is "Bogozity"!
++zutest.c:NNN: In test_assert_strings, assert a gt c failed. a is "Bogozity" and c is "Bogozity"!
++zutest.c:NNN: In test_assert_strings, assert b gt c failed. b is "Arclamp" and c is "Bogozity"!
++zutest.c:NNN: In test_assert_strings, assert b ge a failed. b is "Arclamp" and a is "Bogozity"!
++zutest.c:NNN: In test_assert_strings, assert c lt a failed. c is "Bogozity" and a is "Bogozity"!
++zutest.c:NNN: In test_assert_strings, assert c lt b failed. c is "Bogozity" and b is "Arclamp"!
++zutest.c:NNN: In test_assert_strings, assert a le b failed. a is "Bogozity" and b is "Arclamp"!
++zutest.c:NNN: In test_assert_strings, assert a is empty failed. a is: Bogozity
++zutest.c:NNN: In test_assert_strings, assert n is empty failed. n is NULL!
++zutest.c:NNN: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
++zutest.c:NNN: In test_assert_strings, assert n is nonempty failed. n is NULL!
++All OK.  14 tests run, 14 successes (252 assertions).
+
+Modified: trunk/test/02-running/03-Unit-Tests.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Tests.test	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/test/02-running/03-Unit-Tests.test	2007-02-17 13:46:25 UTC (rev 133)
+@@ -3,4 +3,4 @@
+ $tmtest --run-unit-tests
+ 
+ STDOUT:
+-All OK.  11 tests run, 11 successes (195 assertions).
++All OK.  14 tests run, 14 successes (252 assertions).
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/test.h	2007-02-17 13:46:25 UTC (rev 133)
+@@ -54,6 +54,7 @@
+ 
+ struct test {
+     const char *testfilename;   ///< name of the test file.  does not include any directories.  will be "-" if reading from stdin.
++    const char *testfiledir;	///< full path to the directory containing the testfile.  should never end in a '/'.
+     scanstate testfile;         ///< scans the testfile.  may be stdin so seeking is not allowed.
+ 
+     int rewritefd;          ///< where to dump the rewritten test.  -1 if we're just running the tests, or the fd of the file that should receive the test contents.
+
+Modified: trunk/units.c
+===================================================================
+--- trunk/units.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/units.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,11 +1,26 @@
+ #include "units.h"
+-#include "compare.h"
+ #include <stddef.h>
+ 
+ 
+-zutest_suite all_unit_tests[] = {
+-	zutest_tests,	// run a self-check on the unit test library
+-	compare_tests,
+-	NULL
+-};
++void run_all_unit_tests()
++{
++	zutest_tests();
++	compare_tests();
++	pathstack_tests();
++}
+ 
++
++#ifdef UNITS_MAIN
++int main(int argc, char **argv)
++{
++	if(argc > 1) {
++		// "zutest -f" prints all the failures in the zutest unit tests.
++		// This allows you to check the output of each macro.
++		run_unit_tests_showing_failures(run_all_unit_tests);
++	} else {
++		run_unit_tests(run_all_unit_tests);
++	}
++	// this will never be reached
++	return 0;
++}
++#endif
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/units.h	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,6 +1,8 @@
+ #include "zutest.h"
+ 
+-extern zutest_proc compare_tests[];
++void compare_tests();
++void pathstack_tests();
+ 
+-extern zutest_suite all_unit_tests[];
++void run_all_unit_tests();
+ 
++
+
+Modified: trunk/vars.c
+===================================================================
+--- trunk/vars.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/vars.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -19,7 +19,7 @@
+ 
+ #include "test.h"
+ #include "vars.h"
+-#include "curdir.h"
++#include "pathstack.h"
+ 
+ #define CONFIG_FILE "tmtest.conf"
+ #define HOME_CONFIG_FILE ".tmtestrc"
+@@ -48,7 +48,7 @@
+ 	} else if(test->testfilename[0] == '/') {
+ 		fprintf(fp, "%s", test->testfilename);
+ 	} else {
+-		fprintf(fp, "%s/%s", curabsolute(), test->testfilename);
++		fprintf(fp, "%s/%s", test->testfiledir, test->testfilename);
+ 	}
+ 
+     return 0;
+@@ -56,7 +56,7 @@
+ 
+ static int var_testdir(struct test *test, FILE* fp, const char *var)
+ {
+-	fputs(curabsolute(), fp);
++	fputs(test->testfiledir, fp);
+     return 0;
+ }
+ 
+@@ -76,7 +76,7 @@
+ 		if(test->testfilename[0] == '/') {
+ 			fprintf(fp, ". %s", test->testfilename);
+ 		} else {
+-			fprintf(fp, ". '%s/%s'", curabsolute(), test->testfilename);
++			fprintf(fp, ". '%s/%s'", test->testfiledir, test->testfilename);
+ 		}
+     }
+ 
+@@ -227,7 +227,7 @@
+ 	}
+ 
+ 	// check config files in the current hierarchy
+-	strncpy(buf, curabsolute(), sizeof(buf));
++	strncpy(buf, test->testfiledir, sizeof(buf));
+ 	buf[sizeof(buf)-1] = '\0';
+ 	if(config_file) {
+ 		confbaselen = strrchr(config_file, '/') - config_file;
+
+Modified: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/zutest.c	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,15 +1,18 @@
+ /* zutest.c
+  * Scott Bronson
+  * 6 Mar 2006
++ * 
++ * This file is released under the MIT License.
++ * See http://en.wikipedia.org/wiki/MIT_License for more.
+  *
+- * Version 0.6, 26 Apr 2006
++ * Version 0.7,  16 Feb 2007 -- turn dependency tree into functions
++ * Version 0.6,  26 Apr 2006 -- first version worth releasing
+  */
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <stdarg.h>
+ #include <string.h>
+-#include <setjmp.h>
+ #include "zutest.h"
+ 
+ 
+@@ -22,10 +25,34 @@
+  * within a test, the test itself is stopped and printed as a failure
+  * but all other tests in the current test suite, and all other test
+  * suites, will still be run.
++ * 
++ * You need to ensure that it's impossible for Assert macros to be
++ * called without first ensuring that test_enter is called.
++ * 
++ * A single test is typically:
++ *   
++ *   Generally each step in a test must be processed in order
++ * (later steps depend on earlier).  This is why tmtest bails
++ * on the entire test when the first assert fails -- chances are
++ * that the failure will prevent any further processing in this
++ * test from producing meaningful results, and is probably not
++ * unlikely to cause a full crash.  Therefore when an assert fails,
++ * the current test is stopped and the next test is started.
+  *
+- * A test suite consists of a number of tests.  Typically a C file
+- * will include a test suite that lists all the tests in the file.
++ * Q: Why not collect tests in data structures like other unit test
++ * program do?
++ * A: Zutest used to do this.  However, you can't call a data structure
++ * with different parameters.  For instance, ensuring a suite of tests
++ * works with any sized buffer:
++ *     test_buffer(1024);
++ *     test_buffer(13);
++ *     test_buffer(0);
++ * And you can't set a breakpoint on a data structure or step through
++ * it in a debugger.  So, while it might be conceptually cleaner to
++ * specify your tests purely declarative, in practice it's significantly
++ * less convenient.
+  *
++ * TODO: move test setup into the tests themselves.
+  * TODO: print test results, test suites, etc as they run.
+  *    Add a quiet flag that will suppress printing unless a test fails.
+  *    quiet=0, full printing
+@@ -36,10 +63,10 @@
+ 
+ 
+ int zutest_assertions = 0;		///< A goofy statistic, updated by the assertion macros
+-static int tests_run = 0;		///< The number of tests that we have run.  successes+failures==tests_run (if not, then there's a bug somewhere).
+-static int successes = 0;		///< The number of successful tests run
+-static int failures = 0;		///< The number of failed tests run.
+-static jmp_buf test_bail;		///< If an assertion fails, and we're not inverted, this is where we end up.
++int zutest_tests_run = 0;		///< The number of tests that we have run.  successes+failures==tests_run (if not, then there's a bug somewhere).
++int zutest_successes = 0;		///< The number of successful tests run
++int zutest_failures = 0;		///< The number of failed tests run.
++jmp_buf zutest_test_bail;		///< If an assertion fails, and we're not inverted, this is where we end up.
+ static jmp_buf *inversion;		///< If an assertion fails, and we're inverted, this is where we end up.  This is NULL except when running Zutest's internal unit tests.  See test_fail().
+ static int show_failures = 0; 	///< Set this to 1 to print the failures.  This allows you to view the output of each failure to ensure it looks OK.
+ 
+@@ -61,67 +88,41 @@
+ 		longjmp(*inversion, 1);
+ 	}
+ 
+-	longjmp(test_bail, 1);
++	longjmp(zutest_test_bail, 1);
+ }
+ 
+ 
+-void run_zutest_suite(const zutest_suite suite)
+-{
+-	const zutest_proc *test;
+-
+-	for(test=suite; *test; test++) {
+-		tests_run += 1;
+-		if(!setjmp(test_bail)) {
+-			(*test)();
+-			successes += 1;
+-		} else {
+-			failures += 1;
+-		}
+-	}
+-}
+-
+-
+-void run_zutest_suites(const zutest_suites suites)
+-{
+-	zutest_suite *suite;
+-
+-	for(suite=suites; *suite; suite++) {
+-		run_zutest_suite(*suite);
+-	}
+-}
+-
+-
+ void print_zutest_results()
+ {
+-	if(failures == 0) {
++	if(zutest_failures == 0) {
+ 		printf("All OK.  %d test%s run, %d successe%s (%d assertion%s).\n",
+-				successes, (successes == 1 ? "" : "s"),
+-				successes, (successes == 1 ? "" : "s"),
++				zutest_successes, (zutest_successes == 1 ? "" : "s"),
++				zutest_successes, (zutest_successes == 1 ? "" : "s"),
+ 				zutest_assertions, (zutest_assertions == 1 ? "" : "s"));
+ 		return;
+ 	}
+ 
+ 	printf("ERROR: %d failure%s in %d test%s run!\n",
+-			failures, (failures == 1 ? "" : "s"), 
+-			tests_run, (tests_run == 1 ? "" : "s"));
++			zutest_failures, (zutest_failures == 1 ? "" : "s"), 
++			zutest_tests_run, (zutest_tests_run == 1 ? "" : "s"));
+ }
+ 
+ 
+ /** Runs all the unit tests in all the passed-in test suites.
+  */
+ 
+-void run_unit_tests(const zutest_suites suites)
++void run_unit_tests(zutest_proc proc)
+ {
+-	run_zutest_suites(suites);
++	(*proc)();
+ 	print_zutest_results();
+-	exit(failures < 100 ? failures : 100);
++	exit(zutest_failures < 100 ? zutest_failures : 100);
+ }
+ 
+ 
+-void run_unit_tests_showing_failures(const zutest_suites suites)
++void run_unit_tests_showing_failures(zutest_proc proc)
+ {
+ 	show_failures = 1;
+-	run_unit_tests(suites);
++	run_unit_tests(proc);
+ }
+ 
+ 
+@@ -136,19 +137,15 @@
+  * without doing anything.
+  */
+ 
+-void unit_test_check(int argc, char **argv, const zutest_suites suites)
++void unit_test_check(int argc, char **argv, zutest_proc proc)
+ {
+ 	if(argc > 1 && strcmp(argv[1],"--run-unit-tests") == 0) {
+-		run_unit_tests(suites);
++		run_unit_tests(proc);
+ 	}
+ }
+ 
+ 
+ 
+-
+-
+-#if defined(ZUTEST) || defined(ZUTEST_MAIN)
+-
+ /* This code runs the zutest unit tests to ensure that zutest itself
+  * is working properly.
+  */
+@@ -383,43 +380,27 @@
+ }
+ 
+ 
+-zutest_proc zutest_tests[] = {
+-	test_assert_int,
+-	test_assert_hex,
+-	test_assert_ptr,
+-	test_assert_float,
+-	test_assert_strings,
+-	NULL
++void zutest_tests()
++{
++	zutest( test_assert_int() );
++	zutest( test_assert_hex() );
++	zutest( test_assert_ptr() );
++	zutest( test_assert_float() );
++	zutest( test_assert_strings() );
+ };
+ 
+ 
+-// Ensure that zutest doesn't crash if handed an empty suite.
+-zutest_proc zutest_empty_suite[] = {
+-	NULL
+-};
+-
+-
+-zutest_suite all_zutests[] = {
+-	zutest_empty_suite,
+-	zutest_tests,
+-	NULL
+-};
+-
+-
+ #ifdef ZUTEST_MAIN
+ int main(int argc, char **argv)
+ {
+ 	if(argc > 1) {
+ 		// "zutest -f" prints all the failures in the zutest unit tests.
+ 		// This allows you to check the output of each macro.
+-		run_unit_tests_showing_failures(all_zutests);
++		run_unit_tests_showing_failures(zutest_tests);
+ 	} else {
+-		run_unit_tests(all_zutests);
++		run_unit_tests(zutest_tests);
+ 	}
+ 	// this will never be reached
+ 	return 0;
+ }
+ #endif
+-
+-#endif
+-
+
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-02-16 06:21:16 UTC (rev 132)
++++ trunk/zutest.h	2007-02-17 13:46:25 UTC (rev 133)
+@@ -1,13 +1,13 @@
+ /* zutest.h
+  * Scott Bronson
+  * 6 Mar 2006
+- *
+- * TODO: make tests self-documenting.  The test name is the same as the
+- * function name, but they should also have a short and long description.
+- * TODO: make zutest suites able to be arranged in a hierarchy.
+- *
+- * Version 0.62, 22 Jan 2007
+- * Version 0.61, 30 Apr 2006
++ * 
++ * This file is released under the MIT License.
++ * See http://en.wikipedia.org/wiki/MIT_License for more.
++ * 
++ * Version 0.7,  16 Feb 2007 -- turn dependency tree into functions
++ * Version 0.62, 22 Jan 2007 -- clean up failure messages
++ * Version 0.61, 30 Apr 2006 -- first version worth releasing
+  */
+ 
+ 
+@@ -17,7 +17,6 @@
+  * required to use Zutest in your own applications.
+  *
+  * Zutest is a ground-up rewrite of Asim Jalis's "CuTest" library.
+- * It is released under the MIT License.
+  *
+  * To compile Zutest to run its own unit tests, do this:
+  * 
+@@ -38,6 +37,10 @@
+ #ifndef ZUTEST_H
+ #define ZUTEST_H
+ 
++// This include is unfortunate...  TODO: try to get this out of here.
++#include <setjmp.h>
++
++
+ //#define ZUTBECAUSE " failed because "
+ #define ZUTBECAUSE " failed. "
+ 
+@@ -140,8 +143,15 @@
+ 		if(!(p)[0]) { Fail(#p" is nonempty" ZUTBECAUSE #p"[0] is 0!"); } \
+ 	} while(0)
+ 
++// I think that "Equal" looks better than "Eq".
++// This is probably proof that these macros need to be totally overhauled...
++#define AssertEqual(x,y) AssertEq(x,y)
++#define AssertEqualHex(x,y) AssertHexEq(x,y)
++#define AssertPtrEqual(x,y) AssertPtrEq(x,y)
++#define AssertFloatEqual(x,y) AssertFloatEq(x,y)
++#define AssertDoubleEqual(x,y) AssertFloatEq(x,y)
++#define AssertStrEqual(x,y) AssertStrEq(x,y)
+ 
+-
+ //
+ // helper macros, not intended to be called directly.
+ //
+@@ -165,45 +175,7 @@
+ 
+ 
+ 
+-/** Keeps track of how many assertions have been made.
+- * This needs to be updated manually each time an assertion
+- * is made.  The Zutest built-in assertion macros all
+- * update this variable properly.
+- */
+ 
+-extern int zutest_assertions;
+-
+-
+-/** A single test
+- *
+- * This routine is called to run the test.  If it returns, the test
+- * succeeds.  If zutest_fail() is called (either directly or indirectly
+- * via an Assert macro), then the test fails.
+- */
+-typedef void (*zutest_proc)();
+-
+-
+-/** A suite of tests
+- *
+- * A zutest_suite is simply a list of tests.  Generally, each .c file
+- * in your project will include a test suite that ensures all the tests
+- * contained in the .c file are run.  A suite is just a NULL-terminated
+- * list of tests.
+- */
+-typedef zutest_proc *zutest_suite;
+-
+-
+-/** A suite of test suites
+- *
+- * Zutests runs through each test suite in your project, running all the
+- * tests in each suite.  A suite of suites is just a NULL-terminated list
+- * of suites.  This is the topmost data structure used by zutest.
+- * TODO: make it so zutest chan handle an arbitrary hierarchy of suites.
+- * That way this data structure can go away.
+- */
+-typedef zutest_suite *zutest_suites;
+-
+-
+ /** Fails the current test.
+  *
+  * This function may only be called from within a ::zutest_proc.
+@@ -224,12 +196,42 @@
+ 
+ void zutest_fail(const char *file, int line, const char *func,
+ 		const char *msg, ...);
++		
++		
++#define zutest(test) do { zutest_tests_run += 1; 	\
++		if(!setjmp(zutest_test_bail)) { 			\
++			do { test; } while(0); 					\
++			zutest_successes += 1; 					\
++		} else { 									\
++			zutest_failures += 1; 					\
++		} } while(0)
++		
+ 
++/* above this line is stuff only needed within the tests */
++/* ------------------ */
++/* below this line is stuff only needed to run the tests */
+ 
++
++
++
++/** Keeps track of how many assertions have been made.
++ * This needs to be updated manually each time an assertion
++ * is made.  The Zutest built-in assertion macros all
++ * update this variable properly.
++ */
++
++extern int zutest_assertions;
++extern int zutest_tests_run;
++extern int zutest_successes;
++extern int zutest_failures;
++extern jmp_buf zutest_test_bail;
++
++typedef void (*zutest_proc)();
++
+ /** Runs all the tests in a suite. */
+-void run_zutest_suite(const zutest_suite suite);
++void run_zutest_suite(zutest_proc proc);
+ /** Runs all the tests in all the suites passed in. */
+-void run_zutest_suites(const zutest_suites suites);
++void run_zutest_suites(zutest_proc proc);
+ 
+ void print_zutest_results();
+ 
+@@ -243,7 +245,7 @@
+  * run_zutest_suites() directly.
+  */
+ 
+-void unit_test_check(int argc, char **argv, const zutest_suites suites);
++void unit_test_check(int argc, char **argv, zutest_proc proc);
+ 
+ /**
+  *
+@@ -251,8 +253,8 @@
+  * if you want to handle the arguments yourself.
+  */
+ 
+-void run_unit_tests(const zutest_suites suites);
+-void run_unit_tests_showing_failures(const zutest_suites suites);
++void run_unit_tests(zutest_proc proc);
++void run_unit_tests_showing_failures(zutest_proc proc);
+ 
+ 
+ /** Zutest's built-in test suite.
+@@ -268,6 +270,7 @@
+  * compile and run its unit tests as described in zutest.h.
+  */
+ 
+-extern zutest_proc zutest_tests[];
++void zutest_tests();
+ 
++
+ #endif
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Sat Feb 17 20:10:59 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Sat, 17 Feb 2007 20:10:59 +0100
+Subject: [Tmtest-commits] [134] trunk: Minor cleanups lying around in an
+	older tree
+Message-ID: <200702171910.l1HJAx25024818@sheep.berlios.de>
+
+Revision: 134
+Author:   bronson
+Date:     2007-02-17 20:10:58 +0100 (Sat, 17 Feb 2007)
+
+Log Message:
+-----------
+Minor cleanups lying around in an older tree
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/main.c
+    trunk/test.c
+    trunk/zutest.c
+    trunk/zutest.h
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/TODO	2007-02-17 19:10:58 UTC (rev 134)
+@@ -76,9 +76,18 @@
+ - Use i/o lib for everything.  No need for temp files.
+   This means that we stream everything EXCEPT stderr, which we memory
+   buffer.  If your stderr is more than 100K or so in size, just redirect
+-  it to a file, then cat the file at the end.  We truncate stderr if it
+-  gets too big.
++  it to a file, then cat the file at the end.  We will truncate stderr if it
++  gets too big.  (new maximum, what 2 MB?)
+   - When done, verify that netknife's tests that freeze with -d now pass.
++  - The reason why this is important is that we currently do a wait_for_child
++  to wait for the test to complete.  Instead, we need to wait for EACH fd
++  to close.  The problem is, the child can dup its fds onto other children
++  (process substitution), and those children might not be done writing yet.
++  This is why files randomly get truncated when doing substitution.  So,
++  we'll just wait for all the FDs to close, then we immediately reap the
++  child.  If the child can't be reaped, that means it closed all its FDs
++  but is still runnnig, which makes no sense; print an error and keep on
++  trucking.
+ - get rid of MKFILE_EMPTY, deprecated in favor of TOUCH.
+ - Is there any way to record memory and swap usage for each test?
+   sure, it's in the rusage. prolly add a "tmtest -v" to print it for each test.
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/main.c	2007-02-17 19:10:58 UTC (rev 134)
+@@ -272,7 +272,7 @@
+ }
+ 
+ 
+-static int write_stdin_to_tmpfile(struct test *test)
++static void write_stdin_to_tmpfile(struct test *test)
+ {
+ 	char *buf;
+ 	int fd;
+@@ -288,8 +288,6 @@
+ 	assert(strlen(buf) == sizeof(TESTDIR)+sizeof(DIFFNAME)-1);
+ 	write_file(test, fd, 0, NULL);
+ 	close(fd);
+-
+-	return fd;
+ }
+ 
+ 
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/test.c	2007-02-17 19:10:58 UTC (rev 134)
+@@ -674,8 +674,8 @@
+     do {
+         int tokno = scan_next_token(scanner);
+         if(tokno < 0) {
+-            test_abort(test, "scan_sections error %d pulling status tokens: %s\n", 
+-                    tokno, strerror(errno));
++            test_abort(test, "scan_sections error %d pulling status tokens: "
++				"%s\n", tokno, strerror(errno));
+         } else if(tokno == 0) {
+ 			break;
+ 		}
+@@ -955,8 +955,7 @@
+ }
+ 
+ 
+-/** Prints the actual result sections in the same order as they
+- * appear in the testfile.
++/** Prints the result sections as tested.
+  */
+ 
+ void dump_results(struct test *test)
+@@ -982,9 +981,7 @@
+     }
+ 
+     // The command section has already been dumped.  We just
+-    // need to dump the result sections.  The trick is, though,
+-    // that we need to dump them in the same order as they occur
+-    // in the testfile otherwise the diff will be all screwed up.
++    // need to dump the STDERR and STDOUT results.
+ 
+     test->stdout_match = match_unknown;
+     test->stderr_match = match_unknown;
+
+Modified: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/zutest.c	2007-02-17 19:10:58 UTC (rev 134)
+@@ -7,6 +7,7 @@
+  *
+  * Version 0.7,  16 Feb 2007 -- turn dependency tree into functions
+  * Version 0.6,  26 Apr 2006 -- first version worth releasing
++ * Released under the MIT License.
+  */
+ 
+ #include <stdio.h>
+
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-02-17 13:46:25 UTC (rev 133)
++++ trunk/zutest.h	2007-02-17 19:10:58 UTC (rev 134)
+@@ -1,6 +1,10 @@
+ /* zutest.h
+  * Scott Bronson
+  * 6 Mar 2006
++ *
++ * TODO: make tests self-documenting.  The test name is the same as the
++ * function name, but they should also have a short and long description.
++ * TODO: make zutest suites able to be arranged in a hierarchy.
+  * 
+  * This file is released under the MIT License.
+  * See http://en.wikipedia.org/wiki/MIT_License for more.
+
+
+
+
+
+From tmtest-commits at lists.berlios.de  Tue Feb 27 20:24:44 2007
+From: tmtest-commits at lists.berlios.de (tmtest-commits at lists.berlios.de)
+Date: Tue, 27 Feb 2007 20:24:44 +0100
+Subject: [Tmtest-commits] [135] trunk: Experimenting with Eclipse...
+Message-ID: <200702271924.l1RJOirp030056@sheep.berlios.de>
+
+Revision: 135
+Author:   bronson
+Date:     2007-02-27 20:24:34 +0100 (Tue, 27 Feb 2007)
+
+Log Message:
+-----------
+Experimenting with Eclipse...  add Eclipse project files.
+
+Added Paths:
+-----------
+    trunk/.cdtproject
+    trunk/.project
+    trunk/.settings/
+    trunk/.settings/org.eclipse.cdt.core.prefs
+
+Property Changed:
+----------------
+    trunk/
+
+Property changes on: trunk
+___________________________________________________________________
+Name: svn:ignore
+   + template.c
+tmtest
+units
+
+
+Added: trunk/.cdtproject
+===================================================================
+--- trunk/.cdtproject	2007-02-17 19:10:58 UTC (rev 134)
++++ trunk/.cdtproject	2007-02-27 19:24:34 UTC (rev 135)
+@@ -0,0 +1,88 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<?eclipse-cdt version="2.0"?>
++
++<cdtproject id="org.eclipse.cdt.make.core.make">
++<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
++<data>
++<item id="scannerConfiguration">
++<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile"/>
++<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile">
++<buildOutputProvider>
++<openAction enabled="false" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="specsFile">
++<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="gcc" useDefault="true"/>
++<parser enabled="true"/>
++</scannerInfoProvider>
++</profile>
++<profile id="org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile">
++<buildOutputProvider>
++<openAction enabled="true" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="makefileGenerator">
++<runAction arguments="-f ${project_name}_scd.mk" command="make" useDefault="true"/>
++<parser enabled="true"/>
++</scannerInfoProvider>
++</profile>
++<profile id="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfile">
++<buildOutputProvider>
++<openAction enabled="false" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="specsFile">
++<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="gcc" useDefault="true"/>
++<parser enabled="false"/>
++</scannerInfoProvider>
++</profile>
++<profile id="org.eclipse.cdt.managedbuilder.core.GCCWinManagedMakePerProjectProfile">
++<buildOutputProvider>
++<openAction enabled="false" filePath=""/>
++<parser enabled="true"/>
++</buildOutputProvider>
++<scannerInfoProvider id="specsFile">
++<runAction arguments="-E -P -v -dD ${plugin_state_location}/${specs_file}" command="gcc" useDefault="true"/>
++<parser enabled="false"/>
++</scannerInfoProvider>
++</profile>
++</item>
++<item id="org.eclipse.cdt.core.pathentry">
++<pathentry kind="src" path=""/>
++<pathentry kind="out" path=""/>
++<pathentry kind="con" path="org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO"/>
++</item>
++<item id="org.eclipse.cdt.make.core.buildtargets">
++<buildTargets>
++<target name="zutest" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments></buildArguments>
++<buildTarget>zutest</buildTarget>
++<stopOnError>false</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="units" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments></buildArguments>
++<buildTarget>units</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="run-units" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments></buildArguments>
++<buildTarget>run-units</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++<target name="test" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
++<buildCommand>make</buildCommand>
++<buildArguments></buildArguments>
++<buildTarget>test</buildTarget>
++<stopOnError>true</stopOnError>
++<useDefaultCommand>true</useDefaultCommand>
++</target>
++</buildTargets>
++</item>
++</data>
++</cdtproject>
+
+Added: trunk/.project
+===================================================================
+--- trunk/.project	2007-02-17 19:10:58 UTC (rev 134)
++++ trunk/.project	2007-02-27 19:24:34 UTC (rev 135)
+@@ -0,0 +1,85 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<projectDescription>
++	<name>tmtest</name>
++	<comment></comment>
++	<projects>
++	</projects>
++	<buildSpec>
++		<buildCommand>
++			<name>org.eclipse.cdt.make.core.makeBuilder</name>
++			<triggers>clean,full,incremental,</triggers>
++			<arguments>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.build.arguments</key>
++					<value></value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.core.errorOutputParser</key>
++					<value>org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.VCErrorParser;</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.enableAutoBuild</key>
++					<value>false</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.environment</key>
++					<value></value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.enableFullBuild</key>
++					<value>true</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.build.target.inc</key>
++					<value>all</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.enabledIncrementalBuild</key>
++					<value>true</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.build.location</key>
++					<value></value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.build.target.clean</key>
++					<value>clean</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.build.command</key>
++					<value>make</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.enableCleanBuild</key>
++					<value>true</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.append_environment</key>
++					<value>true</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.useDefaultBuildCmd</key>
++					<value>true</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.build.target.auto</key>
++					<value>all</value>
++				</dictionary>
++				<dictionary>
++					<key>org.eclipse.cdt.make.core.stopOnError</key>
++					<value>true</value>
++				</dictionary>
++			</arguments>
++		</buildCommand>
++		<buildCommand>
++			<name>org.eclipse.cdt.make.core.ScannerConfigBuilder</name>
++			<arguments>
++			</arguments>
++		</buildCommand>
++	</buildSpec>
++	<natures>
++		<nature>org.eclipse.cdt.core.cnature</nature>
++		<nature>org.eclipse.cdt.make.core.makeNature</nature>
++		<nature>org.eclipse.cdt.make.core.ScannerConfigNature</nature>
++	</natures>
++</projectDescription>
+
+Added: trunk/.settings/org.eclipse.cdt.core.prefs
+===================================================================
+--- trunk/.settings/org.eclipse.cdt.core.prefs	2007-02-17 19:10:58 UTC (rev 134)
++++ trunk/.settings/org.eclipse.cdt.core.prefs	2007-02-27 19:24:34 UTC (rev 135)
+@@ -0,0 +1,3 @@
++#Thu Feb 15 17:47:47 PST 2007
++eclipse.preferences.version=1
++indexerId=org.eclipse.cdt.core.fastIndexer
+
+
+
+
+

@@ -1,0 +1,282 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [95] trunk: Add tests to ensure binary transparency.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B95%5D%20trunk%3A%20Add%20tests%20to%20ensure%20binary%20transparency.&In-Reply-To=%3C200602282153.k1SLrIGl004915%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000011.html">
+   <LINK REL="Next"  HREF="000013.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [95] trunk: Add tests to ensure binary transparency.</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B95%5D%20trunk%3A%20Add%20tests%20to%20ensure%20binary%20transparency.&In-Reply-To=%3C200602282153.k1SLrIGl004915%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [95] trunk: Add tests to ensure binary transparency.">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Feb 28 22:53:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000011.html">[Tmtest-commits] [94] trunk: read_shiftbuf was totally messed up.
+</A></li>
+        <LI>Next message: <A HREF="000013.html">[Tmtest-commits] [96] trunk: Make --dump-script clean up after itself.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#12">[ date ]</a>
+              <a href="thread.html#12">[ thread ]</a>
+              <a href="subject.html#12">[ subject ]</a>
+              <a href="author.html#12">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 95
+Author:   bronson
+Date:     2006-02-28 22:53:17 +0100 (Tue, 28 Feb 2006)
+
+Log Message:
+-----------
+Add tests to ensure binary transparency.  After some parsing
+effort it appears to work.
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/TODO
+
+Added Paths:
+-----------
+    trunk/test/03-results/30-Binary.test
+    trunk/test/03-results/31-BinaryFail.test
+    trunk/test/03-results/32-BinaryLarge.test
+    trunk/test/03-results/33-BinaryHuge.test
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-02-28 21:32:53 UTC (rev 94)
++++ trunk/CHANGES	2006-02-28 21:53:17 UTC (rev 95)
+@@ -1,5 +1,3 @@
+-- write some tests to ensure binary transparency of stdout and stderr.
+-  (especially hit the newlines hard)
+ - Release next version.
+ ----
+ - Now reports in the test results if child was terminated by a signal.
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-02-28 21:32:53 UTC (rev 94)
++++ trunk/TODO	2006-02-28 21:53:17 UTC (rev 95)
+@@ -2,7 +2,6 @@
+ - An empty test with a STDOUT clause should fail without the -n right?
+   I mean, there's no newline in the actual output, but there is in the
+   expected...
+-- Add tests for binary transparency.
+ - write tests for nesting testfiles with --config.
+         // If the user specifies a config file, we only check directories
+         // not above the given config file.  i.e. if user specifies
+@@ -16,6 +15,14 @@
+     supports the --config argument (make them DISABLED or something).
+ 
+ 0.96:
++- Change the I/O scheme to be event based.  Get rid of the tempfiles.
++  Convert to using the async io library.  Don't use temporary files.
++  This would allow us to recognize that the test is disabled before
++  producing a partial diff, blowing away output sections.
++- Use i/o lib for everything.  No need for temp files.
++  This means that we stream everything EXCEPT stderr, which we memory
++  buffer.  If your stderr is more than 100K or so in size, just redirect
++  it to stdout.
+ - stdin is all buggered up.  why is it that &quot;cat&quot; with no args will print
+   the rest of the test script?  And why is it that if you fork, diff freezes?
+   They're related problems I suspect.
+@@ -38,16 +45,6 @@
+   See 22-PatchNoNL2.test for more.  Make sure a test for this is in 03 too.
+ 
+ 0.98:
+-- Change the I/O scheme to be event based.  Get rid of the tempfiles.
+-  Convert to using the async io library.  Don't use temporary files.
+-  This would allow us to recognize that the test is disabled before
+-  producing a partial diff, blowing away output sections.
+-- Use i/o lib for everything.  No need for temp files.
+-  This means that we stream everything EXCEPT stderr, which we memory
+-  buffer.  If your stderr is more than 100K or so in size, just redirect
+-  it to stdout.
+-
+-2.0:
+ - get rid of all the exit(10) calls in test.c.  We need a better way to
+   abort the test.
+   should get rid of a whole bunch in main.c as well.
+@@ -55,6 +52,8 @@
+ - Get rid of MODIFY clauses.  It's unnecessary complexity.
+   And it's a LOT.  First remove it from the tests, then from the code.
+ 
++1.0:
++
+ ?:
+ - add gcov support so you can see what sort of coverage your tests provide.
+ - Provide some sort of automatable XML output?
+
+Added: trunk/test/03-results/30-Binary.test
+===================================================================
+--- trunk/test/03-results/30-Binary.test	2006-02-28 21:32:53 UTC (rev 94)
++++ trunk/test/03-results/30-Binary.test	2006-02-28 21:53:17 UTC (rev 95)
+@@ -0,0 +1,24 @@
++# Ensures that a testfile can contain 4 NULLs and comparison will
++# still work.
++
++# We need to create the testfile in its own file because Bash will
++# screw things up if we use a heredoc.
++
++MKFILE tt &lt;&lt;-EOL
++	echo -e &quot;\\0\\0\\0\\0&quot;
++    # stdout will be filled in below
++	STDOUT:
++EOL
++
++# Add the expected results to the testfile.
++echo -e &quot;\\0\\0\\0\\0&quot; &gt;&gt; &quot;$tt&quot;
++
++# and run the test
++tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++
++STDOUT:
++
++Processing /tmp/FILE
++ok   /tmp/FILE 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/31-BinaryFail.test
+===================================================================
+--- trunk/test/03-results/31-BinaryFail.test	2006-02-28 21:32:53 UTC (rev 94)
++++ trunk/test/03-results/31-BinaryFail.test	2006-02-28 21:53:17 UTC (rev 95)
+@@ -0,0 +1,24 @@
++# Ensures that a testfile can contain 4 NULLs and comparison will
++# still work.  This tests what happens if the comparison fails.
++
++# We need to create the testfile by hand in the /tmp directory
++# because Bash will screw up the binary if we use a heredoc.
++
++MKFILE tt &lt;&lt;-EOL
++	echo -e &quot;\\0\\0\\0\\0&quot;
++	STDOUT:
++EOL
++
++# Add the expected results to the testfile.  NOTE: there is one
++# to few NULs here.  This will cause the test to fail.
++echo -e &quot;\\0\\0\\0&quot; &gt;&gt; &quot;$tt&quot;
++
++# and run the test
++tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++
++STDOUT:
++
++Processing /tmp/FILE
++FAIL /tmp/FILE        O..  stdout differed
++
++1 test run, 0 successes, 1 failure.
+
+Added: trunk/test/03-results/32-BinaryLarge.test
+===================================================================
+--- trunk/test/03-results/32-BinaryLarge.test	2006-02-28 21:32:53 UTC (rev 94)
++++ trunk/test/03-results/32-BinaryLarge.test	2006-02-28 21:53:17 UTC (rev 95)
+@@ -0,0 +1,35 @@
++# Ensures that a testfile can contain some arbitrary binary
++# data and the test will still work.  This just tests control chars.
++
++# We need to manuall create the testfile because Bash will screw 
++# things up if we use a heredoc.
++
++MKFILE tt &lt;&lt;-'EOL'
++    for i in `seq 1 20`; do
++        echo -e &quot;\\0\\0\\0\\0\\r\\n\\0\\0\\0\\0\\a\\e\\b\\f\\t\\v\\'&quot;
++        echo -e &quot;\\000\\001\\002\\003\\004\\005\\006\\007&quot;
++        echo -e &quot;\\010\\011\\012\\013\\014\\015\\016\\017&quot;
++        echo -e &quot;\\020\\021\\022\\023\\024\\025\\026\\027&quot;
++        echo -e &quot;\\030\\031\\032\\033\\034\\035\\036\\037&quot;
++    done
++	STDOUT:
++EOL
++
++# Add the expected results to the testfile.
++for i in `seq 1 20`; do
++    echo -e &quot;\\0\\0\\0\\0\\r\\n\\0\\0\\0\\0\\a\\e\\b\\f\\t\\v\\'&quot;
++    echo -e &quot;\\000\\001\\002\\003\\004\\005\\006\\007&quot;
++    echo -e &quot;\\010\\011\\012\\013\\014\\015\\016\\017&quot;
++    echo -e &quot;\\020\\021\\022\\023\\024\\025\\026\\027&quot;
++    echo -e &quot;\\030\\031\\032\\033\\034\\035\\036\\037&quot;
++done &gt;&gt; &quot;$tt&quot;
++
++# and run the test
++tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++
++STDOUT:
++
++Processing /tmp/FILE
++ok   /tmp/FILE 
++
++1 test run, 1 success, 0 failures.
+
+Added: trunk/test/03-results/33-BinaryHuge.test
+===================================================================
+--- trunk/test/03-results/33-BinaryHuge.test	2006-02-28 21:32:53 UTC (rev 94)
++++ trunk/test/03-results/33-BinaryHuge.test	2006-02-28 21:53:17 UTC (rev 95)
+@@ -0,0 +1,27 @@
++# Ensures that a testfile can contain some arbitrary binary
++# data and the test will still work.  We use every permeutation
++# of 2 1-byte values (64K of data).
++
++# We need to manually create the testfile because Bash will screw 
++# things up if we use a heredoc.
++
++
++MKFILE tt &lt;&lt;-'EOL'
++    perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}'
++    # stdout will be filled in below
++	STDOUT:
++EOL
++
++
++# Add the expected results to the testfile.
++perl -e 'for(my $i=0; $i&lt;256; $i++) { for(my $j=0; $j&lt;256; $j++) { print pack(&quot;cc&quot;, $i, $j); }}' &gt;&gt; &quot;$tt&quot;
++
++# and run the test
++tmtest --all-files -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
++
++STDOUT:
++
++Processing /tmp/FILE
++ok   /tmp/FILE 
++
++1 test run, 1 success, 0 failures.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000011.html">[Tmtest-commits] [94] trunk: read_shiftbuf was totally messed up.
+</A></li>
+	<LI>Next message: <A HREF="000013.html">[Tmtest-commits] [96] trunk: Make --dump-script clean up after itself.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#12">[ date ]</a>
+              <a href="thread.html#12">[ thread ]</a>
+              <a href="subject.html#12">[ subject ]</a>
+              <a href="author.html#12">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

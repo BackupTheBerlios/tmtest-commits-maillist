@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [153] trunk: Get rid of misleading &quot;system-wide&quot;	at the top of
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B153%5D%20trunk%3A%20Get%20rid%20of%20misleading%20%22system-wide%22%0A%09at%20the%20top%20of&In-Reply-To=%3C200710210804.l9L84jtB031339%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000065.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [153] trunk: Get rid of misleading &quot;system-wide&quot;	at the top of</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B153%5D%20trunk%3A%20Get%20rid%20of%20misleading%20%22system-wide%22%0A%09at%20the%20top%20of&In-Reply-To=%3C200710210804.l9L84jtB031339%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [153] trunk: Get rid of misleading &quot;system-wide&quot;	at the top of">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Sun Oct 21 10:04:45 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000065.html">[Tmtest-commits] [152] trunk: Add .tmtest-ignore (allows whole	directories to be ignored)
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#66">[ date ]</a>
+              <a href="thread.html#66">[ thread ]</a>
+              <a href="subject.html#66">[ subject ]</a>
+              <a href="author.html#66">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 153
+Author:   bronson
+Date:     2007-10-21 10:04:42 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Get rid of misleading &quot;system-wide&quot; at the top of sample.conf
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/sample.conf
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-10-21 07:59:04 UTC (rev 152)
++++ trunk/TODO	2007-10-21 08:04:42 UTC (rev 153)
+@@ -1,9 +1,6 @@
+ 0.96:
+ - Disabled tests are not ignored when running tmtest -d?
+   /home/bronson/workspace-tmtest/tmtest/test/02-running/50-OpenFDsTest.test
+-- The installed .tmtestrc has, at the very top:
+-  # This is the system-wide configuration file for tmtest.
+-  Uh, no.  It's certainly not system-wide!
+ - Put the zutest macro inside the tests (zutest { ... }) instead of outside.
+ - Remove the allfiles and quiet options.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+
+Modified: trunk/sample.conf
+===================================================================
+--- trunk/sample.conf	2007-10-21 07:59:04 UTC (rev 152)
++++ trunk/sample.conf	2007-10-21 08:04:42 UTC (rev 153)
+@@ -1,4 +1,4 @@
+-# This is the system-wide configuration file for tmtest.
++# This is a configuration file for tmtest.
+ 
+ # tmtest configuration files are read in the following order:
+ #
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000065.html">[Tmtest-commits] [152] trunk: Add .tmtest-ignore (allows whole	directories to be ignored)
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#66">[ date ]</a>
+              <a href="thread.html#66">[ thread ]</a>
+              <a href="subject.html#66">[ subject ]</a>
+              <a href="author.html#66">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

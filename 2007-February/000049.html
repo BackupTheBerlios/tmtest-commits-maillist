@@ -1,0 +1,206 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [132] trunk/zutest.h: Make the 2-arg 1-op macros	look less Forth-like.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B132%5D%20trunk/zutest.h%3A%20Make%20the%202-arg%201-op%20macros%0A%09look%20less%20Forth-like.&In-Reply-To=%3C200702160621.l1G6LX22029598%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000048.html">
+   <LINK REL="Next"  HREF="000050.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [132] trunk/zutest.h: Make the 2-arg 1-op macros	look less Forth-like.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B132%5D%20trunk/zutest.h%3A%20Make%20the%202-arg%201-op%20macros%0A%09look%20less%20Forth-like.&In-Reply-To=%3C200702160621.l1G6LX22029598%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [132] trunk/zutest.h: Make the 2-arg 1-op macros	look less Forth-like.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Fri Feb 16 07:21:33 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000048.html">[Tmtest-commits] [131] trunk/Makefile: Eclipse wants an &quot;all&quot;	target in the Makefile.
+</A></li>
+        <LI>Next message: <A HREF="000050.html">[Tmtest-commits] [133] trunk: Totally replaced the path handling	code.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#49">[ date ]</a>
+              <a href="thread.html#49">[ thread ]</a>
+              <a href="subject.html#49">[ subject ]</a>
+              <a href="author.html#49">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 132
+Author:   bronson
+Date:     2007-02-16 07:21:16 +0100 (Fri, 16 Feb 2007)
+
+Log Message:
+-----------
+Make the 2-arg 1-op macros look less Forth-like.
+
+Modified Paths:
+--------------
+    trunk/zutest.h
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-02-14 23:15:13 UTC (rev 131)
++++ trunk/zutest.h	2007-02-16 06:21:16 UTC (rev 132)
+@@ -58,12 +58,12 @@
+ 		if(!(x)) { Fail(__VA_ARGS__); } } while(0)
+ 
+ // integers, longs, chars...
+-#define AssertEq(x,y) AssertOp(x,y,==)
+-#define AssertNe(x,y) AssertOp(x,y,!=)
+-#define AssertGt(x,y) AssertOp(x,y,&gt;)
+-#define AssertGe(x,y) AssertOp(x,y,&gt;=)
+-#define AssertLt(x,y) AssertOp(x,y,&lt;)
+-#define AssertLe(x,y) AssertOp(x,y,&lt;=)
++#define AssertEq(x,y) AssertOp(x,==,y)
++#define AssertNe(x,y) AssertOp(x,!=,y)
++#define AssertGt(x,y) AssertOp(x,&gt;,y)
++#define AssertGe(x,y) AssertOp(x,&gt;=,y)
++#define AssertLt(x,y) AssertOp(x,&lt;,y)
++#define AssertLe(x,y) AssertOp(x,&lt;=,y)
+ 
+ #define AssertZero(x) AssertOpToZero(x,==)
+ #define AssertNonzero(x) AssertOpToZero(x,!=)
+@@ -74,12 +74,12 @@
+ #define AssertNonPositive(x) AssertOpToZero(x,&lt;=);
+ 
+ // Also integers but failure values are printed in hex rather than decimal.
+-#define AssertEqHex(x,y) AssertHexOp(x,y,==)
+-#define AssertNeHex(x,y) AssertHexOp(x,y,!=)
+-#define AssertGtHex(x,y) AssertHexOp(x,y,&gt;)
+-#define AssertGeHex(x,y) AssertHexOp(x,y,&gt;=)
+-#define AssertLtHex(x,y) AssertHexOp(x,y,&lt;)
+-#define AssertLeHex(x,y) AssertHexOp(x,y,&lt;=)
++#define AssertEqHex(x,y) AssertHexOp(x,==,y)
++#define AssertNeHex(x,y) AssertHexOp(x,!=,y)
++#define AssertGtHex(x,y) AssertHexOp(x,&gt;,y)
++#define AssertGeHex(x,y) AssertHexOp(x,&gt;=,y)
++#define AssertLtHex(x,y) AssertHexOp(x,&lt;,y)
++#define AssertLeHex(x,y) AssertHexOp(x,&lt;=,y)
+ 
+ #define AssertZeroHex(x) AssertHexOpToZero(x,==)
+ #define AssertNonzeroHex(x) AssertHexOpToZero(x,!=)
+@@ -98,36 +98,36 @@
+ 
+ #define AssertPtrNull(p) AssertNull(p)
+ #define AssertPtrNonNull(p) AssertNonNull(p)
+-#define AssertPtrEq(x,y) AssertPtrOp(x,y,==)
+-#define AssertPtrNe(x,y) AssertPtrOp(x,y,!=)
+-#define AssertPtrGt(x,y) AssertPtrOp(x,y,&gt;)
+-#define AssertPtrGe(x,y) AssertPtrOp(x,y,&gt;=)
+-#define AssertPtrLt(x,y) AssertPtrOp(x,y,&lt;)
+-#define AssertPtrLe(x,y) AssertPtrOp(x,y,&lt;=)
++#define AssertPtrEq(x,y) AssertPtrOp(x,==,y)
++#define AssertPtrNe(x,y) AssertPtrOp(x,!=,y)
++#define AssertPtrGt(x,y) AssertPtrOp(x,&gt;,y)
++#define AssertPtrGe(x,y) AssertPtrOp(x,&gt;=,y)
++#define AssertPtrLt(x,y) AssertPtrOp(x,&lt;,y)
++#define AssertPtrLe(x,y) AssertPtrOp(x,&lt;=,y)
+ 
+ // These work with floats and doubles
+ // (everything is handled internally as double)
+-#define AssertFloatEq(x,y) AssertFloatOp(x,y,==)
+-#define AssertFloatNe(x,y) AssertFloatOp(x,y,!=)
+-#define AssertFloatGt(x,y) AssertFloatOp(x,y,&gt;)
+-#define AssertFloatGe(x,y) AssertFloatOp(x,y,&gt;=)
+-#define AssertFloatLt(x,y) AssertFloatOp(x,y,&lt;)
+-#define AssertFloatLe(x,y) AssertFloatOp(x,y,&lt;=)
++#define AssertFloatEq(x,y) AssertFloatOp(x,==,y)
++#define AssertFloatNe(x,y) AssertFloatOp(x,!=,y)
++#define AssertFloatGt(x,y) AssertFloatOp(x,&gt;,y)
++#define AssertFloatGe(x,y) AssertFloatOp(x,&gt;=,y)
++#define AssertFloatLt(x,y) AssertFloatOp(x,&lt;,y)
++#define AssertFloatLe(x,y) AssertFloatOp(x,&lt;=,y)
+ // supply Doubles so people don't worry about precision when they see Float
+-#define AssertDoubleEq(x,y) AssertFloatOp(x,y,==)
+-#define AssertDoubleNe(x,y) AssertFloatOp(x,y,!=)
+-#define AssertDoubleGt(x,y) AssertFloatOp(x,y,&gt;)
+-#define AssertDoubleGe(x,y) AssertFloatOp(x,y,&gt;=)
+-#define AssertDoubleLt(x,y) AssertFloatOp(x,y,&lt;)
+-#define AssertDoubleLe(x,y) AssertFloatOp(x,y,&lt;=)
++#define AssertDoubleEq(x,y) AssertFloatOp(x,==,y)
++#define AssertDoubleNe(x,y) AssertFloatOp(x,!=,y)
++#define AssertDoubleGt(x,y) AssertFloatOp(x,&gt;,y)
++#define AssertDoubleGe(x,y) AssertFloatOp(x,&gt;=,y)
++#define AssertDoubleLt(x,y) AssertFloatOp(x,&lt;,y)
++#define AssertDoubleLe(x,y) AssertFloatOp(x,&lt;=,y)
+ 
+ // Strings (uses strcmp)...
+-#define AssertStrEq(x,y) AssertStrOp(x,y,eq,==)
+-#define AssertStrNe(x,y) AssertStrOp(x,y,ne,!=)
+-#define AssertStrGt(x,y) AssertStrOp(x,y,gt,&gt;)
+-#define AssertStrGe(x,y) AssertStrOp(x,y,ge,&gt;=)
+-#define AssertStrLt(x,y) AssertStrOp(x,y,lt,&lt;)
+-#define AssertStrLe(x,y) AssertStrOp(x,y,le,&lt;=)
++#define AssertStrEq(x,y) AssertStrOp(x,eq,==,y)
++#define AssertStrNe(x,y) AssertStrOp(x,ne,!=,y)
++#define AssertStrGt(x,y) AssertStrOp(x,gt,&gt;,y)
++#define AssertStrGe(x,y) AssertStrOp(x,ge,&gt;=,y)
++#define AssertStrLt(x,y) AssertStrOp(x,lt,&lt;,y)
++#define AssertStrLe(x,y) AssertStrOp(x,le,&lt;=,y)
+ 
+ // ensures a string is non-null but zero-length
+ #define AssertStrEmpty(p) do { zutest_assertions++; \
+@@ -146,7 +146,7 @@
+ // helper macros, not intended to be called directly.
+ //
+ 
+-#define AssertExpType(x,y,op,type,fmt) \
++#define AssertExpType(x,op,y,type,fmt) \
+ 	AssertFmt((type)x op (type)y, #x&quot; &quot;#op&quot; &quot;#y ZUTBECAUSE \
+ 	#x&quot;==&quot;fmt&quot; and &quot;#y&quot;==&quot;fmt&quot;!&quot;, (type)x,(type)y)
+ // The failure &quot;x==0 failed because x==1 and 0==0&quot; s too wordy so we'll
+@@ -154,13 +154,13 @@
+ #define AssertExpToZero(x,op,type,fmt) \
+ 	AssertFmt((type)x op 0,#x&quot; &quot;#op&quot; 0&quot; ZUTBECAUSE #x&quot;==&quot;fmt&quot;!&quot;, (type)x)
+ 
+-#define AssertOp(x,y,op) AssertExpType(x,y,op,long,&quot;%ld&quot;)
+-#define AssertHexOp(x,y,op) AssertExpType(x,y,op,long,&quot;0x%lX&quot;)
++#define AssertOp(x,op,y) AssertExpType(x,op,y,long,&quot;%ld&quot;)
++#define AssertHexOp(x,op,y) AssertExpType(x,op,y,long,&quot;0x%lX&quot;)
+ #define AssertOpToZero(x,op) AssertExpToZero(x,op,long,&quot;%ld&quot;)
+ #define AssertHexOpToZero(x,op) AssertExpToZero(x,op,long,&quot;0x%lX&quot;)
+-#define AssertPtrOp(x,y,op) AssertExpType(x,y,op,unsigned long,&quot;0x%lX&quot;)
+-#define AssertFloatOp(x,y,op) AssertExpType(x,y,op,double,&quot;%lf&quot;)
+-#define AssertStrOp(x,y,opn,op) AssertFmt(strcmp(x,y) op 0, \
++#define AssertPtrOp(x,op,y) AssertExpType(x,op,y,unsigned long,&quot;0x%lX&quot;)
++#define AssertFloatOp(x,op,y) AssertExpType(x,op,y,double,&quot;%lf&quot;)
++#define AssertStrOp(x,opn,op,y) AssertFmt(strcmp(x,y) op 0, \
+ 	#x&quot; &quot;#opn&quot; &quot;#y ZUTBECAUSE #x&quot; is \&quot;%s\&quot; and &quot;#y&quot; is \&quot;%s\&quot;!&quot;,x,y)
+ 
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000048.html">[Tmtest-commits] [131] trunk/Makefile: Eclipse wants an &quot;all&quot;	target in the Makefile.
+</A></li>
+	<LI>Next message: <A HREF="000050.html">[Tmtest-commits] [133] trunk: Totally replaced the path handling	code.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#49">[ date ]</a>
+              <a href="thread.html#49">[ thread ]</a>
+              <a href="subject.html#49">[ subject ]</a>
+              <a href="author.html#49">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,431 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [89] trunk: Add INDENT to stdlib, start make-dist script
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B89%5D%20trunk%3A%20Add%20INDENT%20to%20stdlib%2C%20start%20make-dist%20script&In-Reply-To=%3C200602281344.k1SDit3s001268%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000005.html">
+   <LINK REL="Next"  HREF="000007.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [89] trunk: Add INDENT to stdlib, start make-dist script</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B89%5D%20trunk%3A%20Add%20INDENT%20to%20stdlib%2C%20start%20make-dist%20script&In-Reply-To=%3C200602281344.k1SDit3s001268%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [89] trunk: Add INDENT to stdlib, start make-dist script">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Feb 28 14:44:55 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000005.html">[Tmtest-commits] [88] releases/0.92/: Tag release 0.92
+</A></li>
+        <LI>Next message: <A HREF="000007.html">[Tmtest-commits] [90] trunk: Wrote some tests to ensre that diff/patch work with
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6">[ date ]</a>
+              <a href="thread.html#6">[ thread ]</a>
+              <a href="subject.html#6">[ subject ]</a>
+              <a href="author.html#6">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 89
+Author:   bronson
+Date:     2006-02-28 14:44:47 +0100 (Tue, 28 Feb 2006)
+
+Log Message:
+-----------
+Add INDENT to stdlib, start make-dist script
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/Makefile
+    trunk/stscan.c
+    trunk/test/04-diff/09-MultiLevelDiff.test
+    trunk/test/04-diff/10-Patch.test
+    trunk/test/04-diff/11-MultiPatch.test
+    trunk/test/04-diff/12-MultiLevelPatch.test
+    trunk/test/04-diff/13-MultiLevelPatch.test
+    trunk/tmlib.sh
+
+Added Paths:
+-----------
+    trunk/make-dist
+
+Removed Paths:
+-------------
+    trunk/test/04-diff/indent.sh
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/CHANGES	2006-02-28 13:44:47 UTC (rev 89)
+@@ -1,6 +1,9 @@
+ - write some tests to ensure diff works with files that don't end in CR.
+-- move INDENT from 04-diff into the stdlib.  Add to docs.
++- write some tests to ensure binary transparency of stdout and stderr.
++  (especially hit the newlines hard)
++- Release next version.
+ ----
++- Added the INDENT function to tmlib.
+ - Bash3 has made it so that the RE can no longer appear on the same line as
+   the MODIFY command.  I updated all tests and accelerated MODIFY deprecation.
+ - Added -n (--no-trailing-newline) capability to STDOUT and STDERR sections.
+@@ -8,6 +11,7 @@
+ - Got rid of all AUTHOR and DATE automation.  Too heavyhanded.
+ - Standardized licensing: everything under my control is MIT, package is LGPL.
+ - When installing locally, it's ~/.tmlib.sh instead of ~/share/tmtest/tmlib.sh
++
+ - Bump to 0.92
+ - install now installs config files too.
+ - Added the --config option to override default config files.
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/Makefile	2006-02-28 13:44:47 UTC (rev 89)
+@@ -5,7 +5,7 @@
+ # This software is distributed under the LGPL.  See COPYING for more.
+ 
+ 
+-VERSION=0.92
++VERSION=0.94
+ 
+ # override this when installing: &quot;make install prefix=/usr/local&quot;
+ #prefix=/usr
+@@ -95,6 +95,8 @@
+ distclean: clean
+ 	rm -f stscan.[co]
+ 
++dist: stscan.c
++	
+ tags: $(CSRC) $(CHDR) $(INTERMED)
+ 	ctags -R
+ 
+
+Added: trunk/make-dist
+===================================================================
+--- trunk/make-dist	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/make-dist	2006-02-28 13:44:47 UTC (rev 89)
+@@ -0,0 +1,48 @@
++#!/bin/sh
++
++# make-dist (for tmtest)
++# Scott Bronson
++# 30 May 2000
++
++
++name=tmtest
++version=$(perl -ne '/VERSION=([0-9]+\.[0-9A-Za-z_.-]+)/ &amp;&amp; print $1' Makefile)
++
++if [ ! &quot;$version&quot; ] ; then echo &quot;Could not figure out version.&quot; ; exit 1 ; fi
++
++grep -w $version CHANGES 2&gt;&amp;1 &gt;/dev/null
++if [ &quot;$?&quot; != &quot;0&quot; ]; then echo &quot;Add $version to CHANGES!&quot;; exit 1; fi
++
++pushd . 2&gt;&amp;1 &gt; /dev/null
++
++# Ensure tree is ready to go
++make distclean &gt; /dev/null || exit 1
++make dist &gt; /dev/null || exit 1
++
++# get rid of possible old files
++rm -rf /tmp/$name-$version
++rm -rf /tmp/$name-$version.tar.gz
++
++# make a working copy in /tmp
++cp -r . /tmp/$name-$version
++
++# remove unneeded files
++cd /tmp/$name-$version
++find . -name .svn | xargs rm -rf
++rm -f Makefile.old
++rm make-dist
++
++# check for any invisible files
++find . | grep /\\. &amp;&amp; echo &quot;BAD FILES!  Won't finish.&quot; &amp;&amp; exit 1
++
++# show a list of files so we can see questionable stuff
++find .
++
++# tar it up
++cd ..
++tar zcf $name-$version.tar.gz $name-$version
++
++# we're done
++echo &quot;New dist is in /tmp/$name-$version.tar.gz, enjoy!&quot;
++popd 2&gt;&amp;1 &gt; /dev/null
++
+
+
+Property changes on: trunk/make-dist
+___________________________________________________________________
+Name: svn:executable
+   + *
+
+Modified: trunk/stscan.c
+===================================================================
+--- trunk/stscan.c	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/stscan.c	2006-02-28 13:44:47 UTC (rev 89)
+@@ -1,4 +1,4 @@
+-/* Generated by re2c 0.9.10 on Mon Feb 27 18:07:08 2006 */
++/* Generated by re2c 0.9.10 on Mon Feb 27 20:04:36 2006 */
+ 
+ /* stscan.re
+  * Scott Bronson
+
+Modified: trunk/test/04-diff/09-MultiLevelDiff.test
+===================================================================
+--- trunk/test/04-diff/09-MultiLevelDiff.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/04-diff/09-MultiLevelDiff.test	2006-02-28 13:44:47 UTC (rev 89)
+@@ -11,9 +11,6 @@
+ # tt/two/one/t.test
+ 
+ 
+-. &quot;$MYDIR/indent.sh&quot;
+-
+-
+ MKDIR tt
+ cd &quot;$tt&quot; || ABORT &quot;Could not cd to $tt&quot;
+ 
+
+Modified: trunk/test/04-diff/10-Patch.test
+===================================================================
+--- trunk/test/04-diff/10-Patch.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/04-diff/10-Patch.test	2006-02-28 13:44:47 UTC (rev 89)
+@@ -4,9 +4,7 @@
+ # tests tmtest -d | patch
+ # Updated for tmtest 2.0 on 29 Jan 2005
+ 
+-. &quot;$MYDIR/indent.sh&quot;
+ 
+-
+ MKFILE tt &lt;&lt;-EOL
+ 	echo &quot;right output&quot;
+ 	STDOUT:
+@@ -20,7 +18,7 @@
+ tmtest --all-files -d &quot;$tt&quot; | (cd `dirname &quot;$tt&quot;` &amp;&amp; patch)
+ echo &quot;And the patched file:&quot;
+ echo
+-INDENT &lt; &quot;$tt&quot;
++INDENT &quot;\t&quot; &lt; &quot;$tt&quot;
+ 
+ MODIFY:
+   s/^patching .*/patching FILE/
+
+Modified: trunk/test/04-diff/11-MultiPatch.test
+===================================================================
+--- trunk/test/04-diff/11-MultiPatch.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/04-diff/11-MultiPatch.test	2006-02-28 13:44:47 UTC (rev 89)
+@@ -4,9 +4,7 @@
+ # tests tmtest -d | patch
+ # Updated for tmtest 2.0 on 29 Jan 2005
+ 
+-. &quot;$MYDIR/indent.sh&quot;
+ 
+-
+ MKFILE tt1 &lt;&lt;-EOL
+ 	echo &quot;right output1&quot;
+ 	STDOUT:
+@@ -30,11 +28,11 @@
+ 
+ tmtest --all-files -d &quot;$tt1&quot; &quot;$tt2&quot; &quot;$tt3&quot; | (cd `dirname &quot;$tt1&quot;` &amp;&amp; patch)
+ echo
+-INDENT &lt; &quot;$tt1&quot;
++INDENT &quot;\t&quot; &lt; &quot;$tt1&quot;
+ echo
+-INDENT &lt; &quot;$tt2&quot;
++INDENT &quot;\t&quot; &lt; &quot;$tt2&quot;
+ echo
+-INDENT &lt; &quot;$tt3&quot;
++INDENT &quot;\t&quot; &lt; &quot;$tt3&quot;
+ 
+ MODIFY:
+   s/^patching .*/patching FILE/
+
+Modified: trunk/test/04-diff/12-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/12-MultiLevelPatch.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/04-diff/12-MultiLevelPatch.test	2006-02-28 13:44:47 UTC (rev 89)
+@@ -11,9 +11,6 @@
+ # tt/two/one/t.test
+ 
+ 
+-. &quot;$MYDIR/indent.sh&quot;
+-
+-
+ MKDIR tt
+ cd &quot;$tt&quot; || ABORT &quot;Could not cd to $tt&quot;
+ 
+@@ -56,15 +53,15 @@
+ 
+ tmtest --all-files -d | patch -p0
+ echo
+-INDENT &lt; t.test
++INDENT &quot;\t&quot; &lt; t.test
+ echo
+-INDENT &lt; one/t.test
++INDENT &quot;\t&quot; &lt; one/t.test
+ echo
+-INDENT &lt; two/t1.test
++INDENT &quot;\t&quot; &lt; two/t1.test
+ echo
+-INDENT &lt; two/t2.test
++INDENT &quot;\t&quot; &lt; two/t2.test
+ echo
+-INDENT &lt; two/one/t.test
++INDENT &quot;\t&quot; &lt; two/one/t.test
+ 
+ rm -rf t.test one two
+ 
+
+Modified: trunk/test/04-diff/13-MultiLevelPatch.test
+===================================================================
+--- trunk/test/04-diff/13-MultiLevelPatch.test	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/04-diff/13-MultiLevelPatch.test	2006-02-28 13:44:47 UTC (rev 89)
+@@ -11,9 +11,6 @@
+ # tt/two/one/t.test
+ 
+ 
+-. &quot;$MYDIR/indent.sh&quot;
+-
+-
+ MKDIR tt
+ cd &quot;$tt&quot; || ABORT &quot;Could not cd to $tt&quot;
+ 
+@@ -57,15 +54,15 @@
+ 
+ tmtest --all-files -d .. | patch -p0
+ echo
+-INDENT &lt; ../t.test
++INDENT &quot;\t&quot; &lt; ../t.test
+ echo
+-INDENT &lt; ../one/t.test
++INDENT &quot;\t&quot; &lt; ../one/t.test
+ echo
+-INDENT &lt; t1.test
++INDENT &quot;\t&quot; &lt; t1.test
+ echo
+-INDENT &lt; t2.test
++INDENT &quot;\t&quot; &lt; t2.test
+ echo
+-INDENT &lt; one/t.test
++INDENT &quot;\t&quot; &lt; one/t.test
+ 
+ rm -rf ../t.test ../one ../two
+ 
+
+Deleted: trunk/test/04-diff/indent.sh
+===================================================================
+--- trunk/test/04-diff/indent.sh	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/test/04-diff/indent.sh	2006-02-28 13:44:47 UTC (rev 89)
+@@ -1,9 +0,0 @@
+-# This function indents each line of its stdin with a tab.
+-
+-INDENT ()
+-{
+-	while read LINE; do
+-		echo $'\t'&quot;$LINE&quot;
+-	done
+-}
+-
+
+Modified: trunk/tmlib.sh
+===================================================================
+--- trunk/tmlib.sh	2006-02-28 00:50:58 UTC (rev 88)
++++ trunk/tmlib.sh	2006-02-28 13:44:47 UTC (rev 89)
+@@ -5,13 +5,19 @@
+ 
+ 
+ # TODO: should these routines be prefixed by &quot;TM&quot;?
++# TODO: is there any way to get rid of MKFILE_EMPTY?  Can't MKFILE notice
++#       if read would block and, if so, just create an empty file.?
+ 
+ 
+-# Current functions:
+-# ASSERT: Stop a test if a condition fails
+-# ATEXIT: Ensure something gets cleaned up even if the test fails.
+-# MKFILE MKFILE_EMPTY: create temporary files
+-# MKDIR: create a temporary directory
++# tmlib functions:
++#
++# ASSERT:   Stop a test if a condition fails
++# TRAP:     Execute a command when an exception happens
++# ATEXIT:   Ensure a command runs even if the test fails (usually to clean up).
++# MKFILE_EMPTY: create an empty temporary file.
++# MKFILE:   Creates a temporary file with the given contents.
++# MKDIR:    create a temporary directory
++# INDENT:   indent some output.
+ 
+ 
+ 
+@@ -178,3 +184,36 @@
+ 	ATEXIT &quot;rmdir '$name'&quot;
+ }
+ 
++
++# 
++# INDENT
++#
++# Indents the output the given number of spaces.
++# Note that this only works with stdout!  You'll have to combine
++# the stdout and stderr streams if you want to indent stderr.
++#
++# By default this script indents each line with two spaces.
++# Pass an argument to tell this function what to put before
++# each line.
++#
++# Examples:
++#
++#    echo hi | INDENT &quot;\t&quot;      # indents stdout with a tab char
++#    cat /tmp 2&gt;&amp;1 | INDENT     # indents both stdout and stderr
++#    exec &gt; &gt;(INDENT)           # indents all further script output
++#
++
++INDENT ()
++{
++    # sed appears more binary transparent than bash's builtins so I'm
++    # using sed instead of read.
++
++    sed -e &quot;s/^/${1-  }/&quot;
++
++    # even though this might be faster, it mucks things up.
++    #
++    #	while read LINE; do
++    #		echo $'\t'&quot;$LINE&quot;
++    #	done
++}
++
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000005.html">[Tmtest-commits] [88] releases/0.92/: Tag release 0.92
+</A></li>
+	<LI>Next message: <A HREF="000007.html">[Tmtest-commits] [90] trunk: Wrote some tests to ensre that diff/patch work with
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#6">[ date ]</a>
+              <a href="thread.html#6">[ thread ]</a>
+              <a href="subject.html#6">[ subject ]</a>
+              <a href="author.html#6">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

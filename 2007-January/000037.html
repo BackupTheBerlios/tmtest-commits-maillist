@@ -1,0 +1,575 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [120] trunk/test/03-results: Remove the RESULT	section from tmtest
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B120%5D%20trunk/test/03-results%3A%20Remove%20the%20RESULT%0A%09section%20from%20tmtest&In-Reply-To=%3C200701240250.l0O2ofif026118%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000036.html">
+   <LINK REL="Next"  HREF="000038.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [120] trunk/test/03-results: Remove the RESULT	section from tmtest</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B120%5D%20trunk/test/03-results%3A%20Remove%20the%20RESULT%0A%09section%20from%20tmtest&In-Reply-To=%3C200701240250.l0O2ofif026118%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [120] trunk/test/03-results: Remove the RESULT	section from tmtest">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Wed Jan 24 03:52:07 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000036.html">[Tmtest-commits] [119] trunk: Further eradicate MODIFY from the	source tree and the
+</A></li>
+        <LI>Next message: <A HREF="000038.html">[Tmtest-commits] [121] trunk: Remove RESULT section from testfiles.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#37">[ date ]</a>
+              <a href="thread.html#37">[ thread ]</a>
+              <a href="subject.html#37">[ subject ]</a>
+              <a href="author.html#37">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 120
+Author:   bronson
+Date:     2007-01-24 03:50:38 +0100 (Wed, 24 Jan 2007)
+
+Log Message:
+-----------
+Remove the RESULT section from tmtest entirely.
+Use $? from within the testfile instead.
+
+Modified Paths:
+--------------
+    trunk/test/00-cmdline/10-CfgDir.test
+    trunk/test/00-cmdline/11-CfgMissing.test
+    trunk/test/00-cmdline/12-CfgEmpty.test
+    trunk/test/01-testfile/05-MultipleStdout.test
+    trunk/test/01-testfile/06-MultipleStderr.test
+    trunk/test/01-testfile/08-GarbageInStdout.test
+    trunk/test/01-testfile/09-GarbageInStderr.test
+    trunk/test/01-testfile/dumpscript/10-Stdout.test
+    trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+    trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+    trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+    trunk/test/01-testfile/dumpscript/14-DeepDir.test
+    trunk/test/01-testfile/dumpscript/15-PathOps.test
+    trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+    trunk/test/02-running/18-TestError.test
+    trunk/test/03-results/02-Nstderr.test
+    trunk/test/03-results/02-Nstdout.test
+    trunk/test/03-results/03-Nstderr.test
+    trunk/test/03-results/03-Nstdout.test
+    trunk/test/03-results/04-Nstderr.test
+    trunk/test/03-results/04-Nstdout.test
+    trunk/test/03-results/10-NoNLErrFail.test
+    trunk/test/03-results/10-NoNLFFail.test
+    trunk/test/03-results/10-NoNLFail.test
+    trunk/test/03-results/13-MultiNL.test
+    trunk/test/03-results/13-MultiNL2.test
+    trunk/test/03-results/13-MultiNL2Err.test
+    trunk/test/03-results/13-MultiNLErr.test
+    trunk/test/03-results/14-NoNLWarn.test
+    trunk/test/03-results/31-BinaryFail.test
+
+Removed Paths:
+-------------
+    trunk/test/01-testfile/01-ExitGarbageWarn.test
+Modified: trunk/test/00-cmdline/10-CfgDir.test
+===================================================================
+--- trunk/test/00-cmdline/10-CfgDir.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/00-cmdline/10-CfgDir.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -1,7 +1,9 @@
+ $tmtest --config=/tmp - &lt;&lt;-EOL
+ 	echo Test!
+ EOL
++echo RESULT: $?
+ 
+-RESULT: 2
+ STDERR:
+ Could not open /tmp: not a file!
++STDOUT:
++RESULT: 2
+
+Modified: trunk/test/00-cmdline/11-CfgMissing.test
+===================================================================
+--- trunk/test/00-cmdline/11-CfgMissing.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/00-cmdline/11-CfgMissing.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -15,6 +15,5 @@
+ 	Howdy
+ EOL
+ 
+-RESULT: 0
+ STDOUT:
+ Could not locate ...zzyzx: No such file or directory
+
+Modified: trunk/test/00-cmdline/12-CfgEmpty.test
+===================================================================
+--- trunk/test/00-cmdline/12-CfgEmpty.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/00-cmdline/12-CfgEmpty.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -3,7 +3,9 @@
+ 	STDOUT:
+ 	Howdy
+ EOL
++echo RESULT: $?
+ 
+-RESULT: 1
+ STDERR:
+ You must specify a directory for --config.
++STDOUT:
++RESULT: 1
+
+Deleted: trunk/test/01-testfile/01-ExitGarbageWarn.test
+===================================================================
+--- trunk/test/01-testfile/01-ExitGarbageWarn.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/01-ExitGarbageWarn.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -1,17 +0,0 @@
+-# Ensure we emit a warning if the user includes garbage in his
+-# exit value section.
+-
+-$tmtest -q - &lt;&lt;-EOL
+-	echo Howdy
+-	RESULT: 0
+-	junque
+-	STDOUT:
+-	Howdy
+-EOL
+-
+-STDERR:
+-(STDIN) line 3 Error: RESULT clause contains garbage.
+-STDOUT:
+-ok   (STDIN) 
+-
+-1 test run, 1 success, 0 failures.
+
+Modified: trunk/test/01-testfile/05-MultipleStdout.test
+===================================================================
+--- trunk/test/01-testfile/05-MultipleStdout.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/05-MultipleStdout.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -15,6 +15,6 @@
+ STDERR:
+ (STDIN) line 7 Error: duplicate STDOUT section.  Ignored.
+ STDOUT:
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/01-testfile/06-MultipleStderr.test
+===================================================================
+--- trunk/test/01-testfile/06-MultipleStderr.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/06-MultipleStderr.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -12,7 +12,6 @@
+ 
+ STDERR:
+ (STDIN) line 5 Error: duplicate STDERR section.  Ignored.
+-RESULT: 0
+ STDOUT:
+ ok   (STDIN) 
+ 
+
+Modified: trunk/test/01-testfile/08-GarbageInStdout.test
+===================================================================
+--- trunk/test/01-testfile/08-GarbageInStdout.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/08-GarbageInStdout.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -11,6 +11,6 @@
+ STDERR
+ (STDIN) line 2: unknown arguments &quot;crapola&quot;
+ STDOUT
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/01-testfile/09-GarbageInStderr.test
+===================================================================
+--- trunk/test/01-testfile/09-GarbageInStderr.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/09-GarbageInStderr.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -13,6 +13,6 @@
+ STDERR:
+ (STDIN) line 4: unknown arguments &quot;crapola&quot;
+ STDOUT:
+-FAIL (STDIN)                   OE.  stdout and stderr differed
++FAIL (STDIN)                   OE  stdout and stderr differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/01-testfile/dumpscript/10-Stdout.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/10-Stdout.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/dumpscript/10-Stdout.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -36,8 +36,6 @@
+ 	STDOUT: () { exit 0; }
+ 	STDERR () { exit 0; }
+ 	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+ 	
+ 	echo 'RUNNING: (STDIN)' &gt;&amp;FD
+ 	MYDIR='/tmp'
+
+Modified: trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/dumpscript/11-AbsoluteDir.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -51,8 +51,6 @@
+ 	STDOUT: () { exit 0; }
+ 	STDERR () { exit 0; }
+ 	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR'
+
+Modified: trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/dumpscript/12-TrailingParentDir.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -65,8 +65,6 @@
+ 	STDOUT: () { exit 0; }
+ 	STDERR () { exit 0; }
+ 	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR/di'
+@@ -75,5 +73,4 @@
+ 	. '/tmp/DIR/di/tt.test'
+ 	
+ 	echo DONE &gt;&amp;FD
+-RESULT: 0
+ STDERR:
+
+Modified: trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -66,8 +66,6 @@
+ 	STDOUT: () { exit 0; }
+ 	STDERR () { exit 0; }
+ 	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR/di'
+@@ -76,5 +74,4 @@
+ 	. '/tmp/DIR/di/tt.test'
+ 	
+ 	echo DONE &gt;&amp;FD
+-RESULT: 0
+ STDERR:
+
+Modified: trunk/test/01-testfile/dumpscript/14-DeepDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/14-DeepDir.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/dumpscript/14-DeepDir.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -68,8 +68,6 @@
+ 	STDOUT: () { exit 0; }
+ 	STDERR () { exit 0; }
+ 	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR/di'
+@@ -78,5 +76,4 @@
+ 	. '/tmp/DIR/di/tt.test'
+ 	
+ 	echo DONE &gt;&amp;FD
+-RESULT: 0
+ STDERR:
+
+Modified: trunk/test/01-testfile/dumpscript/15-PathOps.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/15-PathOps.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/dumpscript/15-PathOps.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -46,8 +46,6 @@
+ 	STDOUT: () { exit 0; }
+ 	STDERR () { exit 0; }
+ 	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+ 	
+ 	echo 'RUNNING: /tmp/DIR/tt.test' &gt;&amp;FD
+ 	MYDIR='/tmp/DIR'
+
+Modified: trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/01-testfile/dumpscript/16-AbsoluteDir.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -67,8 +67,6 @@
+ 	STDOUT: () { exit 0; }
+ 	STDERR () { exit 0; }
+ 	STDERR: () { exit 0; }
+-	RESULT () { exit 0; }
+-	RESULT: () { exit 0; }
+ 	
+ 	echo 'RUNNING: DIR/di/tt.test' &gt;&amp;FD
+ 	MYDIR='DIR/di'
+@@ -77,5 +75,4 @@
+ 	. 'DIR/di/tt.test'
+ 	
+ 	echo DONE &gt;&amp;FD
+-RESULT: 0
+ STDERR:
+
+Modified: trunk/test/02-running/18-TestError.test
+===================================================================
+--- trunk/test/02-running/18-TestError.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/02-running/18-TestError.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -1,5 +1,8 @@
+ # Sees what happens when we're in pedantic mode and there's an error
+ # in the test file.
++#
++# Now that we no longer have a RESULT section, I'm not sure this test
++# means much...   leaving it in anyway.
+ 
+ $tmtest $args -o - &lt;&lt;-EOL | sed -re &quot;s/: line [0-9]+:/: line BLAH:/&quot; | INDENT &quot;  &quot;
+ 	set -e
+@@ -15,6 +18,5 @@
+   iusedtobullseyewompratsinmypants
+   echo it ran
+   STDOUT:
+-  RESULT: 127
+   STDERR:
+   /bin/bash: line BLAH: iusedtobullseyewompratsinmypants: command not found
+
+Modified: trunk/test/03-results/02-Nstderr.test
+===================================================================
+--- trunk/test/03-results/02-Nstderr.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/02-Nstderr.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -10,7 +10,6 @@
+ 	howdy
+ EOL
+ STDOUT:
+-FAIL (STDIN)                   .E.  stderr differed
++FAIL (STDIN)                   .E  stderr differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT: 0
+
+Modified: trunk/test/03-results/02-Nstdout.test
+===================================================================
+--- trunk/test/03-results/02-Nstdout.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/02-Nstdout.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -10,7 +10,6 @@
+ 	howdy
+ EOL
+ STDOUT: 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT: 0
+
+Modified: trunk/test/03-results/03-Nstderr.test
+===================================================================
+--- trunk/test/03-results/03-Nstderr.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/03-Nstderr.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -10,7 +10,6 @@
+ 	Howdy 
+ EOL
+ STDOUT:
+-FAIL (STDIN)                   .E.  stderr differed
++FAIL (STDIN)                   .E  stderr differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT: 0
+
+Modified: trunk/test/03-results/03-Nstdout.test
+===================================================================
+--- trunk/test/03-results/03-Nstdout.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/03-Nstdout.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -11,7 +11,6 @@
+ 	Howdy 
+ EOL
+ STDOUT: 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT: 0
+
+Modified: trunk/test/03-results/04-Nstderr.test
+===================================================================
+--- trunk/test/03-results/04-Nstderr.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/04-Nstderr.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -13,7 +13,6 @@
+ 
+ 
+ STDOUT:
+-FAIL (STDIN)                   .E.  stderr differed
++FAIL (STDIN)                   .E  stderr differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT: 0
+
+Modified: trunk/test/03-results/04-Nstdout.test
+===================================================================
+--- trunk/test/03-results/04-Nstdout.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/04-Nstdout.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -12,7 +12,6 @@
+ 
+ EOL
+ STDOUT: 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+-RESULT: 0
+
+Modified: trunk/test/03-results/10-NoNLErrFail.test
+===================================================================
+--- trunk/test/03-results/10-NoNLErrFail.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/10-NoNLErrFail.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -12,6 +12,6 @@
+ 	Howdy
+ EOL
+ STDOUT : 
+-FAIL (STDIN)                   .E.  stderr differed
++FAIL (STDIN)                   .E  stderr differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/03-results/10-NoNLFFail.test
+===================================================================
+--- trunk/test/03-results/10-NoNLFFail.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/10-NoNLFFail.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -9,7 +9,7 @@
+ 
+ EOL
+ STDOUT : 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+ STDERR:
+
+Modified: trunk/test/03-results/10-NoNLFail.test
+===================================================================
+--- trunk/test/03-results/10-NoNLFail.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/10-NoNLFail.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -16,6 +16,6 @@
+ 	Howdy
+ EOL
+ STDOUT : 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/03-results/13-MultiNL.test
+===================================================================
+--- trunk/test/03-results/13-MultiNL.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/13-MultiNL.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -9,7 +9,7 @@
+ 
+ EOL
+ STDOUT: 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+ STDERR:
+
+Modified: trunk/test/03-results/13-MultiNL2.test
+===================================================================
+--- trunk/test/03-results/13-MultiNL2.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/13-MultiNL2.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -11,6 +11,6 @@
+ EOL
+ 
+ STDOUT: 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/03-results/13-MultiNL2Err.test
+===================================================================
+--- trunk/test/03-results/13-MultiNL2Err.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/13-MultiNL2Err.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -11,6 +11,6 @@
+ EOL
+ 
+ STDOUT:
+-FAIL (STDIN)                   .E.  stderr differed
++FAIL (STDIN)                   .E  stderr differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+Modified: trunk/test/03-results/13-MultiNLErr.test
+===================================================================
+--- trunk/test/03-results/13-MultiNLErr.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/13-MultiNLErr.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -9,7 +9,7 @@
+ 
+ EOL
+ STDOUT: 
+-FAIL (STDIN)                   .E.  stderr differed
++FAIL (STDIN)                   .E  stderr differed
+ 
+ 1 test run, 0 successes, 1 failure.
+ STDERR:
+
+Modified: trunk/test/03-results/14-NoNLWarn.test
+===================================================================
+--- trunk/test/03-results/14-NoNLWarn.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/14-NoNLWarn.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -14,7 +14,7 @@
+ 	Howdy
+ EOL
+ STDOUT : 
+-FAIL (STDIN)                   O..  stdout differed
++FAIL (STDIN)                   O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+ STDERR:
+
+Modified: trunk/test/03-results/31-BinaryFail.test
+===================================================================
+--- trunk/test/03-results/31-BinaryFail.test	2007-01-23 10:26:24 UTC (rev 119)
++++ trunk/test/03-results/31-BinaryFail.test	2007-01-24 02:50:38 UTC (rev 120)
+@@ -17,6 +17,6 @@
+ $tmtest --ignore-extension -q &quot;$tt&quot; | REPLACE &quot;$tt&quot; /tmp/FILE
+ 
+ STDOUT:
+-FAIL /tmp/FILE        O..  stdout differed
++FAIL /tmp/FILE        O.  stdout differed
+ 
+ 1 test run, 0 successes, 1 failure.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000036.html">[Tmtest-commits] [119] trunk: Further eradicate MODIFY from the	source tree and the
+</A></li>
+	<LI>Next message: <A HREF="000038.html">[Tmtest-commits] [121] trunk: Remove RESULT section from testfiles.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#37">[ date ]</a>
+              <a href="thread.html#37">[ thread ]</a>
+              <a href="subject.html#37">[ subject ]</a>
+              <a href="author.html#37">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

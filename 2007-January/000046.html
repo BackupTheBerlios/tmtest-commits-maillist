@@ -1,0 +1,315 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [129] trunk: Drastically improve the output from	failed unit tests.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B129%5D%20trunk%3A%20Drastically%20improve%20the%20output%20from%0A%09failed%20unit%20tests.&In-Reply-To=%3C200701250314.l0P3EpHP003677%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000045.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [129] trunk: Drastically improve the output from	failed unit tests.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B129%5D%20trunk%3A%20Drastically%20improve%20the%20output%20from%0A%09failed%20unit%20tests.&In-Reply-To=%3C200701250314.l0P3EpHP003677%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [129] trunk: Drastically improve the output from	failed unit tests.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Thu Jan 25 04:16:16 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000045.html">[Tmtest-commits] [128] trunk: Add the ability to view zutest	failures (zutest -f).
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#46">[ date ]</a>
+              <a href="thread.html#46">[ thread ]</a>
+              <a href="subject.html#46">[ subject ]</a>
+              <a href="author.html#46">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 129
+Author:   bronson
+Date:     2007-01-25 04:14:50 +0100 (Thu, 25 Jan 2007)
+
+Log Message:
+-----------
+Drastically improve the output from failed unit tests.
+
+Modified Paths:
+--------------
+    trunk/main.c
+    trunk/zutest.c
+    trunk/zutest.h
+
+Added Paths:
+-----------
+    trunk/test/02-running/03-Unit-Fails.test
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-01-25 02:30:51 UTC (rev 128)
++++ trunk/main.c	2007-01-25 03:14:50 UTC (rev 129)
+@@ -1059,6 +1059,7 @@
+ 		{&quot;output&quot;, 0, 0, 'o'},
+ 		{&quot;quiet&quot;, 0, 0, 'q'},
+ 		{&quot;run-unit-tests&quot;, 0, 0, 'U'},
++		{&quot;show-unit-fails&quot;, 0, 0, 257},
+ 		{&quot;version&quot;, 0, 0, 'V'},
+ 		{0, 0, 0, 0},
+ 	};
+@@ -1108,6 +1109,10 @@
+ 				run_unit_tests(all_unit_tests);
+ 				exit(0);
+ 
++			case 257:
++				run_unit_tests_showing_failures(all_unit_tests);
++				exit(0);
++
+ 			case 'V':
+ 				printf(&quot;tmtest version %s\n&quot;, stringify(VERSION));
+ 				exit(0);
+
+Added: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-01-25 02:30:51 UTC (rev 128)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-01-25 03:14:50 UTC (rev 129)
+@@ -0,0 +1,86 @@
++# This shows all the failure messages tested by zutest.
++# This tests zutest, not tmtest.  Oh well, it's worth keeping an
++# eye on our unit tester.
++
++# This won't work until we're fully event-based.
++# exec 2&gt; &gt;(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g 1&gt;&amp;2)
++#  ... run commands ...
++# exec 2&gt;&amp;-
++
++# This doesn't work either
++# $tmtest --show-unit-fails &gt; &gt;(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g) 2&gt;&amp;1
++
++$tmtest --show-unit-fails 2&gt;&amp;1 | sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g
++
++STDOUT:
++zutest.c:197: In test_assert_int, assert a == b failed. a==4 and b==3!
++zutest.c:198: In test_assert_int, assert a != c failed. a==4 and c==4!
++zutest.c:199: In test_assert_int, assert a &gt; c failed. a==4 and c==4!
++zutest.c:200: In test_assert_int, assert b &gt; c failed. b==3 and c==4!
++zutest.c:201: In test_assert_int, assert b &gt;= a failed. b==3 and a==4!
++zutest.c:202: In test_assert_int, assert c &lt; a failed. c==4 and a==4!
++zutest.c:203: In test_assert_int, assert c &lt; b failed. c==4 and b==3!
++zutest.c:204: In test_assert_int, assert a &lt;= b failed. a==4 and b==3!
++zutest.c:207: In test_assert_int, assert a == 0 failed. a==4!
++zutest.c:209: In test_assert_int, assert z != 0 failed. z==0!
++zutest.c:212: In test_assert_int, assert z &gt; 0 failed. z==0!
++zutest.c:213: In test_assert_int, assert n &gt; 0 failed. n==-1!
++zutest.c:217: In test_assert_int, assert a &lt;= 0 failed. a==4!
++zutest.c:220: In test_assert_int, assert z &lt; 0 failed. z==0!
++zutest.c:221: In test_assert_int, assert a &lt; 0 failed. a==4!
++zutest.c:225: In test_assert_int, assert n &gt;= 0 failed. n==-1!
++zutest.c:242: In test_assert_hex, assert a == b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
++zutest.c:243: In test_assert_hex, assert a != c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
++zutest.c:244: In test_assert_hex, assert a &gt; c failed. a==0xHEXDIGIT and c==0xHEXDIGIT!
++zutest.c:245: In test_assert_hex, assert b &gt; c failed. b==0xHEXDIGIT and c==0xHEXDIGIT!
++zutest.c:246: In test_assert_hex, assert b &gt;= a failed. b==0xHEXDIGIT and a==0xHEXDIGIT!
++zutest.c:247: In test_assert_hex, assert c &lt; a failed. c==0xHEXDIGIT and a==0xHEXDIGIT!
++zutest.c:248: In test_assert_hex, assert c &lt; b failed. c==0xHEXDIGIT and b==0xHEXDIGIT!
++zutest.c:249: In test_assert_hex, assert a &lt;= b failed. a==0xHEXDIGIT and b==0xHEXDIGIT!
++zutest.c:252: In test_assert_hex, assert a == 0 failed. a==0xHEXDIGIT!
++zutest.c:254: In test_assert_hex, assert z != 0 failed. z==0xHEXDIGIT!
++zutest.c:257: In test_assert_hex, assert z &gt; 0 failed. z==0xHEXDIGIT!
++zutest.c:258: In test_assert_hex, assert n &gt; 0 failed. n==0xHEXDIGIT!
++zutest.c:262: In test_assert_hex, assert a &lt;= 0 failed. a==0xHEXDIGIT!
++zutest.c:265: In test_assert_hex, assert z &lt; 0 failed. z==0xHEXDIGIT!
++zutest.c:266: In test_assert_hex, assert a &lt; 0 failed. a==0xHEXDIGIT!
++zutest.c:270: In test_assert_hex, assert n &gt;= 0 failed. n==0xHEXDIGIT!
++zutest.c:285: In test_assert_ptr, assert n != NULL failed. n==0xHEXDIGIT!
++zutest.c:286: In test_assert_ptr, assert ap == NULL failed. ap==0xHEXDIGIT!
++zutest.c:297: In test_assert_ptr, assert ap == bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
++zutest.c:298: In test_assert_ptr, assert ap != cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
++zutest.c:299: In test_assert_ptr, assert ap &gt; cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
++zutest.c:300: In test_assert_ptr, assert bp &gt; cp failed. bp==0xHEXDIGIT and cp==0xHEXDIGIT!
++zutest.c:301: In test_assert_ptr, assert bp &gt;= ap failed. bp==0xHEXDIGIT and ap==0xHEXDIGIT!
++zutest.c:302: In test_assert_ptr, assert cp &lt; ap failed. cp==0xHEXDIGIT and ap==0xHEXDIGIT!
++zutest.c:303: In test_assert_ptr, assert cp &lt; bp failed. cp==0xHEXDIGIT and bp==0xHEXDIGIT!
++zutest.c:304: In test_assert_ptr, assert ap &lt;= bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
++zutest.c:321: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
++zutest.c:322: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
++zutest.c:323: In test_assert_float, assert a &gt; c failed. a==0.000400 and c==0.000400!
++zutest.c:324: In test_assert_float, assert b &gt; c failed. b==0.000300 and c==0.000400!
++zutest.c:325: In test_assert_float, assert b &gt;= a failed. b==0.000300 and a==0.000400!
++zutest.c:326: In test_assert_float, assert c &lt; a failed. c==0.000400 and a==0.000400!
++zutest.c:327: In test_assert_float, assert c &lt; b failed. c==0.000400 and b==0.000300!
++zutest.c:328: In test_assert_float, assert a &lt;= b failed. a==0.000400 and b==0.000300!
++zutest.c:339: In test_assert_float, assert a == b failed. a==0.000400 and b==0.000300!
++zutest.c:340: In test_assert_float, assert a != c failed. a==0.000400 and c==0.000400!
++zutest.c:341: In test_assert_float, assert a &gt; c failed. a==0.000400 and c==0.000400!
++zutest.c:342: In test_assert_float, assert b &gt; c failed. b==0.000300 and c==0.000400!
++zutest.c:343: In test_assert_float, assert b &gt;= a failed. b==0.000300 and a==0.000400!
++zutest.c:344: In test_assert_float, assert c &lt; a failed. c==0.000400 and a==0.000400!
++zutest.c:345: In test_assert_float, assert c &lt; b failed. c==0.000400 and b==0.000300!
++zutest.c:346: In test_assert_float, assert a &lt;= b failed. a==0.000400 and b==0.000300!
++zutest.c:367: In test_assert_strings, assert a eq b failed. a is &quot;Bogozity&quot; and b is &quot;Arclamp&quot;!
++zutest.c:368: In test_assert_strings, assert a ne c failed. a is &quot;Bogozity&quot; and c is &quot;Bogozity&quot;!
++zutest.c:369: In test_assert_strings, assert a gt c failed. a is &quot;Bogozity&quot; and c is &quot;Bogozity&quot;!
++zutest.c:370: In test_assert_strings, assert b gt c failed. b is &quot;Arclamp&quot; and c is &quot;Bogozity&quot;!
++zutest.c:371: In test_assert_strings, assert b ge a failed. b is &quot;Arclamp&quot; and a is &quot;Bogozity&quot;!
++zutest.c:372: In test_assert_strings, assert c lt a failed. c is &quot;Bogozity&quot; and a is &quot;Bogozity&quot;!
++zutest.c:373: In test_assert_strings, assert c lt b failed. c is &quot;Bogozity&quot; and b is &quot;Arclamp&quot;!
++zutest.c:374: In test_assert_strings, assert a le b failed. a is &quot;Bogozity&quot; and b is &quot;Arclamp&quot;!
++zutest.c:377: In test_assert_strings, assert a is empty failed. a is: Bogozity
++zutest.c:378: In test_assert_strings, assert n is empty failed. n is NULL!
++zutest.c:381: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
++zutest.c:382: In test_assert_strings, assert n is nonempty failed. n is NULL!
++All OK.  11 tests run, 11 successes (195 assertions).
+
+Modified: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2007-01-25 02:30:51 UTC (rev 128)
++++ trunk/zutest.c	2007-01-25 03:14:50 UTC (rev 129)
+@@ -48,9 +48,8 @@
+ 		const char *msg, ...)
+ {
+ 	va_list ap;
+-
+ 	if(!inversion || show_failures) {
+-		fprintf(stderr, &quot;FAIL %s at %s line %d:\n\t&quot;, func, file, line);
++		fprintf(stderr, &quot;%s:%d: In %s, assert &quot;, file, line, func);
+ 		va_start(ap, msg);
+ 		vfprintf(stderr, msg, ap);
+ 		va_end(ap);
+@@ -119,6 +118,13 @@
+ }
+ 
+ 
++void run_unit_tests_showing_failures(const zutest_suites suites)
++{
++	show_failures = 1;
++	run_unit_tests(suites);
++}
++
++
+ /**
+  * Examines the command-line arguments.  If &quot;--run-unit-tests&quot; is
+  * the first argument, then it runs the unit tests (further arguments
+@@ -406,9 +412,11 @@
+ 	if(argc &gt; 1) {
+ 		// &quot;zutest -f&quot; prints all the failures in the zutest unit tests.
+ 		// This allows you to check the output of each macro.
+-		show_failures = 1;
++		run_unit_tests_showing_failures(all_zutests);
++	} else {
++		run_unit_tests(all_zutests);
+ 	}
+-	run_unit_tests(all_zutests);
++	// this will never be reached
+ 	return 0;
+ }
+ #endif
+
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-01-25 02:30:51 UTC (rev 128)
++++ trunk/zutest.h	2007-01-25 03:14:50 UTC (rev 129)
+@@ -38,6 +38,9 @@
+ #ifndef ZUTEST_H
+ #define ZUTEST_H
+ 
++//#define ZUTBECAUSE &quot; failed because &quot;
++#define ZUTBECAUSE &quot; failed. &quot;
++
+ // Note that Fail doesn't increment zutest_assertions (the number of assertions
+ // that have been made) because it doesn't assert anything.  It only fails.
+ // If you call fail, you might want to increment zutest_assertions
+@@ -88,9 +91,9 @@
+ 
+ // Pointers...
+ #define AssertPtr(p)  AssertFmt(p != NULL, \
+-		#p&quot; != NULL but &quot;#p&quot;==0x%lX!&quot;, (unsigned long)p)
++		#p&quot; != NULL&quot; ZUTBECAUSE #p&quot;==0x%lX!&quot;, (unsigned long)p)
+ #define AssertNull(p) AssertFmt(p == NULL, \
+-		#p&quot; == NULL but &quot;#p&quot;==0x%lX!&quot;, (unsigned long)p)
++		#p&quot; == NULL&quot; ZUTBECAUSE #p&quot;==0x%lX!&quot;, (unsigned long)p)
+ #define AssertNonNull(p) AssertPtr(p)
+ 
+ #define AssertPtrNull(p) AssertNull(p)
+@@ -128,13 +131,13 @@
+ 
+ // ensures a string is non-null but zero-length
+ #define AssertStrEmpty(p) do { zutest_assertions++; \
+-		if(!(p)) { Fail(#p&quot; should be empty but it is NULL!&quot;); } \
+-		if((p)[0]) { Fail(#p&quot; should be empty but it is: %s&quot;,p); } \
++		if(!(p)) { Fail(#p&quot; is empty&quot; ZUTBECAUSE #p &quot; is NULL!&quot;); } \
++		if((p)[0]) { Fail(#p&quot; is empty&quot; ZUTBECAUSE #p &quot; is: %s&quot;,p); } \
+ 	} while(0)
+ // ensures a string is non-null and non-zero-length
+ #define AssertStrNonEmpty(p) do { zutest_assertions++; \
+-		if(!(p)) { Fail(#p&quot; should be nonempty but it is NULL!&quot;); } \
+-		if(!(p)[0]) { Fail(#p&quot; should be nonempty but &quot;#p&quot;[0] is 0&quot;); } \
++		if(!(p)) { Fail(#p&quot; is nonempty&quot; ZUTBECAUSE #p &quot; is NULL!&quot;); } \
++		if(!(p)[0]) { Fail(#p&quot; is nonempty&quot; ZUTBECAUSE #p&quot;[0] is 0!&quot;); } \
+ 	} while(0)
+ 
+ 
+@@ -144,12 +147,12 @@
+ //
+ 
+ #define AssertExpType(x,y,op,type,fmt) \
+-	AssertFmt((type)x op (type)y, #x&quot; &quot;#op&quot; &quot;#y&quot; failed because &quot; \
++	AssertFmt((type)x op (type)y, #x&quot; &quot;#op&quot; &quot;#y ZUTBECAUSE \
+ 	#x&quot;==&quot;fmt&quot; and &quot;#y&quot;==&quot;fmt&quot;!&quot;, (type)x,(type)y)
+ // The failure &quot;x==0 failed because x==1 and 0==0&quot; s too wordy so we'll
+ // special-case checking against 0: x==0 failed because x==1).
+ #define AssertExpToZero(x,op,type,fmt) \
+-	AssertFmt((type)x op 0,#x&quot; &quot;#op&quot; 0 failed because &quot;#x&quot;==&quot;fmt&quot;!&quot;, (type)x)
++	AssertFmt((type)x op 0,#x&quot; &quot;#op&quot; 0&quot; ZUTBECAUSE #x&quot;==&quot;fmt&quot;!&quot;, (type)x)
+ 
+ #define AssertOp(x,y,op) AssertExpType(x,y,op,long,&quot;%ld&quot;)
+ #define AssertHexOp(x,y,op) AssertExpType(x,y,op,long,&quot;0x%lX&quot;)
+@@ -158,7 +161,7 @@
+ #define AssertPtrOp(x,y,op) AssertExpType(x,y,op,unsigned long,&quot;0x%lX&quot;)
+ #define AssertFloatOp(x,y,op) AssertExpType(x,y,op,double,&quot;%lf&quot;)
+ #define AssertStrOp(x,y,opn,op) AssertFmt(strcmp(x,y) op 0, \
+-	#x&quot; &quot;#opn&quot; &quot;#y&quot; but &quot;#x&quot; is \&quot;%s\&quot; and &quot;#y&quot; is \&quot;%s\&quot;!&quot;,x,y)
++	#x&quot; &quot;#opn&quot; &quot;#y ZUTBECAUSE #x&quot; is \&quot;%s\&quot; and &quot;#y&quot; is \&quot;%s\&quot;!&quot;,x,y)
+ 
+ 
+ 
+@@ -249,6 +252,7 @@
+  */
+ 
+ void run_unit_tests(const zutest_suites suites);
++void run_unit_tests_showing_failures(const zutest_suites suites);
+ 
+ 
+ /** Zutest's built-in test suite.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000045.html">[Tmtest-commits] [128] trunk: Add the ability to view zutest	failures (zutest -f).
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#46">[ date ]</a>
+              <a href="thread.html#46">[ thread ]</a>
+              <a href="subject.html#46">[ subject ]</a>
+              <a href="author.html#46">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

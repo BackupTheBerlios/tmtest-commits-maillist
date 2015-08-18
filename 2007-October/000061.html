@@ -1,0 +1,326 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [148] trunk: Update tmtest to latest mutest.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B148%5D%20trunk%3A%20Update%20tmtest%20to%20latest%20mutest.&In-Reply-To=%3C200710201939.l9KJdSfF000174%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000062.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [148] trunk: Update tmtest to latest mutest.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B148%5D%20trunk%3A%20Update%20tmtest%20to%20latest%20mutest.&In-Reply-To=%3C200710201939.l9KJdSfF000174%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [148] trunk: Update tmtest to latest mutest.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Sat Oct 20 21:39:28 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000062.html">[Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves	turds in /tmp.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 148
+Author:   bronson
+Date:     2007-10-20 21:38:59 +0200 (Sat, 20 Oct 2007)
+
+Log Message:
+-----------
+Update tmtest to latest mutest.
+
+Modified Paths:
+--------------
+    trunk/.settings/org.eclipse.cdt.core.prefs
+    trunk/Makefile
+    trunk/TODO
+    trunk/main.c
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/units.c
+    trunk/units.h
+
+Added Paths:
+-----------
+    trunk/.cproject
+Added: trunk/.cproject
+===================================================================
+--- trunk/.cproject	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/.cproject	2007-10-20 19:38:59 UTC (rev 148)
+@@ -0,0 +1,102 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;
++&lt;?fileVersion 4.0.0?&gt;
++
++&lt;cproject&gt;
++&lt;storageModule moduleId=&quot;org.eclipse.cdt.core.settings&quot;&gt;
++&lt;cconfiguration id=&quot;converted.config.1720523811&quot;&gt;
++&lt;storageModule moduleId=&quot;scannerConfiguration&quot;&gt;
++&lt;autodiscovery enabled=&quot;true&quot; problemReportingEnabled=&quot;true&quot; selectedProfileId=&quot;org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile&quot;/&gt;
++&lt;profile id=&quot;org.eclipse.cdt.make.core.GCCStandardMakePerProjectProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;false&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;specsFile&quot;&gt;
++&lt;runAction arguments=&quot;-E -P -v -dD ${plugin_state_location}/${specs_file}&quot; command=&quot;gcc&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;profile id=&quot;org.eclipse.cdt.make.core.GCCStandardMakePerFileProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;true&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;makefileGenerator&quot;&gt;
++&lt;runAction arguments=&quot;-f ${project_name}_scd.mk&quot; command=&quot;make&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;profile id=&quot;org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;false&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;specsFile&quot;&gt;
++&lt;runAction arguments=&quot;-E -P -v -dD ${plugin_state_location}/${specs_file}&quot; command=&quot;gcc&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;false&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;profile id=&quot;org.eclipse.cdt.managedbuilder.core.GCCWinManagedMakePerProjectProfile&quot;&gt;
++&lt;buildOutputProvider&gt;
++&lt;openAction enabled=&quot;false&quot; filePath=&quot;&quot;/&gt;
++&lt;parser enabled=&quot;true&quot;/&gt;
++&lt;/buildOutputProvider&gt;
++&lt;scannerInfoProvider id=&quot;specsFile&quot;&gt;
++&lt;runAction arguments=&quot;-E -P -v -dD ${plugin_state_location}/${specs_file}&quot; command=&quot;gcc&quot; useDefault=&quot;true&quot;/&gt;
++&lt;parser enabled=&quot;false&quot;/&gt;
++&lt;/scannerInfoProvider&gt;
++&lt;/profile&gt;
++&lt;/storageModule&gt;
++&lt;storageModule moduleId=&quot;org.eclipse.cdt.core.pathentry&quot;&gt;
++&lt;pathentry kind=&quot;src&quot; path=&quot;&quot;/&gt;
++&lt;pathentry kind=&quot;out&quot; path=&quot;&quot;/&gt;
++&lt;pathentry kind=&quot;con&quot; path=&quot;org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO&quot;/&gt;
++&lt;/storageModule&gt;
++&lt;storageModule moduleId=&quot;org.eclipse.cdt.make.core.buildtargets&quot;&gt;
++&lt;buildTargets&gt;
++&lt;target name=&quot;units&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments/&gt;
++&lt;buildTarget&gt;units&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;run-units&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments/&gt;
++&lt;buildTarget&gt;run-units&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;test&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments/&gt;
++&lt;buildTarget&gt;test&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;mutest&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments/&gt;
++&lt;buildTarget&gt;mutest&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;target name=&quot;run-mutest&quot; path=&quot;&quot; targetID=&quot;org.eclipse.cdt.make.MakeTargetBuilder&quot;&gt;
++&lt;buildCommand&gt;make&lt;/buildCommand&gt;
++&lt;buildArguments/&gt;
++&lt;buildTarget&gt;run-mutest&lt;/buildTarget&gt;
++&lt;stopOnError&gt;true&lt;/stopOnError&gt;
++&lt;useDefaultCommand&gt;true&lt;/useDefaultCommand&gt;
++&lt;/target&gt;
++&lt;/buildTargets&gt;
++&lt;/storageModule&gt;
++&lt;storageModule buildSystemId=&quot;org.eclipse.cdt.core.defaultConfigDataProvider&quot; id=&quot;converted.config.1720523811&quot; moduleId=&quot;org.eclipse.cdt.core.settings&quot; name=&quot;convertedConfig&quot;&gt;
++&lt;externalSettings/&gt;
++&lt;extensions&gt;
++&lt;extension id=&quot;org.eclipse.cdt.core.ELF&quot; point=&quot;org.eclipse.cdt.core.BinaryParser&quot;/&gt;
++&lt;/extensions&gt;
++&lt;/storageModule&gt;
++&lt;/cconfiguration&gt;
++&lt;/storageModule&gt;
++&lt;/cproject&gt;
+
+Modified: trunk/.settings/org.eclipse.cdt.core.prefs
+===================================================================
+--- trunk/.settings/org.eclipse.cdt.core.prefs	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/.settings/org.eclipse.cdt.core.prefs	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1,3 +1,5 @@
+-#Thu Feb 15 17:47:47 PST 2007
++#Sat Oct 20 16:53:25 GMT 2007
+ eclipse.preferences.version=1
++indexer/indexerId=org.eclipse.cdt.core.fastIndexer
+ indexerId=org.eclipse.cdt.core.fastIndexer
++instance/org.eclipse.core.net/org.eclipse.core.net.hasMigrated=true
+
+Modified: trunk/Makefile
+===================================================================
+--- trunk/Makefile	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/Makefile	2007-10-20 19:38:59 UTC (rev 148)
+@@ -71,8 +71,8 @@
+ 	tmtest test
+ 	
+ # Sometimes the app won't compile but we still want to run the unit tests...
+-units: $(USRC) $(UHDR) mutest/main.c $(SCANH) $(SCANC) Makefile
+-	$(CC) -g -Wall $(USRC) mutest/main.c $(SCANC) -o units -DUNITS_MAIN
++units: $(USRC) $(UHDR) $(SCANH) $(SCANC) Makefile
++	$(CC) -g -Wall $(USRC) $(SCANC) -o units -DUNITS_MAIN
+ 
+ run-units: units
+ 	./units
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/TODO	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1,4 +1,7 @@
+ 0.96:
++- The installed .tmtestrc has, at the very top:
++  # This is the system-wide configuration file for tmtest.
++  Uh, no.  It's certainly not system-wide!
+ - Put the zutest macro inside the tests (zutest { ... }) instead of outside.
+ - Remove the allfiles and quiet options.
+ - Is it possible to separate STDOUT and STDERR?  Maybe stderr comes first
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/main.c	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1051,11 +1051,13 @@
+ 				break;
+ 
+ 			case 'U':
+-				run_unit_tests(all_tests);
++				all_tests();
++				mutest_exit();
+ 				exit(0);
+ 
+ 			case 257:
+-				run_unit_tests_showing_failures(all_tests);
++				mutest_show_failures();
++				all_tests();
+ 				exit(0);
+ 
+ 			case 'V':
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-10-20 19:38:59 UTC (rev 148)
+@@ -1,6 +1,7 @@
+ # This shows all the failure messages tested by zutest.
+ # This tests zutest, not tmtest.  Oh well, it's worth keeping an
+ # eye on our unit tester.
++# UPDATE: now mutest includes an identical test.
+ 
+ # This won't work until we're fully event-based.
+ # exec 2&gt; &gt;(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g 1&gt;&amp;2)
+@@ -11,7 +12,7 @@
+ # $tmtest --show-unit-fails &gt; &gt;(sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g) 2&gt;&amp;1
+ 
+ $tmtest --show-unit-fails 2&gt;&amp;1 | \
+-	sed s/0x[A-Z0-9][A-Z0-9]*/0xHEXDIGIT/g | \
++	sed s/0x[A-Fa-f0-9][A-Fa-f0-9]*/0xHEXDIGIT/g | \
+ 	sed s/^.*\\.c:[0-9]\*:/mutest.c:NNN:/
+ 
+ STDOUT:
+@@ -47,7 +48,7 @@
+ mutest.c:NNN: In test_assert_hex, assert z &lt; 0 failed. z==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_hex, assert a &lt; 0 failed. a==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_hex, assert n &gt;= 0 failed. n==0xHEXDIGIT!
+-mutest.c:NNN: In test_assert_ptr, assert n != NULL failed. n==0xHEXDIGIT!
++mutest.c:NNN: In test_assert_ptr, assert n != NULL failed. n is NULL!
+ mutest.c:NNN: In test_assert_ptr, assert ap == NULL failed. ap==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_ptr, assert ap == bp failed. ap==0xHEXDIGIT and bp==0xHEXDIGIT!
+ mutest.c:NNN: In test_assert_ptr, assert ap != cp failed. ap==0xHEXDIGIT and cp==0xHEXDIGIT!
+@@ -85,4 +86,3 @@
+ mutest.c:NNN: In test_assert_strings, assert n is empty failed. n is NULL!
+ mutest.c:NNN: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
+ mutest.c:NNN: In test_assert_strings, assert n is nonempty failed. n is NULL!
+-All OK.  33 tests run, 33 successes (252 assertions).
+
+Modified: trunk/units.c
+===================================================================
+--- trunk/units.c	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/units.c	2007-10-20 19:38:59 UTC (rev 148)
+@@ -8,3 +8,19 @@
+ 	compare_tests();
+ 	pathstack_tests();
+ }
++
++
++#ifdef UNITS_MAIN
++
++#include &quot;mutest/mutest.h&quot;
++
++int main(int argc, char **argv)
++{
++	all_tests();
++	mutest_exit();
++	
++	// this will never be reached
++	return 0;
++}
++
++#endif
+
+Modified: trunk/units.h
+===================================================================
+--- trunk/units.h	2007-04-05 06:46:13 UTC (rev 147)
++++ trunk/units.h	2007-10-20 19:38:59 UTC (rev 148)
+@@ -3,6 +3,6 @@
+ void compare_tests();
+ void pathstack_tests();
+ 
+-void run_all_unit_tests();
++void all_tests();
+ 
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000062.html">[Tmtest-commits] [149] trunk: Make tmtest abort if MKDIR leaves	turds in /tmp.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#61">[ date ]</a>
+              <a href="thread.html#61">[ thread ]</a>
+              <a href="subject.html#61">[ subject ]</a>
+              <a href="author.html#61">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

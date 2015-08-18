@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [110] trunk: Fix format strings so test summary looks better, Get rid of
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B110%5D%20trunk%3A%20Fix%20format%20strings%20so%20test%20summary%20looks%20better%2C%20Get%20rid%20of&In-Reply-To=%3C200603072140.k27LeIj8007088%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000026.html">
+   <LINK REL="Next"  HREF="000028.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [110] trunk: Fix format strings so test summary looks better, Get rid of</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B110%5D%20trunk%3A%20Fix%20format%20strings%20so%20test%20summary%20looks%20better%2C%20Get%20rid%20of&In-Reply-To=%3C200603072140.k27LeIj8007088%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [110] trunk: Fix format strings so test summary looks better, Get rid of">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Mar  7 22:40:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000026.html">[Tmtest-commits] [109] trunk: Used to report user+sys time.
+</A></li>
+        <LI>Next message: <A HREF="000028.html">[Tmtest-commits] [111] trunk: Repair an 8-byte memory leak (well, depending on how many
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#27">[ date ]</a>
+              <a href="thread.html#27">[ thread ]</a>
+              <a href="subject.html#27">[ subject ]</a>
+              <a href="author.html#27">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 110
+Author:   bronson
+Date:     2006-03-07 22:40:08 +0100 (Tue, 07 Mar 2006)
+
+Log Message:
+-----------
+Fix format strings so test summary looks better, Get rid of a spurios ;
+
+Modified Paths:
+--------------
+    trunk/rusage.c
+    trunk/tmtest.conf
+Modified: trunk/rusage.c
+===================================================================
+--- trunk/rusage.c	2006-03-07 21:36:44 UTC (rev 109)
++++ trunk/rusage.c	2006-03-07 21:40:08 UTC (rev 110)
+@@ -54,7 +54,7 @@
+ 			(int)(100.0*schild/total+0.5));
+ 			*/
+ 
+-	printf(&quot;%.2fs (%02d%% user, %02d%% sys)&quot;,
++	printf(&quot;%.2fs (%d%% user, %d%% sys)&quot;,
+ 			total,
+ 			(int)(100.0*uchild/total+0.5),
+ 			(int)(100.0*schild/total+0.5));
+
+Modified: trunk/tmtest.conf
+===================================================================
+--- trunk/tmtest.conf	2006-03-07 21:36:44 UTC (rev 109)
++++ trunk/tmtest.conf	2006-03-07 21:40:08 UTC (rev 110)
+@@ -40,7 +40,7 @@
+ # else (like /usr/bin or ~/bin).  This ensures that we lauch the unstable
+ # copy of tmtest to handle each subtest.
+ 
+-PATH=&quot;$MYDIR:$PATH&quot;;
++PATH=&quot;$MYDIR:$PATH&quot;
+ 
+ 
+ # All testfiles include $args in the arguments to the subexec.
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000026.html">[Tmtest-commits] [109] trunk: Used to report user+sys time.
+</A></li>
+	<LI>Next message: <A HREF="000028.html">[Tmtest-commits] [111] trunk: Repair an 8-byte memory leak (well, depending on how many
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#27">[ date ]</a>
+              <a href="thread.html#27">[ thread ]</a>
+              <a href="subject.html#27">[ subject ]</a>
+              <a href="author.html#27">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [101] releases/0.92: Minor update to 0.92 to make it distributable and
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B101%5D%20releases/0.92%3A%20Minor%20update%20to%200.92%20to%20make%20it%20distributable%20and&In-Reply-To=%3C200603030006.k2306Wo0019790%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000017.html">
+   <LINK REL="Next"  HREF="000019.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [101] releases/0.92: Minor update to 0.92 to make it distributable and</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B101%5D%20releases/0.92%3A%20Minor%20update%20to%200.92%20to%20make%20it%20distributable%20and&In-Reply-To=%3C200603030006.k2306Wo0019790%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [101] releases/0.92: Minor update to 0.92 to make it distributable and">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Fri Mar  3 01:06:32 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000017.html">[Tmtest-commits] [100] trunk: Purge ATEXIT from the template, minor cleanup
+</A></li>
+        <LI>Next message: <A HREF="000019.html">[Tmtest-commits] [102] releases: Release 0.94
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#18">[ date ]</a>
+              <a href="thread.html#18">[ thread ]</a>
+              <a href="subject.html#18">[ subject ]</a>
+              <a href="author.html#18">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 101
+Author:   bronson
+Date:     2006-03-03 01:06:24 +0100 (Fri, 03 Mar 2006)
+
+Log Message:
+-----------
+Minor update to 0.92 to make it distributable and testable.
+
+Modified Paths:
+--------------
+    releases/0.92/tmtest.conf
+
+Added Paths:
+-----------
+    releases/0.92/make-dist
+Added: releases/0.92/make-dist
+===================================================================
+--- releases/0.92/make-dist	2006-03-03 00:01:32 UTC (rev 100)
++++ releases/0.92/make-dist	2006-03-03 00:06:24 UTC (rev 101)
+@@ -0,0 +1,61 @@
++#!/bin/sh
++
++# make-dist (for tmtest)
++# Scott Bronson
++# 30 May 2000
++
++
++name=tmtest
++version=$(perl -ne '/VERSION=([0-9]+\.[0-9A-Za-z_.-]+)/ &amp;&amp; print $1' Makefile)
++
++if [ ! &quot;$version&quot; ] ; then echo &quot;Could not figure out version.&quot; ; exit 1 ; fi
++
++if grep -vw $version CHANGES 2&gt;&amp;1 &gt;/dev/null; then echo -n
++else echo echo &quot;Did you update the Changelog?&quot; ; exit 1 ; fi
++
++pushd . 2&gt;&amp;1 &gt; /dev/null
++
++# Ensure tree is ready to go
++make distclean &gt; /dev/null || exit 1
++make dist &gt; /dev/null || exit 1
++
++# get rid of possible old files
++rm -rf /tmp/$name-$version
++rm -rf /tmp/$name-$version.tar.gz
++
++# make a working copy in /tmp
++cp -r . /tmp/$name-$version
++
++# remove unneeded files
++cd /tmp/$name-$version
++find . -name .svn | xargs rm -rf
++rm -f Makefile.old
++rm make-dist
++
++# check for any invisible files
++find . | grep /\\. &amp;&amp; echo &quot;BAD FILES!  Won't finish.&quot; &amp;&amp; exit 1
++
++# check the version number on all modules
++if ((0)) ; then
++find . -path './t' -prune -o -name '*.pm' -print | while read file; do
++	fver=$(perl -MExtUtils::MakeMaker -le 'print MM-&gt;parse_version(shift)' &quot;$file&quot;)
++	if [ &quot;x$version&quot; != &quot;x$fver&quot; ]; then
++		echo &quot;Versions don't match!  $file is $fver, should be $version.&quot;
++		exit 1
++	fi
++done
++fi
++# bash is really weird
++if [ &quot;$?&quot; != &quot;0&quot; ]; then exit 1; fi
++
++# show a list of files so we can see questionable stuff
++find .
++
++# tar it up
++cd ..
++tar zcf $name-$version.tar.gz $name-$version
++
++# we're done
++echo &quot;New dist is in /tmp/$name-$version.tar.gz, enjoy!&quot;
++popd 2&gt;&amp;1 &gt; /dev/null
++
+
+
+Property changes on: releases/0.92/make-dist
+___________________________________________________________________
+Name: svn:executable
+   + *
+
+Modified: releases/0.92/tmtest.conf
+===================================================================
+--- releases/0.92/tmtest.conf	2006-03-03 00:01:32 UTC (rev 100)
++++ releases/0.92/tmtest.conf	2006-03-03 00:06:24 UTC (rev 101)
+@@ -49,3 +49,6 @@
+ 
+ args=&quot;--config=$MYPATH/test/tmtest.sub.conf&quot;
+ 
++# This allows us to run tests without installing tmtest first.
++. tmlib.sh
++
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000017.html">[Tmtest-commits] [100] trunk: Purge ATEXIT from the template, minor cleanup
+</A></li>
+	<LI>Next message: <A HREF="000019.html">[Tmtest-commits] [102] releases: Release 0.94
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#18">[ date ]</a>
+              <a href="thread.html#18">[ thread ]</a>
+              <a href="subject.html#18">[ subject ]</a>
+              <a href="author.html#18">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

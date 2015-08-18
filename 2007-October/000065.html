@@ -1,0 +1,408 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [152] trunk: Add .tmtest-ignore (allows whole	directories to be ignored)
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B152%5D%20trunk%3A%20Add%20.tmtest-ignore%20%28allows%20whole%0A%09directories%20to%20be%20ignored%29&In-Reply-To=%3C200710210759.l9L7xG0r031063%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000064.html">
+   <LINK REL="Next"  HREF="000066.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [152] trunk: Add .tmtest-ignore (allows whole	directories to be ignored)</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B152%5D%20trunk%3A%20Add%20.tmtest-ignore%20%28allows%20whole%0A%09directories%20to%20be%20ignored%29&In-Reply-To=%3C200710210759.l9L7xG0r031063%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [152] trunk: Add .tmtest-ignore (allows whole	directories to be ignored)">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Sun Oct 21 09:59:16 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000064.html">[Tmtest-commits] [151] trunk: Fix up docs a bit,	make install message a little nicer, 
+</A></li>
+        <LI>Next message: <A HREF="000066.html">[Tmtest-commits] [153] trunk: Get rid of misleading &quot;system-wide&quot;	at the top of
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 152
+Author:   bronson
+Date:     2007-10-21 09:59:04 +0200 (Sun, 21 Oct 2007)
+
+Log Message:
+-----------
+Add .tmtest-ignore (allows whole directories to be ignored)
+
+Modified Paths:
+--------------
+    trunk/CHANGES
+    trunk/TODO
+    trunk/main.c
+    trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+    trunk/test/02-running/05-Running.test
+    trunk/tmtest.pod
+
+Added Paths:
+-----------
+    trunk/test/02-running/24-SkipDirectory.test
+    trunk/test/02-running/25-SkipMyDirectory.test
+    trunk/test/02-running/26-SkipNamedDirectory.test
+Modified: trunk/CHANGES
+===================================================================
+--- trunk/CHANGES	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/CHANGES	2007-10-21 07:59:04 UTC (rev 152)
+@@ -1,3 +1,6 @@
++- Added .tmtest-ignore (allows whole directories to be skipped).
++- Fixed a bug where there was a chance that the test would not complete
++  if tmtest spent any time looking through folders with no testfiles.
+ - Rewrote the path handling code and gave it some unit tests.
+ - Added -f command-line option to print only the failed tests.
+ - Made REPLACE handle multiple text substitutions; could only handle 1 before.
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/TODO	2007-10-21 07:59:04 UTC (rev 152)
+@@ -70,6 +70,12 @@
+   test; it's helped in the past to ensure that we don't leak fds.
+ 
+ 0.98:
++- Document tmtest and testfile with naturaldocs?
++  This should be an example of how to print all important variables.
++	for i in MYDIR MYFILE TESTDIR TESTFILE PWD; do
++		eval o=\$$i
++		echo $i: $o
++	done
+ - Change the I/O scheme to be event based.  Get rid of the tempfiles.
+   Convert to using the async io library.  Don't use temporary files.
+   This would allow us to recognize that the test is disabled before
+
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/main.c	2007-10-21 07:59:04 UTC (rev 152)
+@@ -681,14 +681,6 @@
+ {
+ 	char buf[PATH_MAX];
+ 	struct pathstack stack;
+-
+-	if(outmode == outmode_test) {
+-		if(print_absolute) {
+-			printf(&quot;\nProcessing %s\n&quot;, abspath);
+-		} else {
+-			printf(&quot;\nProcessing ./%s\n&quot;, origpath);
+-		}
+-	}
+ 	
+ 	pathstack_init(&amp;stack, buf, sizeof(buf), abspath);
+ 	pathstack_normalize(&amp;stack);
+@@ -696,7 +688,7 @@
+ }
+ 
+ 
+-static void print_relative_dir(struct pathstack *ps, int print_absolute)
++static void print_processing_progress(struct pathstack *ps, int print_absolute)
+ {
+ 	char buf[PATH_MAX];
+ 	
+@@ -704,6 +696,10 @@
+     if(outmode != outmode_test) {
+     	return;
+     }
++    
++    if(print_absolute == -1) {
++    	return;
++    }
+ 
+ 	if(print_absolute) {
+ 		printf(&quot;\nProcessing %s\n&quot;, pathstack_absolute(ps));
+@@ -712,11 +708,13 @@
+ 			printf(&quot;Path couldn't be converted \&quot;\%s\&quot;\n&quot;, pathstack_absolute(ps));
+ 			exit(runtime_error);
+ 		}
+-		printf(&quot;\nProcessing ./%s\n&quot;, buf);
++		// special-case &quot;.&quot; so we don't print the silly-looking &quot;./.&quot;
++		printf(&quot;\nProcessing %s%s\n&quot;, (buf[0] == '.' &amp;&amp; buf[1] == '\0' ? &quot;&quot; : &quot;./&quot;), buf);
+ 	}
+ }
+ 
+ 
++
+ /** Process all entries in a directory.
+  *
+  * @param ps The pathstack to use.  It comes pre-set-up with whatever
+@@ -750,6 +748,12 @@
+     for(i=0; i&lt;n; i++) {
+         if(!is_dash(ents[i])) {
+ 			const char *cp = ents[i];
++			
++			if(strcmp(ents[i], &quot;.tmtest-ignore&quot;) == 0) {
++				// skip this directory but continue processing
++				goto abort;
++			}
++			
+ 			if(ents[i][0] != '/') {
+ 				ret = pathstack_push(ps, ents[i], &amp;save);
+ 				if(ret != 0) {
+@@ -771,6 +775,9 @@
+         }
+     }
+     
++    // Now that we're sure we're going to process this dir, print a notice.
++    print_processing_progress(ps, print_absolute);
++    
+     // process all files in dir
+     for(i=0; i&lt;n; i++) {
+         if(is_dash(ents[i]) || S_ISREG(modes[i])) {
+@@ -812,7 +819,6 @@
+ 				} else {
+ 					// Otherwise, we just push the path and chug.
+ 					ret = pathstack_push(ps, ents[i], &amp;save);
+-					print_relative_dir(ps, print_absolute);
+ 					keepontruckin = process_dir(ps, print_absolute);
+ 					pathstack_pop(ps, &amp;save);
+ 				}
+@@ -831,11 +837,25 @@
+ 
+ /** This routine filters out any dirents that begin with '.'.
+  *  We don't want to process any hidden files or special directories.
++ * 
++ * NOTE: we DO allow .tmtest-ignore files through.  Otherwise, how
++ * would the directory scanner know which directories to skip?
+  */
+ 
+ static int select_nodots(const struct dirent *d)
+ {
+-    return d-&gt;d_name[0] != '.';
++	// common case: if the filename doesn't begin with a dot, use it.
++    if(d-&gt;d_name[0] != '.') {
++    	return 1;
++    }
++    
++    // if it's named '.tmtest-ignore', use it
++    if(strcmp(d-&gt;d_name, &quot;.tmtest-ignore&quot;) == 0) {
++    	return 1;
++    }
++    
++    // otherwise, ignore it.
++    return 0;
+ }
+ 
+ 
+@@ -1195,9 +1215,6 @@
+     if(optind &lt; argc) {
+ 		process_argv(&amp;pathstack, argv+optind);
+     } else {
+-        if(outmode == outmode_test) {
+-            printf(&quot;\nProcessing .\n&quot;);
+-        }
+         process_dir(&amp;pathstack, 0);
+     }
+     stop_tests();
+
+Modified: trunk/test/01-testfile/dumpscript/13-BareParentDir.test
+===================================================================
+--- trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/01-testfile/dumpscript/13-BareParentDir.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -32,7 +32,7 @@
+ 	
+ 	Processing ./..
+ 	
+-	Processing ./.
++	Processing .
+ 	echo START &gt;&amp;FD
+ 	
+ 	ABORT ()  { echo &quot;ABORTED: $*&quot; &gt;&FD; exit 0; }
+
+Modified: trunk/test/02-running/05-Running.test
+===================================================================
+--- trunk/test/02-running/05-Running.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/05-Running.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -52,7 +52,7 @@
+ Processing ./sub
+ ok   sub.test 
+ 
+-Processing ./.
++Processing .
+ ok   mid.test 
+ 
+ Processing ./sub
+@@ -61,7 +61,7 @@
+ Processing ./..
+ ok   sup.test 
+ 
+-Processing ./.
++Processing .
+ ok   mid.test 
+ 
+ Processing ./sub
+
+Added: trunk/test/02-running/24-SkipDirectory.test
+===================================================================
+--- trunk/test/02-running/24-SkipDirectory.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/24-SkipDirectory.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -0,0 +1,40 @@
++# Ensures that a directory disabled by a .tmtest-ignore file is skipped
++# but subsequent tests are still run.
++
++MKDIR dir
++cd &quot;$dir&quot;
++
++mkdir disabled
++touch disabled/.tmtest-ignore
++cat &gt; disabled/t1.test &lt;&lt;-EOs
++	echo hi
++	STDOUT:
++	hi
++EOs
++
++mkdir enabled
++cat &gt; enabled/t2.test &lt;&lt;-EOs
++	echo he
++	STDOUT:
++	he
++EOs
++
++cat &gt; t3.test &lt;&lt;-EOs
++	echo he
++	STDOUT:
++	he
++EOs
++
++$tmtest -q | REPLACE &quot;$dir&quot; /tmp/DIR
++rm -rf &quot;$dir&quot;/*
++
++
++STDOUT:
++
++Processing .
++ok   t3.test 
++
++Processing ./enabled
++ok   t2.test 
++
++2 tests run, 2 successes, 0 failures.
+
+Added: trunk/test/02-running/25-SkipMyDirectory.test
+===================================================================
+--- trunk/test/02-running/25-SkipMyDirectory.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/25-SkipMyDirectory.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -0,0 +1,26 @@
++# Ensures that a skip file in the starting directory results in no tests run.
++
++MKDIR dir
++cd &quot;$dir&quot;
++
++cat &gt; t1.test &lt;&lt;-EOs
++	echo hi
++	STDOUT:
++	hi
++EOs
++
++cat &gt; t2.test &lt;&lt;-EOs
++	echo he
++	STDOUT:
++	he
++EOs
++
++touch .tmtest-ignore
++
++$tmtest -q | REPLACE &quot;$dir&quot; /tmp/DIR
++rm t1.test t2.test .tmtest-ignore
++
++
++STDOUT:
++
++0 tests run, 0 successes, 0 failures.
+
+Added: trunk/test/02-running/26-SkipNamedDirectory.test
+===================================================================
+--- trunk/test/02-running/26-SkipNamedDirectory.test	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/test/02-running/26-SkipNamedDirectory.test	2007-10-21 07:59:04 UTC (rev 152)
+@@ -0,0 +1,21 @@
++# Ensures that a directory disabled by a .tmtest-ignore file is skipped
++# but subsequent tests are still run.
++
++MKDIR dir
++cd &quot;$dir&quot;
++
++mkdir disabled
++touch disabled/.tmtest-ignore
++cat &gt; disabled/t1.test &lt;&lt;-EOs
++	echo hi
++	STDOUT:
++	hi
++EOs
++
++$tmtest -q disabled | REPLACE &quot;$dir&quot; /tmp/DIR
++rm -rf &quot;$dir&quot;/disabled
++
++
++STDOUT:
++
++0 tests run, 0 successes, 0 failures.
+
+Modified: trunk/tmtest.pod
+===================================================================
+--- trunk/tmtest.pod	2007-10-21 00:57:17 UTC (rev 151)
++++ trunk/tmtest.pod	2007-10-21 07:59:04 UTC (rev 152)
+@@ -101,6 +101,14 @@
+ 
+ =back
+ 
++If you place an empty file named &quot;.tmtest-ignore&quot; into a directory,
++tmtest will ignore that directory and all directories below it.
++tmtest does not check parent directories for a .tmtest-ignore file!
++It only checks for it when descending into subdirectories.  Therefore,
++if you explicitly name a testfile on the command-line, the test will
++be run even if it's in the same directory as a .tmtest-ignore file.
++
++
+ =head1 EXIT VALUE
+ 
+ tmtest exits with the number of tests that failed or were aborted.
+@@ -120,6 +128,7 @@
+ =head1 TEST RESULTS
+ 
+ There are two schools of thought on how testfiles should be written:
++
+ - like a shell script, where you need to manually check after the
+ commands that matter if they failed or not.
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000064.html">[Tmtest-commits] [151] trunk: Fix up docs a bit,	make install message a little nicer, 
+</A></li>
+	<LI>Next message: <A HREF="000066.html">[Tmtest-commits] [153] trunk: Get rid of misleading &quot;system-wide&quot;	at the top of
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

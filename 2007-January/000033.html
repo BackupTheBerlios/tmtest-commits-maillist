@@ -1,0 +1,239 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [116] trunk: Make source code 64-bit friendly.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B116%5D%20trunk%3A%20Make%20source%20code%2064-bit%20friendly.&In-Reply-To=%3C200701230555.l0N5t7L0030050%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000034.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [116] trunk: Make source code 64-bit friendly.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B116%5D%20trunk%3A%20Make%20source%20code%2064-bit%20friendly.&In-Reply-To=%3C200701230555.l0N5t7L0030050%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [116] trunk: Make source code 64-bit friendly.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Tue Jan 23 06:56:27 CET 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000034.html">[Tmtest-commits] [117] trunk: Create the TOUCH tmlib function,	mark MKFILE_EMPTY for
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#33">[ date ]</a>
+              <a href="thread.html#33">[ thread ]</a>
+              <a href="subject.html#33">[ subject ]</a>
+              <a href="author.html#33">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 116
+Author:   bronson
+Date:     2007-01-23 06:55:05 +0100 (Tue, 23 Jan 2007)
+
+Log Message:
+-----------
+Make source code 64-bit friendly.
+
+Modified Paths:
+--------------
+    trunk/re2c/read-fd.c
+    trunk/re2c/scan.h
+    trunk/test.c
+    trunk/tfscan.c
+Modified: trunk/re2c/read-fd.c
+===================================================================
+--- trunk/re2c/read-fd.c	2006-03-08 22:03:36 UTC (rev 115)
++++ trunk/re2c/read-fd.c	2007-01-23 05:55:05 UTC (rev 116)
+@@ -33,7 +33,7 @@
+ 
+     // ensure we get a full read
+     do {
+-        n = read((int)ss-&gt;readref, (void*)ss-&gt;limit, avail);
++        n = read((long int)ss-&gt;readref, (void*)ss-&gt;limit, avail);
+     } while(n &lt; 0 &amp;&amp; errno == EINTR);
+     ss-&gt;limit += n;
+ 
+@@ -58,7 +58,7 @@
+         return 0;
+     }
+ 
+-    ss-&gt;readref = (void*)fd;
++    ss-&gt;readref = (void*)(long int)fd;
+     ss-&gt;read = readfd_read;
+     return ss;
+ }
+@@ -101,7 +101,7 @@
+ 
+ void readfd_close(scanstate *ss)
+ {
+-    close((int)ss-&gt;readref);
++    close((long int)ss-&gt;readref);
+     dynscan_free(ss);
+ }
+ 
+
+Modified: trunk/re2c/scan.h
+===================================================================
+--- trunk/re2c/scan.h	2006-03-08 22:03:36 UTC (rev 115)
++++ trunk/re2c/scan.h	2007-01-23 05:55:05 UTC (rev 116)
+@@ -252,6 +252,7 @@
+ #define current_token_end(ss) ((ss)-&gt;cursor)
+ 
+ /** Returns the length of the most recently scanned token.
++ *  (on all compilers this should be a signed long int)
+  */
+ 
+ #define token_length(ss) ((ss)-&gt;cursor - (ss)-&gt;token)
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2006-03-08 22:03:36 UTC (rev 115)
++++ trunk/test.c	2007-01-23 05:55:05 UTC (rev 116)
+@@ -168,7 +168,7 @@
+             exit(10);
+         } else if(tok == stGARBAGE) {
+ 			fprintf(stderr, &quot;Garbage on line %d in the status file: '%.*s'\n&quot;,
+-					ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
++					ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+ 		} else {
+ 			state = tok;
+ 		}
+@@ -185,11 +185,11 @@
+ 						lastfile_good = 1;
+ 					} else {
+ 						fprintf(stderr, &quot;CONFIG needs arg on line %d of the status file: '%.*s'\n&quot;,
+-								ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
++								ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+ 					}
+ 				} else {
+ 					fprintf(stderr, &quot;CONFIG but status (%d) wasn't pending on line %d of the status file: '%.*s'\n&quot;,
+-							test-&gt;status, ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
++							test-&gt;status, ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+ 				}
+ 				break;
+ 
+@@ -204,11 +204,11 @@
+ 						lastfile_good = 1;
+ 					} else {
+ 						fprintf(stderr, &quot;RUNNING needs arg on line %d of the status file: '%.*s'\n&quot;,
+-								ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
++								ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+ 					}
+ 				} else {
+ 					fprintf(stderr, &quot;RUNNING but status (%d) wasn't pending on line %d of the status file: '%.*s'\n&quot;,
+-							test-&gt;status, ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
++							test-&gt;status, ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+ 				}
+ 				break;
+ 
+@@ -217,7 +217,7 @@
+ 					test-&gt;status = test_was_completed;
+ 				} else {
+ 					fprintf(stderr, &quot;DONE but status (%d) wasn't RUNNING on line %d of the status file: '%.*s'\n&quot;,
+-							test-&gt;status, ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
++							test-&gt;status, ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+ 				}
+ 				break;
+ 			
+@@ -233,7 +233,7 @@
+ 
+ 			default:
+ 				fprintf(stderr, &quot;Unknown token (%d) on line %d of the status file: '%.*s'\n&quot;,
+-						tok, ss.line, token_length(&amp;ss)-1, token_start(&amp;ss));
++						tok, ss.line, (int)token_length(&amp;ss)-1, token_start(&amp;ss));
+ 		}
+     } while(!scan_is_finished(&amp;ss));
+ 
+@@ -494,7 +494,7 @@
+         *(int*)refcon = 1;
+     } else if(cp &lt; ce) {
+         fprintf(stderr, &quot;%s line %d: unknown arguments \&quot;%.*s\&quot;\n&quot;,
+-                file, line, ce-cp, cp);
++                file, line, (int)(ce-cp), cp);
+     }
+ 
+     return 0;
+
+Modified: trunk/tfscan.c
+===================================================================
+--- trunk/tfscan.c	2006-03-08 22:03:36 UTC (rev 115)
++++ trunk/tfscan.c	2007-01-23 05:55:05 UTC (rev 116)
+@@ -34,7 +34,7 @@
+ #include &quot;tfscan.h&quot;
+ 
+ 
+-#define START(x) (ss-&gt;scanref=(void*)(x))
++#define START(x) (ss-&gt;scanref=(void*)(long int)(x))
+ 
+ #ifndef NULL
+ #define NULL ((void*)0)
+@@ -93,7 +93,7 @@
+ 		// We have to assume that we previously read as much data as
+ 		// possible.  So the entire buffer is just data with no tokens
+ 		// and no CR/LF.
+-		return (int)ss-&gt;scanref;
++		return (long int)ss-&gt;scanref;
+ 	}
+ 
+ 	if(*YYCURSOR == '\r') YYCURSOR++;
+@@ -103,7 +103,7 @@
+ 
+ 	// We have potential for finding a token at this point.
+ 	ss-&gt;state = tfscan_tok_start;
+-	return (int)ss-&gt;scanref;
++	return (long int)ss-&gt;scanref;
+ }
+ 
+ 
+@@ -123,7 +123,7 @@
+         r = (*ss-&gt;read)(ss);
+         if(r &lt; 0) return r;
+         // if we're at eof, then the current token is just data.
+-        if(r == 0) return (int)ss-&gt;scanref;
++        if(r == 0) return (long int)ss-&gt;scanref;
+     }
+ 
+     if(*YYCURSOR != '\r' &amp;&amp; *YYCURSOR != '\n' &amp;&amp; *YYCURSOR != ':' &amp;&amp;
+@@ -142,7 +142,7 @@
+             r = (*ss-&gt;read)(ss);
+             if(r &lt; 0) return r;
+             // if we're at eof, then the current token is just data.
+-            if(r == 0) return (int)ss-&gt;scanref;
++            if(r == 0) return (long int)ss-&gt;scanref;
+ 		}
+ 	}
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000034.html">[Tmtest-commits] [117] trunk: Create the TOUCH tmlib function,	mark MKFILE_EMPTY for
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#33">[ date ]</a>
+              <a href="thread.html#33">[ thread ]</a>
+              <a href="subject.html#33">[ subject ]</a>
+              <a href="author.html#33">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

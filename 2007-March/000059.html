@@ -1,0 +1,621 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [142] trunk: Big refactor to mutest.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B142%5D%20trunk%3A%20Big%20refactor%20to%20mutest.&In-Reply-To=%3C200703070742.l277g1Ol008200%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000058.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [142] trunk: Big refactor to mutest.</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B142%5D%20trunk%3A%20Big%20refactor%20to%20mutest.&In-Reply-To=%3C200703070742.l277g1Ol008200%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [142] trunk: Big refactor to mutest.">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Wed Mar  7 08:42:01 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000058.html">[Tmtest-commits] [141] trunk: Add mutest-config,	start splitting mutest.h into two files
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#59">[ date ]</a>
+              <a href="thread.html#59">[ thread ]</a>
+              <a href="subject.html#59">[ subject ]</a>
+              <a href="author.html#59">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 142
+Author:   bronson
+Date:     2007-03-07 08:41:52 +0100 (Wed, 07 Mar 2007)
+
+Log Message:
+-----------
+Big refactor to mutest.  Now you need to start a subtest to run an inverted test.
+
+That's why the number of tests run jumped from 5 to 24.  We run 19 inverted tests.
+
+Modified Paths:
+--------------
+    trunk/compare.c
+    trunk/pathstack.c
+    trunk/test/02-running/03-Unit-Fails.test
+    trunk/test/02-running/03-Unit-Tests.test
+Modified: trunk/compare.c
+===================================================================
+--- trunk/compare.c	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/compare.c	2007-03-07 07:41:52 UTC (rev 142)
+@@ -195,16 +195,19 @@
+ {
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+-
+-	readmem_init_str(ss, &quot;&quot;);
+-	compare_attach(ss);
+-	AssertEQ(compare_check(ss), cmp_full_match);
+-
+-	readmem_init_str(ss, &quot;&quot;);
+-	compare_attach(ss);
+-	val = compare_continue(ss, &quot;&quot;, 0);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_full_match);
++	
++	mutest_start(__func__, &quot;Ensure that two empty buffers are a full match.&quot;)
++	{
++		readmem_init_str(ss, &quot;&quot;);
++		compare_attach(ss);
++		AssertEQ(compare_check(ss), cmp_full_match);
++	
++		readmem_init_str(ss, &quot;&quot;);
++		compare_attach(ss);
++		val = compare_continue(ss, &quot;&quot;, 0);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_full_match);
++	}
+ }
+ 
+ 
+@@ -213,13 +216,16 @@
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+ 
+-	readmem_init_str(ss, &quot;123&quot;);
+-	compare_attach(ss);
+-	val = compare_continue(ss, &quot;12&quot;, 2);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;3&quot;, 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_full_match);
++	mutest_start(__func__, &quot;Ensure that 123 and 12,3 are a full match.&quot;)
++	{
++		readmem_init_str(ss, &quot;123&quot;);
++		compare_attach(ss);
++		val = compare_continue(ss, &quot;12&quot;, 2);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;3&quot;, 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_full_match);
++	}
+ }
+ 
+ 
+@@ -230,18 +236,21 @@
+ 	unsigned int seed = 47;
+ 	int num, i, val;
+ 
+-	scanstate_init(ss, buf, BUFSIZ);
+-	readrand_attach(ss, seed);
+-	compare_attach(ss);
+-	for(i=0; i&lt;10; i++) {
+-		num = rand_r(&amp;seed);
+-		val = compare_continue(ss, (char*)&amp;num, sizeof(num));
+-		AssertNonNegative(val);
++	mutest_start(__func__, &quot;Ensure that a few tens of K match.&quot;)
++	{
++		scanstate_init(ss, buf, BUFSIZ);
++		readrand_attach(ss, seed);
++		compare_attach(ss);
++		for(i=0; i&lt;10; i++) {
++			num = rand_r(&amp;seed);
++			val = compare_continue(ss, (char*)&amp;num, sizeof(num));
++			AssertNonNegative(val);
++		}
++	
++		// compare_check will never return cmp_full_match because
++		// the random reader will never run out of data.
++		AssertEQ(compare_check(ss), cmp_ss_has_more_data);
+ 	}
+-
+-	// compare_check will never return cmp_full_match because
+-	// the random reader will never run out of data.
+-	AssertEQ(compare_check(ss), cmp_ss_has_more_data);
+ }
+ 
+ 
+@@ -266,47 +275,51 @@
+ 
+ static void test_newlines()
+ {
+-	AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n&quot;  ), cmp_full_match);
+-	AssertEQ(check_newlines(&quot;Unix&quot;,     &quot;Unix\n&quot;  ), cmp_ptr_has_extra_nl);
+-	AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix&quot;    ), cmp_ss_has_extra_nl);
+-	AssertEQ(check_newlines(&quot;Unix&quot;,     &quot;Unix&quot;    ), cmp_full_match);
+-
+-	AssertEQ(check_newlines(&quot;Unix\n\n&quot;, &quot;Unix\n&quot;  ), cmp_ss_has_extra_nl);
+-	AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n\n&quot;), cmp_ptr_has_more_nls);
+-
+-	// empty buffers (except for newlines)
+-	AssertEQ(check_newlines(&quot;\n&quot;,   &quot;&quot;     ), cmp_ss_has_extra_nl);
+-	AssertEQ(check_newlines(&quot;&quot;,     &quot;\n&quot;   ), cmp_ptr_has_extra_nl);
+-	AssertEQ(check_newlines(&quot;\n\n&quot;, &quot;&quot;     ), cmp_ss_has_more_data);
+-	AssertEQ(check_newlines(&quot;&quot;,     &quot;\n\n&quot; ), cmp_no_match);
++	mutest_start(__func__, &quot;Ensure that the newline descriptions are correct&quot;)
++	{
++		AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n&quot;  ), cmp_full_match);
++		AssertEQ(check_newlines(&quot;Unix&quot;,     &quot;Unix\n&quot;  ), cmp_ptr_has_extra_nl);
++		AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix&quot;    ), cmp_ss_has_extra_nl);
++		AssertEQ(check_newlines(&quot;Unix&quot;,     &quot;Unix&quot;    ), cmp_full_match);
++	
++		AssertEQ(check_newlines(&quot;Unix\n\n&quot;, &quot;Unix\n&quot;  ), cmp_ss_has_extra_nl);
++		AssertEQ(check_newlines(&quot;Unix\n&quot;,   &quot;Unix\n\n&quot;), cmp_ptr_has_more_nls);
++	
++		// empty buffers (except for newlines)
++		AssertEQ(check_newlines(&quot;\n&quot;,   &quot;&quot;     ), cmp_ss_has_extra_nl);
++		AssertEQ(check_newlines(&quot;&quot;,     &quot;\n&quot;   ), cmp_ptr_has_extra_nl);
++		AssertEQ(check_newlines(&quot;\n\n&quot;, &quot;&quot;     ), cmp_ss_has_more_data);
++		AssertEQ(check_newlines(&quot;&quot;,     &quot;\n\n&quot; ), cmp_no_match);
++	}
+ }
+ 
+ static void test_inc()
+ {
+-	// Tries to ensure that packetization won't mess us up.
+-
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+ 
+-	readmem_init_str(ss, &quot;12&quot;);
+-	compare_attach(ss);
+-	val = compare_continue(ss, &quot;1&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;2&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;\n&quot;, 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_ptr_has_extra_nl);
+-
+-	readmem_init_str(ss, &quot;123&quot;);
+-	compare_attach(ss);
+-	val = compare_continue(ss, &quot;1&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;2&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;\n&quot;, 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check(ss), cmp_no_match);
++	mutest_start(__func__, &quot;Ensures packetization won't affect non-matches.&quot;)
++	{
++		readmem_init_str(ss, &quot;12&quot;);
++		compare_attach(ss);
++		val = compare_continue(ss, &quot;1&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;2&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;\n&quot;, 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_ptr_has_extra_nl);
++	
++		readmem_init_str(ss, &quot;123&quot;);
++		compare_attach(ss);
++		val = compare_continue(ss, &quot;1&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;2&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;\n&quot;, 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check(ss), cmp_no_match);
++	}
+ }
+ 
+ 
+@@ -317,37 +330,40 @@
+ 	scanstate ssrec, *ss=&ssrec;
+ 	int val;
+ 
+-	readmem_init_str(ss, &quot;123&quot;);
+-	compare_attach(ss);
+-	val = compare_continue(ss, &quot;1&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;2&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;3&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;\n&quot;, 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+-
+-	readmem_init_str(ss, &quot;123\n&quot;);
+-	compare_attach(ss);
+-	val = compare_continue(ss, &quot;1&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;2&quot;, 1);
+-	AssertNonNegative(val);
+-	val = compare_continue(ss, &quot;3&quot;, 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
+-
+-	readmem_init_str(ss, &quot;&quot;);
+-	compare_attach(ss);
+-	val = compare_continue(ss, &quot;\n&quot;, 1);
+-	AssertNonNegative(val);
+-	AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
+-
+-	readmem_init_str(ss, &quot;\n&quot;);
+-	compare_attach(ss);
+-	AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	mutest_start(__func__, &quot;Test packetization with newlines&quot;)
++	{
++		readmem_init_str(ss, &quot;123&quot;);
++		compare_attach(ss);
++		val = compare_continue(ss, &quot;1&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;2&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;3&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;\n&quot;, 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	
++		readmem_init_str(ss, &quot;123\n&quot;);
++		compare_attach(ss);
++		val = compare_continue(ss, &quot;1&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;2&quot;, 1);
++		AssertNonNegative(val);
++		val = compare_continue(ss, &quot;3&quot;, 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	
++		readmem_init_str(ss, &quot;&quot;);
++		compare_attach(ss);
++		val = compare_continue(ss, &quot;\n&quot;, 1);
++		AssertNonNegative(val);
++		AssertEQ(compare_check_newlines(ss), cmp_ptr_has_extra_nl);
++	
++		readmem_init_str(ss, &quot;\n&quot;);
++		compare_attach(ss);
++		AssertEQ(compare_check_newlines(ss), cmp_ss_has_extra_nl);
++	}
+ }
+ 
+ 
+@@ -360,11 +376,11 @@
+ 
+ void compare_tests()
+ {
+-	mutest( test_empty() );
+-	mutest( test_standard() );
+-	mutest( test_large() );
+-	mutest( test_newlines() );
+-	mutest( test_inc() );
+-	mutest( test_inc_newlines() );
++	test_empty();
++	test_standard();
++	test_large();
++	test_newlines();
++	test_inc();
++	test_inc_newlines();
+ };
+ 
+
+Modified: trunk/pathstack.c
+===================================================================
+--- trunk/pathstack.c	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/pathstack.c	2007-03-07 07:41:52 UTC (rev 142)
+@@ -177,81 +177,84 @@
+ 		// therefore, buffer can hold 23 characters, bufsiz is only 22, and the entire buffer
+ 		// can hold a maximum of 21 characters including the leading '/'.
+ 	
+-	// init the pathstack
+-	pathstack_init(ps, buf, bufsiz, origstr);
+-	AssertEqual(ps-&gt;curlen, strlen(origstr));
+-	AssertEqual(ps-&gt;maxlen, bufsiz-1);
+-	AssertStrEqual(ps-&gt;buf, origstr);
+-	
+-	
+-	// push an actual string
+-	ret = pathstack_push(ps, &quot;/next&quot;, &amp;save1);
+-	AssertZero(ret);
+-	AssertEqual(save1.oldlen, strlen(origstr));
+-	AssertEqual(ps-&gt;maxlen, bufsiz-1);
+-	AssertStrEqual(ps-&gt;buf, &quot;/tryit/next&quot;);
+-	
+-	// and pop it
+-	ret = pathstack_pop(ps, &amp;save1);
+-	AssertZero(ret);
+-	AssertEqual(ps-&gt;curlen, strlen(origstr));
+-	AssertEqual(ps-&gt;maxlen, bufsiz-1);
+-	AssertStrEqual(ps-&gt;buf, origstr);
+-	
+-	
+-	// push an empty string
+-	ret = pathstack_push(ps, &quot;&quot;, &amp;save1);
+-	AssertZero(ret);
+-	AssertEqual(ps-&gt;curlen, strlen(origstr));
+-	AssertEqual(ps-&gt;maxlen, bufsiz-1);
+-	AssertStrEqual(ps-&gt;buf, origstr);
+-	
+-	// and pop it.
+-	ret = pathstack_pop(ps, &amp;save1);
+-	AssertZero(ret);
+-	AssertEqual(ps-&gt;curlen, strlen(origstr));
+-	AssertEqual(ps-&gt;maxlen, bufsiz-1);
+-	AssertStrEqual(ps-&gt;buf, origstr);
+-	
+-	
+-	// push a series of strings, hit the end of the buffer
+-	ret = pathstack_push(ps, &quot;next/&quot;, &amp;save1);
+-	AssertZero(ret);
+-	ret = pathstack_push(ps, &quot;n&quot;, &amp;save2);
+-	AssertZero(ret);
+-	ret = pathstack_push(ps, &quot;123456789&quot;, &amp;save3);
+-	AssertZero(ret);
+-	
+-	//                       123456789012345678901ns  (n: null terminator, s: sentinel)
+-	AssertStrEqual(ps-&gt;buf, &quot;/tryit/next/n/1234567&quot;);
+-	AssertEqual(ps-&gt;curlen, ps-&gt;maxlen);
+-	AssertEqual(ps-&gt;maxlen, bufsiz-1);
+-	
+-	// and pop it
+-	ret = pathstack_pop(ps, &amp;save3);
+-	AssertZero(ret);
+-	ret = pathstack_pop(ps, &amp;save2);
+-	AssertZero(ret);
+-	
+-	// Ensure that an out-of-order pop gets ignored
+-	ret = pathstack_pop(ps, &amp;save3);
+-	AssertEqual(ret, -1);
+-	AssertStrEqual(ps-&gt;buf, &quot;/tryit/next/&quot;);
+-	
+-	ret = pathstack_pop(ps, &amp;save1);
+-	AssertZero(ret);
+-	
+-	AssertEqual(ps-&gt;curlen, strlen(origstr));
+-	AssertEqual(ps-&gt;maxlen, bufsiz-1);
+-	AssertStrEqual(ps-&gt;buf, origstr);
+-	
+-	// ensure we can push without saving state without bus erroring
+-	ret = pathstack_push(ps, &quot;123&quot;, NULL);
+-	// (can't really think of anything to test... the fact that we
+-	// reached this line at all means the test succeeded).
+-	
+-	// And finally, check the sentinel
+-	AssertEqual(buf[sizeof(buf)-1], 127);
++	mutest_start(__func__, &quot;Tests typical pathstack operations&quot;)
++	{
++		// init the pathstack
++		pathstack_init(ps, buf, bufsiz, origstr);
++		AssertEqual(ps-&gt;curlen, strlen(origstr));
++		AssertEqual(ps-&gt;maxlen, bufsiz-1);
++		AssertStrEqual(ps-&gt;buf, origstr);
++		
++		
++		// push an actual string
++		ret = pathstack_push(ps, &quot;/next&quot;, &amp;save1);
++		AssertZero(ret);
++		AssertEqual(save1.oldlen, strlen(origstr));
++		AssertEqual(ps-&gt;maxlen, bufsiz-1);
++		AssertStrEqual(ps-&gt;buf, &quot;/tryit/next&quot;);
++		
++		// and pop it
++		ret = pathstack_pop(ps, &amp;save1);
++		AssertZero(ret);
++		AssertEqual(ps-&gt;curlen, strlen(origstr));
++		AssertEqual(ps-&gt;maxlen, bufsiz-1);
++		AssertStrEqual(ps-&gt;buf, origstr);
++		
++		
++		// push an empty string
++		ret = pathstack_push(ps, &quot;&quot;, &amp;save1);
++		AssertZero(ret);
++		AssertEqual(ps-&gt;curlen, strlen(origstr));
++		AssertEqual(ps-&gt;maxlen, bufsiz-1);
++		AssertStrEqual(ps-&gt;buf, origstr);
++		
++		// and pop it.
++		ret = pathstack_pop(ps, &amp;save1);
++		AssertZero(ret);
++		AssertEqual(ps-&gt;curlen, strlen(origstr));
++		AssertEqual(ps-&gt;maxlen, bufsiz-1);
++		AssertStrEqual(ps-&gt;buf, origstr);
++		
++		
++		// push a series of strings, hit the end of the buffer
++		ret = pathstack_push(ps, &quot;next/&quot;, &amp;save1);
++		AssertZero(ret);
++		ret = pathstack_push(ps, &quot;n&quot;, &amp;save2);
++		AssertZero(ret);
++		ret = pathstack_push(ps, &quot;123456789&quot;, &amp;save3);
++		AssertZero(ret);
++		
++		//                       123456789012345678901ns  (n: null terminator, s: sentinel)
++		AssertStrEqual(ps-&gt;buf, &quot;/tryit/next/n/1234567&quot;);
++		AssertEqual(ps-&gt;curlen, ps-&gt;maxlen);
++		AssertEqual(ps-&gt;maxlen, bufsiz-1);
++		
++		// and pop it
++		ret = pathstack_pop(ps, &amp;save3);
++		AssertZero(ret);
++		ret = pathstack_pop(ps, &amp;save2);
++		AssertZero(ret);
++		
++		// Ensure that an out-of-order pop gets ignored
++		ret = pathstack_pop(ps, &amp;save3);
++		AssertEqual(ret, -1);
++		AssertStrEqual(ps-&gt;buf, &quot;/tryit/next/&quot;);
++		
++		ret = pathstack_pop(ps, &amp;save1);
++		AssertZero(ret);
++		
++		AssertEqual(ps-&gt;curlen, strlen(origstr));
++		AssertEqual(ps-&gt;maxlen, bufsiz-1);
++		AssertStrEqual(ps-&gt;buf, origstr);
++		
++		// ensure we can push without saving state without bus erroring
++		ret = pathstack_push(ps, &quot;123&quot;, NULL);
++		// (can't really think of anything to test... the fact that we
++		// reached this line at all means the test succeeded).
++		
++		// And finally, check the sentinel
++		AssertEqual(buf[sizeof(buf)-1], 127);
++	}
+ }
+ 
+ 
+@@ -263,10 +266,13 @@
+ 	// Ensures that we won't overflow while initing.
+ 	// There are probably some other small path ops we should verify.
+ 	
+-	// Pathstacks always need to start with '/'
+-	pathstack_init(ps, buf, sizeof(buf), &quot;/23456789&quot;);
+-	AssertStrEqual(ps-&gt;buf, &quot;/2345&quot;);	// 5 characters plus the null byte
+-	AssertEqual(ps-&gt;curlen, ps-&gt;maxlen);
++	mutest_start(__func__, &quot;Ensures that initializing with a long string won't overflow.&quot;)
++	{
++		// Pathstacks always need to start with '/'
++		pathstack_init(ps, buf, sizeof(buf), &quot;/23456789&quot;);
++		AssertStrEqual(ps-&gt;buf, &quot;/2345&quot;);	// 5 characters plus the null byte
++		AssertEqual(ps-&gt;curlen, ps-&gt;maxlen);
++	}
+ }
+ 
+ 
+@@ -290,39 +296,42 @@
+ 	// is there a way to test that passing a bufsiz of 0 will
+ 	// cause the assert to trigger?
+ 	
+-	// init the pathstack
+-	pathstack_init(ps, buf, sizeof(buf), NULL);
+-	AssertStackEmpty(ps);
+-	
+-	// push an actual string
+-	ret = pathstack_push(ps, &quot;/next&quot;, &amp;save);
+-	AssertEqual(ret, -1);
+-	AssertEqual(save.oldlen, 1);
+-	AssertStackEmpty(ps);
+-	
+-	// and pop it
+-	ret = pathstack_pop(ps, &amp;save);
+-	AssertZero(ret);
+-	AssertStackEmpty(ps);
+-	
+-	// push an empty string.  It's illegal to push an empty string onto a pathstack.
+-	ret = pathstack_push(ps, &quot;&quot;, &amp;save);
+-	AssertEqual(ret, -1);
+-	AssertEqual(save.oldlen, 1);
+-	AssertStackEmpty(ps);
+-	
+-	// and pop it.
+-	ret = pathstack_pop(ps, &amp;save);
+-	AssertZero(ret);
+-	AssertStackEmpty(ps);
++	mutest_start(__func__, &quot;Ensures all operations are consistent even on a minimum-sized pathstack.&quot;)
++	{
++		// init the pathstack
++		pathstack_init(ps, buf, sizeof(buf), NULL);
++		AssertStackEmpty(ps);
++		
++		// push an actual string
++		ret = pathstack_push(ps, &quot;/next&quot;, &amp;save);
++		AssertEqual(ret, -1);
++		AssertEqual(save.oldlen, 1);
++		AssertStackEmpty(ps);
++		
++		// and pop it
++		ret = pathstack_pop(ps, &amp;save);
++		AssertZero(ret);
++		AssertStackEmpty(ps);
++		
++		// push an empty string.  It's illegal to push an empty string onto a pathstack.
++		ret = pathstack_push(ps, &quot;&quot;, &amp;save);
++		AssertEqual(ret, -1);
++		AssertEqual(save.oldlen, 1);
++		AssertStackEmpty(ps);
++		
++		// and pop it.
++		ret = pathstack_pop(ps, &amp;save);
++		AssertZero(ret);
++		AssertStackEmpty(ps);
++	}
+ }
+ 
+ 
+ void pathstack_tests()
+ {
+-	mutest( test_pathstack() );
+-	mutest( test_small_pathstack() );
+-	mutest( test_empty_pathstack() );
++	test_pathstack();
++	test_small_pathstack();
++	test_empty_pathstack();
+ }
+ 
+ #endif
+
+Modified: trunk/test/02-running/03-Unit-Fails.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Fails.test	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/test/02-running/03-Unit-Fails.test	2007-03-07 07:41:52 UTC (rev 142)
+@@ -85,4 +85,4 @@
+ mutest.c:NNN: In test_assert_strings, assert n is empty failed. n is NULL!
+ mutest.c:NNN: In test_assert_strings, assert e is nonempty failed. e[0] is 0!
+ mutest.c:NNN: In test_assert_strings, assert n is nonempty failed. n is NULL!
+-All OK.  14 tests run, 14 successes (252 assertions).
++All OK.  33 tests run, 33 successes (252 assertions).
+
+Modified: trunk/test/02-running/03-Unit-Tests.test
+===================================================================
+--- trunk/test/02-running/03-Unit-Tests.test	2007-03-06 21:18:39 UTC (rev 141)
++++ trunk/test/02-running/03-Unit-Tests.test	2007-03-07 07:41:52 UTC (rev 142)
+@@ -3,4 +3,4 @@
+ $tmtest --run-unit-tests
+ 
+ STDOUT:
+-All OK.  14 tests run, 14 successes (252 assertions).
++All OK.  33 tests run, 33 successes (252 assertions).
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000058.html">[Tmtest-commits] [141] trunk: Add mutest-config,	start splitting mutest.h into two files
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#59">[ date ]</a>
+              <a href="thread.html#59">[ thread ]</a>
+              <a href="subject.html#59">[ subject ]</a>
+              <a href="author.html#59">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

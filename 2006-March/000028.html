@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [111] trunk: Repair an 8-byte memory leak (well, depending on how many
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B111%5D%20trunk%3A%20Repair%20an%208-byte%20memory%20leak%20%28well%2C%20depending%20on%20how%20many&In-Reply-To=%3C200603072209.k27M9CS3011910%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000027.html">
+   <LINK REL="Next"  HREF="000029.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [111] trunk: Repair an 8-byte memory leak (well, depending on how many</H1>
+    <B>tmtest-commits at berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B111%5D%20trunk%3A%20Repair%20an%208-byte%20memory%20leak%20%28well%2C%20depending%20on%20how%20many&In-Reply-To=%3C200603072209.k27M9CS3011910%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [111] trunk: Repair an 8-byte memory leak (well, depending on how many">tmtest-commits at berlios.de
+       </A><BR>
+    <I>Tue Mar  7 23:09:12 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000027.html">[Tmtest-commits] [110] trunk: Fix format strings so test summary looks better, Get rid of
+</A></li>
+        <LI>Next message: <A HREF="000029.html">[Tmtest-commits] [112] trunk: Rename --all-files to the much more understandable
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#28">[ date ]</a>
+              <a href="thread.html#28">[ thread ]</a>
+              <a href="subject.html#28">[ subject ]</a>
+              <a href="author.html#28">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 111
+Author:   bronson
+Date:     2006-03-07 23:09:11 +0100 (Tue, 07 Mar 2006)
+
+Log Message:
+-----------
+Repair an 8-byte memory leak (well, depending on how many args you pass)
+and fix a spurious warning when you used an empty section in an -o or
+a -d.  Unfortunately I don't see how to write a test for the second item.
+Well, not without running tmtest under valgrind anyway.
+
+Modified Paths:
+--------------
+    trunk/main.c
+    trunk/test.c
+    trunk/test.h
+Modified: trunk/main.c
+===================================================================
+--- trunk/main.c	2006-03-07 21:40:08 UTC (rev 110)
++++ trunk/main.c	2006-03-07 22:09:11 UTC (rev 111)
+@@ -288,7 +288,7 @@
+ 	test-&gt;diffname = buf;
+ 	fd = open_file(buf, DIFFNAME, 0);
+ 	assert(strlen(buf) == sizeof(TESTDIR)+sizeof(DIFFNAME)-1);
+-	write_file(fd, 0);
++	write_file(fd, 0, NULL);
+ 	close(fd);
+ 
+ 	return fd;
+@@ -1161,6 +1161,8 @@
+ 	for(i=0; i&lt;n; i++) { normalize_path(argv[i], &amp;ents[i]); }
+ 	process_ents(ents, 1);
+ 	for(i=0; i&lt;n; i++) { normalize_free(argv[i], ents[i]); }
++
++	free(ents);
+ }
+ 
+ 
+
+Modified: trunk/test.c
+===================================================================
+--- trunk/test.c	2006-03-07 21:40:08 UTC (rev 110)
++++ trunk/test.c	2006-03-07 22:09:11 UTC (rev 111)
+@@ -858,11 +858,19 @@
+ }
+ 
+ 
+-int write_file(int outfd, int infd)
++/**
++ * Reads all the data from infd and writes it onto outfd.
++ *
++ * @param endnl (optional) true if the data written ended with a newline,
++ *   false if not.  Pass NULL if you don't care.
++ * @returns the number of bytes written.
++ */
++
++size_t write_file(int outfd, int infd, int *endnl)
+ {
+     char buf[BUFSIZ];
+-    int rcnt, wcnt;
+-	int ending_newline;
++    size_t rcnt, wcnt;
++	size_t total = 0;
+ 
+     // first rewind the input file
+     if(lseek(infd, 0, SEEK_SET) &lt; 0) {
+@@ -876,7 +884,7 @@
+             rcnt = read(infd, buf, sizeof(buf));
+         } while(rcnt &lt; 0 &amp;&amp; errno == EINTR);
+         if(rcnt &gt; 0) {
+-			ending_newline = (buf[rcnt-1] == '\n');
++			if(endnl) *endnl = (buf[rcnt-1] == '\n');
+             do {
+                 wcnt = write(outfd, buf, rcnt);
+             } while(wcnt &lt; 0 &amp;&amp; errno == EINTR);
+@@ -885,6 +893,7 @@
+                 perror(&quot;writing in write_file&quot;);
+                 break;
+             }
++			total += rcnt;
+         } else if (rcnt &lt; 0) {
+             // read error.  do something!
+             perror(&quot;reading in write_file&quot;);
+@@ -892,7 +901,7 @@
+         }
+     } while(rcnt);
+ 
+-	return ending_newline;
++	return total;
+ }
+ 
+ 
+@@ -900,6 +909,7 @@
+ 		int fd, const char *name)
+ {
+     int marked_no_nl = 0;
++	size_t cnt;
+ 	int has_nl;
+ 
+ 	parse_section_args(datap, len,
+@@ -907,7 +917,7 @@
+ 			start_output_section_argproc, &amp;marked_no_nl);
+ 
+ 	write(test-&gt;rewritefd, datap, len);
+-	has_nl = write_file(test-&gt;rewritefd, fd);
++	cnt = write_file(test-&gt;rewritefd, fd, &amp;has_nl);
+ 
+ 	if(marked_no_nl) {
+ 		// if a section is marked with --no-trailing-newline, we need
+@@ -924,7 +934,9 @@
+ 			printf(&quot;\n&quot;);
+ 		}
+ 
+-		warn_section_newline(test, name);
++		if(cnt &gt; 0) {
++			warn_section_newline(test, name);
++		}
+ 	}
+ }
+ 
+@@ -1035,11 +1047,11 @@
+     }
+     if(test-&gt;stderr_match == match_unknown &amp;&amp; fd_has_data(test-&gt;errfd)) {
+ 		write_strconst(test-&gt;rewritefd, &quot;STDERR:\n&quot;);
+-        write_file(test-&gt;rewritefd, test-&gt;errfd);
++        write_file(test-&gt;rewritefd, test-&gt;errfd, NULL);
+     }
+     if(test-&gt;stdout_match == match_unknown &amp;&amp; fd_has_data(test-&gt;outfd)) {
+ 		write_strconst(test-&gt;rewritefd, &quot;STDOUT:\n&quot;);
+-        write_file(test-&gt;rewritefd, test-&gt;outfd);
++        write_file(test-&gt;rewritefd, test-&gt;outfd, NULL);
+     }
+ }
+ 
+
+Modified: trunk/test.h
+===================================================================
+--- trunk/test.h	2006-03-07 21:40:08 UTC (rev 110)
++++ trunk/test.h	2006-03-07 22:09:11 UTC (rev 111)
+@@ -95,5 +95,5 @@
+ 
+ // random utility function for start_diff.  Return value is true if the
+ // file ends in a newline, false if not.
+-int write_file(int outfd, int infd);
++size_t write_file(int outfd, int infd, int *ending_nl);
+ 
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000027.html">[Tmtest-commits] [110] trunk: Fix format strings so test summary looks better, Get rid of
+</A></li>
+	<LI>Next message: <A HREF="000029.html">[Tmtest-commits] [112] trunk: Rename --all-files to the much more understandable
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#28">[ date ]</a>
+              <a href="thread.html#28">[ thread ]</a>
+              <a href="subject.html#28">[ subject ]</a>
+              <a href="author.html#28">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>

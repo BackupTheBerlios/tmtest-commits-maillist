@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Tmtest-commits] [128] trunk: Add the ability to view zutest	failures (zutest -f).
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/tmtest-commits/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B128%5D%20trunk%3A%20Add%20the%20ability%20to%20view%20zutest%0A%09failures%20%28zutest%20-f%29.&In-Reply-To=%3C200701250230.l0P2UraP001537%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000044.html">
+   <LINK REL="Next"  HREF="000046.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Tmtest-commits] [128] trunk: Add the ability to view zutest	failures (zutest -f).</H1>
+    <B>tmtest-commits at lists.berlios.de</B> 
+    <A HREF="mailto:tmtest-commits%40lists.berlios.de?Subject=Re%3A%20%5BTmtest-commits%5D%20%5B128%5D%20trunk%3A%20Add%20the%20ability%20to%20view%20zutest%0A%09failures%20%28zutest%20-f%29.&In-Reply-To=%3C200701250230.l0P2UraP001537%40sheep.berlios.de%3E"
+       TITLE="[Tmtest-commits] [128] trunk: Add the ability to view zutest	failures (zutest -f).">tmtest-commits at lists.berlios.de
+       </A><BR>
+    <I>Thu Jan 25 03:32:15 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000044.html">[Tmtest-commits] [127] trunk: Run the zutest unit tests before we	run our own.
+</A></li>
+        <LI>Next message: <A HREF="000046.html">[Tmtest-commits] [129] trunk: Drastically improve the output from	failed unit tests.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Revision: 128
+Author:   bronson
+Date:     2007-01-25 03:30:51 +0100 (Thu, 25 Jan 2007)
+
+Log Message:
+-----------
+Add the ability to view zutest failures (zutest -f).
+Clean up a number of the failures.
+
+Modified Paths:
+--------------
+    trunk/TODO
+    trunk/zutest.c
+    trunk/zutest.h
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2007-01-25 01:06:08 UTC (rev 127)
++++ trunk/TODO	2007-01-25 02:30:51 UTC (rev 128)
+@@ -3,6 +3,7 @@
+   in the testfile with each line prefixed by :.  Then STDOUT.  No need
+   for this delimiter craziness.
+   YES, stderr ALWAYS comes first in the testfile, followed by stdout.
++  Should buffer stderr to memory, then compare stdout on the fly
+ - MKFILE should just create the file that the user names.
+ - MKTMPFILE should create a filename and store that in the user's variable.
+ - Write unit tests for path normalization.  Maybe for CURPATH too.
+
+Modified: trunk/zutest.c
+===================================================================
+--- trunk/zutest.c	2007-01-25 01:06:08 UTC (rev 127)
++++ trunk/zutest.c	2007-01-25 02:30:51 UTC (rev 128)
+@@ -35,12 +35,13 @@
+  */
+ 
+ 
+-static jmp_buf test_bail;	///&lt; If a test fails, this is where we end up.
+-int zutest_assertions;		///&lt; A goofy statistic, updated by the assertion macros
+-static int tests_run;		///&lt; The number of tests that we have run.  successes+failures==tests_run (if not, then there's a bug somewhere).
+-static int successes;		///&lt; The number of successful tests run
+-static int failures;		///&lt; The number of failed tests run.
+-static jmp_buf *inversion;	///&lt; Where to go if the assertion fails.  This is NULL except when running Zutest's internal unit tests.  See test_fail().
++int zutest_assertions = 0;		///&lt; A goofy statistic, updated by the assertion macros
++static int tests_run = 0;		///&lt; The number of tests that we have run.  successes+failures==tests_run (if not, then there's a bug somewhere).
++static int successes = 0;		///&lt; The number of successful tests run
++static int failures = 0;		///&lt; The number of failed tests run.
++static jmp_buf test_bail;		///&lt; If an assertion fails, and we're not inverted, this is where we end up.
++static jmp_buf *inversion;		///&lt; If an assertion fails, and we're inverted, this is where we end up.  This is NULL except when running Zutest's internal unit tests.  See test_fail().
++static int show_failures = 0; 	///&lt; Set this to 1 to print the failures.  This allows you to view the output of each failure to ensure it looks OK.
+ 
+ 
+ void zutest_fail(const char *file, int line, const char *func, 
+@@ -48,17 +49,19 @@
+ {
+ 	va_list ap;
+ 
++	if(!inversion || show_failures) {
++		fprintf(stderr, &quot;FAIL %s at %s line %d:\n\t&quot;, func, file, line);
++		va_start(ap, msg);
++		vfprintf(stderr, msg, ap);
++		va_end(ap);
++		fputc('\n', stderr);
++	}
++
+ 	// If inversion is set, then an assert correctly failed.
+ 	if(inversion) {
+ 		longjmp(*inversion, 1);
+ 	}
+ 
+-	fprintf(stderr, &quot;FAIL %s at %s line %d:\n\t&quot;, func, file, line);
+-	va_start(ap, msg);
+-	vfprintf(stderr, msg, ap);
+-	va_end(ap);
+-	fputc('\n', stderr);
+-
+ 	longjmp(test_bail, 1);
+ }
+ 
+@@ -400,6 +403,11 @@
+ #ifdef ZUTEST_MAIN
+ int main(int argc, char **argv)
+ {
++	if(argc &gt; 1) {
++		// &quot;zutest -f&quot; prints all the failures in the zutest unit tests.
++		// This allows you to check the output of each macro.
++		show_failures = 1;
++	}
+ 	run_unit_tests(all_zutests);
+ 	return 0;
+ }
+
+Modified: trunk/zutest.h
+===================================================================
+--- trunk/zutest.h	2007-01-25 01:06:08 UTC (rev 127)
++++ trunk/zutest.h	2007-01-25 02:30:51 UTC (rev 128)
+@@ -119,22 +119,22 @@
+ #define AssertDoubleLe(x,y) AssertFloatOp(x,y,&lt;=)
+ 
+ // Strings (uses strcmp)...
+-#define AssertStrEq(x,y) AssertStrOp(x,y,EQ,==)
+-#define AssertStrNe(x,y) AssertStrOp(x,y,NE,!=)
+-#define AssertStrGt(x,y) AssertStrOp(x,y,GT,&gt;)
+-#define AssertStrGe(x,y) AssertStrOp(x,y,GE,&gt;=)
+-#define AssertStrLt(x,y) AssertStrOp(x,y,LT,&lt;)
+-#define AssertStrLe(x,y) AssertStrOp(x,y,LE,&lt;=)
++#define AssertStrEq(x,y) AssertStrOp(x,y,eq,==)
++#define AssertStrNe(x,y) AssertStrOp(x,y,ne,!=)
++#define AssertStrGt(x,y) AssertStrOp(x,y,gt,&gt;)
++#define AssertStrGe(x,y) AssertStrOp(x,y,ge,&gt;=)
++#define AssertStrLt(x,y) AssertStrOp(x,y,lt,&lt;)
++#define AssertStrLe(x,y) AssertStrOp(x,y,le,&lt;=)
+ 
+ // ensures a string is non-null but zero-length
+ #define AssertStrEmpty(p) do { zutest_assertions++; \
+-		if(!(p)) { Fail(#p&quot; is empty but &quot;#p&quot; is NULL!&quot;); } \
+-		if((p)[0]) { Fail(#p&quot; is empty but &quot;#p&quot; is: %s&quot;,p); } \
++		if(!(p)) { Fail(#p&quot; should be empty but it is NULL!&quot;); } \
++		if((p)[0]) { Fail(#p&quot; should be empty but it is: %s&quot;,p); } \
+ 	} while(0)
+ // ensures a string is non-null and non-zero-length
+ #define AssertStrNonEmpty(p) do { zutest_assertions++; \
+-		if(!(p)) { Fail(#p&quot; is nonempty but &quot;#p&quot; is NULL!&quot;); } \
+-		if(!(p)[0]) { Fail(#p&quot; is nonempty but &quot;#p&quot;[0] is 0&quot;); } \
++		if(!(p)) { Fail(#p&quot; should be nonempty but it is NULL!&quot;); } \
++		if(!(p)[0]) { Fail(#p&quot; should be nonempty but &quot;#p&quot;[0] is 0&quot;); } \
+ 	} while(0)
+ 
+ 
+@@ -143,15 +143,13 @@
+ // helper macros, not intended to be called directly.
+ //
+ 
+-// On failure the expression is printed followed by the format string.
+-#define AssertExp(ex,...) AssertFmt(ex,#ex __VA_ARGS__)
+-// Like AssertExp but enforces a type while performing the comparison.
+ #define AssertExpType(x,y,op,type,fmt) \
+-	AssertExp((type)x op (type)y,&quot; failed because &quot;#x&quot;==&quot;fmt&quot; and &quot;#y&quot;==&quot;fmt&quot;!&quot;, (type)x,(type)y)
+-// It's weird hearing &quot;x==0 failed because x==1 and 0==0&quot; so we'll
++	AssertFmt((type)x op (type)y, #x&quot; &quot;#op&quot; &quot;#y&quot; failed because &quot; \
++	#x&quot;==&quot;fmt&quot; and &quot;#y&quot;==&quot;fmt&quot;!&quot;, (type)x,(type)y)
++// The failure &quot;x==0 failed because x==1 and 0==0&quot; s too wordy so we'll
+ // special-case checking against 0: x==0 failed because x==1).
+ #define AssertExpToZero(x,op,type,fmt) \
+-	AssertExp((type)x op 0,&quot; failed because &quot;#x&quot;==&quot;fmt&quot;!&quot;, (type)x)
++	AssertFmt((type)x op 0,#x&quot; &quot;#op&quot; 0 failed because &quot;#x&quot;==&quot;fmt&quot;!&quot;, (type)x)
+ 
+ #define AssertOp(x,y,op) AssertExpType(x,y,op,long,&quot;%ld&quot;)
+ #define AssertHexOp(x,y,op) AssertExpType(x,y,op,long,&quot;0x%lX&quot;)
+
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000044.html">[Tmtest-commits] [127] trunk: Run the zutest unit tests before we	run our own.
+</A></li>
+	<LI>Next message: <A HREF="000046.html">[Tmtest-commits] [129] trunk: Drastically improve the output from	failed unit tests.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/tmtest-commits">More information about the Tmtest-commits
+mailing list</a><br>
+</body></html>
